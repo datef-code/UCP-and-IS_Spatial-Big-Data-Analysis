@@ -1,0 +1,18 @@
+{
+  "dataset": "snap_brightkite",
+  "role": "辅助示例",
+  "license": "仅限研究用途（SNAP, Stanford Network Analysis Project）",
+  "note": "不允许商用；数据年代 2010–2013（方案口径标注，实测范围见 version_lock）",
+  "license_header": "本章数据许可状态：仅限研究用途（SNAP, Stanford Network Analysis Project）；限制：不允许商用；数据年代 2010–2013（方案口径标注，实测范围见 version_lock）。不满足许可要求时不使用该数据。",
+  "fingerprint": {
+    "file": "loc-brightkite_totalCheckins.txt.gz",
+    "bytes": 59986698,
+    "md5": "8ec133cd33b3f47ac9918196429b471b",
+    "rows": 4747287,
+    "time_range": {
+      "min": "2008-03-21 20:36:21",
+      "max": "2010-10-18 18:39:58"
+    },
+    "era_note": "SNAP 数据年代 2010–2013（方案口径标注）"
+  }
+}

@@ -1,0 +1,80 @@
+{
+  "dataset": "snap_brightkite",
+  "mainline": "H3 网格化 → 空间权重矩阵 → 空间滞后 → 距离环溢出",
+  "tiers": {
+    "L0": {
+      "tier": "L0",
+      "chapter": "H3 网格化",
+      "h3_version": "4.5.0",
+      "h3_res": 8,
+      "points": 4747172,
+      "cells": 228476,
+      "value_total": 4747172.0,
+      "value_top10_cells": {
+        "88754e6499fffff": 256137.0,
+        "882a1072c7fffff": 18995.0,
+        "88268cda81fffff": 18899.0,
+        "8828308281fffff": 18183.0,
+        "8829a1d757fffff": 16139.0,
+        "8828d542c9fffff": 14918.0,
+        "88446ca9b9fffff": 12246.0,
+        "88489e3467fffff": 10939.0,
+        "88195da49bfffff": 10162.0,
+        "8826e6d357fffff": 9663.0
+      }
+    },
+    "L1": {
+      "tier": "L1",
+      "chapter": "空间权重矩阵（H3 邻接 → libpysal W，行标准化）",
+      "n": 228476,
+      "mean_neighbors": 2.014942488488944,
+      "islands": 67189,
+      "transform": "R",
+      "row_sum_standardized": true
+    },
+    "L2": {
+      "tier": "L2",
+      "chapter": "空间滞后（Wx）+ Moran's I",
+      "moran_i": 0.013182832844203757,
+      "lag_corr": 0.026615620525113605,
+      "value_mean": 20.777552128013447,
+      "spatial_lag_mean": 19.018930361759367
+    },
+    "L3": {
+      "tier": "L3",
+      "chapter": "距离环溢出（热点圆心）",
+      "centers": 100,
+      "ring_km": [
+        [
+          0,
+          1
+        ],
+        [
+          1,
+          3
+        ],
+        [
+          3,
+          5
+        ],
+        [
+          5,
+          10
+        ]
+      ],
+      "mean_spill_by_ring": {
+        "spill_0_1km": 12442.34,
+        "spill_1_3km": 9361.73,
+        "spill_3_5km": 8625.29,
+        "spill_5_10km": 14592.37
+      },
+      "mean_spill_density_by_ring": {
+        "spillden_0_1km": 3006.3924285714284,
+        "spillden_1_3km": 341.92463211144405,
+        "spillden_3_5km": 147.87157284375158,
+        "spillden_5_10km": 65.31963056103085
+      },
+      "note": "环内格数随距离增加，求和口径不衰减；按环内格均摊（溢出密度）才反映距离衰减——聚合口径影响结论，对应 L1→L2→L3 认知阶梯"
+    }
+  }
+}

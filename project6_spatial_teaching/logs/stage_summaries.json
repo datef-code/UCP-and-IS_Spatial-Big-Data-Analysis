@@ -1,0 +1,89 @@
+{
+  "01_discover": {
+    "stage": "01_discover",
+    "dataset_count": 4,
+    "file_count": 24975,
+    "total_size_human": "31.1 GB",
+    "ok": true,
+    "blocking": true,
+    "seconds": 54.9
+  },
+  "02_profile": {
+    "stage": "02_profile",
+    "datasets": {
+      "fdic": 152538,
+      "sz_bike": 8572465,
+      "snap_brightkite": 4747287,
+      "snap_gowalla": 6442892
+    },
+    "rows": 19915182,
+    "violations": 7,
+    "ok": true,
+    "blocking": true,
+    "seconds": 57.4
+  },
+  "03_clean": {
+    "stage": "03_clean",
+    "rows_before": 19915182,
+    "rows_after": 19910637,
+    "removed_rate": 0.000228,
+    "datasets": {
+      "fdic": 148137,
+      "sz_bike": 8572465,
+      "snap_brightkite": 4747172,
+      "snap_gowalla": 6442863
+    },
+    "ok": true,
+    "blocking": true,
+    "seconds": 94.5
+  },
+  "04_validate": {
+    "stage": "04_validate",
+    "checks_pass": 28,
+    "checks_total": 28,
+    "blocking": 0,
+    "ok": true,
+    "seconds": 13.5
+  },
+  "05_map": {
+    "stage": "05_map",
+    "cells": 604173,
+    "datasets": {
+      "fdic": {
+        "cells": 70456,
+        "moran_i": 0.1331
+      },
+      "sz_bike": {
+        "cells": 2661,
+        "moran_i": 0.7077
+      },
+      "snap_brightkite": {
+        "cells": 228476,
+        "moran_i": 0.0132
+      },
+      "snap_gowalla": {
+        "cells": 302580,
+        "moran_i": 0.509
+      }
+    },
+    "ok": true,
+    "blocking": true,
+    "seconds": 66.3
+  },
+  "06_visualize": {
+    "stage": "06_visualize",
+    "blocking": false,
+    "figures": 13,
+    "datasets": 4,
+    "ok": true,
+    "seconds": 6.3
+  },
+  "07_conclude": {
+    "stage": "07_conclude",
+    "blocking": false,
+    "datasets": 4,
+    "conclusion": "sz_bike 空间聚集最强（Moran's I=0.7077），snap_brightkite 最弱（0.0132）——空间权重矩阵定义对结论敏感",
+    "ok": true,
+    "seconds": 0.0
+  }
+}

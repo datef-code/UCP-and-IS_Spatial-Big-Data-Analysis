@@ -1,0 +1,14 @@
+{
+  "dataset": "fdic",
+  "role": "主示例",
+  "license": "公共领域（美国联邦政府数据），可商用",
+  "note": "示例可自由分发",
+  "license_header": "本章数据许可状态：公共领域（美国联邦政府数据），可商用；限制：示例可自由分发。不满足许可要求时不使用该数据。",
+  "fingerprint": {
+    "source": "复用 project1_fdic_spatial/output/data/branch_dim.csv（口径：UNINUMBR 维度表）",
+    "files": 32,
+    "total_bytes": 1698610746,
+    "md5": null,
+    "note": "1.7 GB 大文件不计算 MD5，仅记录大小与文件数"
+  }
+}

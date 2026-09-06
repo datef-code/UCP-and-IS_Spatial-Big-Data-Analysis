@@ -1,0 +1,98 @@
+stage: 04_validate
+validated_at: '2026-09-06T19:26:16'
+summary:
+  total: 8
+  passed: 8
+  failed: 0
+  by_severity:
+    P0: 2
+    P1: 5
+    P2: 1
+  failed_by_severity:
+    P0: 0
+    P1: 0
+    P2: 0
+  blocking: false
+checks:
+- name: uninumbr_not_null
+  severity: P0
+  kind: not_null
+  field: UNINUMBR
+  passed: true
+  actual: 0.0
+  expected: <= 0.0
+  message: 字段 UNINUMBR 缺失率 0.0000%
+- name: uninumbr_year_unique
+  severity: P0
+  kind: unique
+  field: UNINUMBR,YEAR
+  passed: true
+  actual: 0
+  expected: 0
+  message: 重复行 0 条
+- name: lat_in_range
+  severity: P1
+  kind: geo_lat
+  field: SIMS_LATITUDE
+  passed: true
+  actual: 0
+  expected: 0
+  message: 字段 SIMS_LATITUDE 越界 0 个
+- name: lon_in_range
+  severity: P1
+  kind: geo_lon
+  field: SIMS_LONGITUDE
+  passed: true
+  actual: 0
+  expected: 0
+  message: 字段 SIMS_LONGITUDE 越界 0 个
+- name: depsumbr_non_negative
+  severity: P1
+  kind: non_negative
+  field: DEPSUMBR
+  passed: true
+  actual: 0
+  expected: 0
+  message: 字段 DEPSUMBR 负值 0 个
+- name: brnum_not_tracking_key
+  severity: P1
+  kind: custom
+  passed: true
+  actual: 0.724277
+  expected: '> 0（存在重编号 → 必须用 UNINUMBR）'
+  message: 并购关闭网点 29,613 家中 21,448 家 BRNUM 跨年变化（72.43%）→ 追踪主键固化为 UNINUMBR
+- name: coordinate_exact_ratio
+  severity: P2
+  kind: custom
+  passed: true
+  actual: 0.45453
+  expected: —（信息性断言）
+  message: SIMS_PROJECTION=EXACT 占 45.45%→ <100%，<1 km 环有系统性失真，须同时产出合并环敏感性结果
+- name: control_coverage
+  severity: P1
+  kind: custom
+  passed: true
+  actual: 0.983386
+  expected: '>= 0.50'
+  message: 关闭事件 29,613 起，同城（同 MSABR）对照覆盖 98.34%
+required_fields:
+  fields:
+  - UNINUMBR
+  - CERT
+  - YEAR
+  - DEPSUMBR
+  with_nulls: {}
+  can_proceed: true
+parallel_trend_prep:
+  clip: dep_chg_rate clip 到 ±50pp（与 ⑥ 估计同一口径）
+  treated_pre_growth_mean: 0.043284798476308
+  treated_pre_growth_median: 0.017041933484817084
+  control_growth_mean: 0.0704970383782515
+  control_growth_median: 0.043807894271048475
+  note: 数据侧准备：事件前增长 vs 对照增长；正式平行趋势检验在 ⑥ 估计阶段做事件研究
+  pre_trend_gap: -0.027212239901943498
+recommendations:
+- severity: P2
+  item: 坐标存在插值
+  evidence: EXACT 占 45.45%
+  action: <1 km 环结果只作参考，主表用 5 km 中等环并始终给出合并环敏感性

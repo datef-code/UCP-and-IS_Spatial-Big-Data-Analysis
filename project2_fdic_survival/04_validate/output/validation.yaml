@@ -1,0 +1,107 @@
+stage: 04_validate
+validated_at: '2026-09-06T19:59:09'
+summary:
+  total: 9
+  passed: 8
+  failed: 1
+  by_severity:
+    P0: 2
+    P1: 5
+    P2: 2
+  failed_by_severity:
+    P0: 0
+    P1: 1
+    P2: 0
+  blocking: false
+checks:
+- name: uninumbr_not_null
+  severity: P0
+  kind: not_null
+  field: UNINUMBR
+  passed: true
+  actual: 0.0
+  expected: <= 0.0
+  message: 字段 UNINUMBR 缺失率 0.0000%
+- name: uninumbr_year_unique
+  severity: P0
+  kind: unique
+  field: UNINUMBR,YEAR
+  passed: true
+  actual: 0
+  expected: 0
+  message: 重复行 0 条
+- name: lat_in_range
+  severity: P1
+  kind: geo_lat
+  field: SIMS_LATITUDE
+  passed: true
+  actual: 0
+  expected: 0
+  message: 字段 SIMS_LATITUDE 越界 0 个
+- name: lon_in_range
+  severity: P1
+  kind: geo_lon
+  field: SIMS_LONGITUDE
+  passed: true
+  actual: 0
+  expected: 0
+  message: 字段 SIMS_LONGITUDE 越界 0 个
+- name: depsumbr_non_negative
+  severity: P1
+  kind: non_negative
+  field: DEPSUMBR
+  passed: true
+  actual: 0
+  expected: 0
+  message: 字段 DEPSUMBR 负值 0 个
+- name: brnum_not_tracking_key
+  severity: P1
+  kind: custom
+  passed: true
+  actual: 0.500885
+  expected: '> 0（存在重编号 → 必须用 UNINUMBR）'
+  message: 152,538 个可追踪网点中 76,404 个 BRNUM 跨年变化（50.09%）→ 追踪主键固化为 UNINUMBR
+- name: death_after_birth
+  severity: P1
+  kind: custom
+  passed: false
+  actual: 1
+  expected: 0
+  message: 80,695 个有起止年份的网点中，死亡早于出生 1 个
+- name: censored_ratio_reasonable
+  severity: P2
+  kind: custom
+  passed: true
+  actual: 0.470984
+  expected: 0 < 右删失比例 < 1
+  message: 右删失（仍存活）网点 71,843 / 152,538 = 47.10%
+- name: event_within_window
+  severity: P2
+  kind: custom
+  passed: true
+  actual: 11787
+  expected: —（信息性断言）
+  message: 事件早于首次观测年的网点 11,787 个（左截断，⑥ 建模时剔除，不进入风险集）
+required_fields:
+  fields:
+  - UNINUMBR
+  - CERT
+  - YEAR
+  - DEPSUMBR
+  with_nulls: {}
+  can_proceed: true
+survival_context:
+  branches: 152538
+  right_censored_rate: 0.4709842793271185
+  left_truncated_rate: 0.5175693925448085
+  coordinate_missing_rate: 0.04192856371146654
+  note: 左截断网点在 ⑥ 建模时剔除；坐标缺失网点不进入空间网格
+recommendations:
+- severity: P1
+  item: death_after_birth
+  evidence: 80,695 个有起止年份的网点中，死亡早于出生 1 个
+  action: 复核口径：确认是否需要在 ③ 补一步处理
+- severity: P2
+  item: 左截断比例高
+  evidence: 出生早于面板首期 51.76%
+  action: ⑥ 建模须显式处理左截断（仅用 1994 后进入风险集的样本，并在报告中声明）

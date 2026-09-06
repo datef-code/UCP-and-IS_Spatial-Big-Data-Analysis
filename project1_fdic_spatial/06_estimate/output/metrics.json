@@ -1,0 +1,58 @@
+{
+  "stage": "06_estimate",
+  "generated_at": "2026-09-06T19:23:31",
+  "twfe": {
+    "model": "PanelOLS_TWFE (linearmodels, event-window sample)",
+    "n_obs": 955025,
+    "post": -0.05259387020663611,
+    "post_p": 0.0,
+    "post_x_strength": 0.013823280070386227,
+    "post_x_strength_p": 6.661338147750939e-16,
+    "r2_within": 0.003054444836813941
+  },
+  "event_study": {
+    "baseline": -1,
+    "pre_trend_max_abs_t": 4.12175935426111,
+    "effects": {
+      "-3": -0.0018907193923828345,
+      "-2": -0.006881715596122951,
+      "-1": 0.0,
+      "0": -0.04379581109171783,
+      "1": -0.043035792452816204,
+      "2": -0.07359545055442644,
+      "3": -0.08929199316782027,
+      "4": -0.10067675352931099
+    }
+  },
+  "spatial": {
+    "chosen": "ols",
+    "residuals_morans_i": 0.07032862790689301,
+    "residuals_morans_p_sim": 0.001,
+    "slx_w_treat_strength": 0.008986047028245209,
+    "sar_rho": -0.1701324779388358,
+    "sem_lambda": 0.2001239956801025
+  },
+  "effect_decomposition": {
+    "available_models": [
+      "sar_approx",
+      "sem"
+    ],
+    "sar_approx": {
+      "rho": -0.1701324779388358,
+      "b_treat_strength": 0.007885929125981073,
+      "direct_effect": 0.006739347274482949,
+      "spillover_effect": -0.0009798735383516606,
+      "total_effect": 0.005759473736131289,
+      "spillover_share": -0.1701324779388358,
+      "note": "SAR 含 W·Y 不含 W·X；一阶近似"
+    },
+    "sem": {
+      "lambda": 0.2001239956801025,
+      "b_treat_strength": 0.007130871659819751,
+      "note": "SEM 空间结构只在残差；direct = β_treat",
+      "direct_effect": 0.007130871659819751,
+      "spillover_effect": 0.0,
+      "total_effect": 0.007130871659819751
+    }
+  }
+}

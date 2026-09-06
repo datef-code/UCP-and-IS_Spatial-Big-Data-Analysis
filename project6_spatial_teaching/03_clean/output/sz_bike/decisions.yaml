@@ -1,0 +1,40 @@
+dataset: sz_bike
+shape_before:
+- 8572465
+- 3
+shape_after:
+- 8572465
+- 3
+records:
+- step: 1
+  action: clip
+  field: lat
+  reason: 越界纬度置空（置空而非截断，避免伪造空间位置）
+  affected_rows: 0
+  detail: 将 0 个越界值置空（[-90, 90] 之外；置空而非截断，避免伪造坐标/金额）
+  reversible: true
+  before: 0 个越界值
+  after: 越界值已置为 NaN
+- step: 2
+  action: clip
+  field: lon
+  reason: 越界经度置空
+  affected_rows: 0
+  detail: 将 0 个越界值置空（[-180, 180] 之外；置空而非截断，避免伪造坐标/金额）
+  reversible: true
+  before: 0 个越界值
+  after: 越界值已置为 NaN
+- step: 3
+  action: drop_na
+  field: lat,lon
+  reason: 无坐标点位无法进入 L0 网格化
+  affected_rows: 0
+  detail: 删除 0 行（字段 lat,lon 缺失）
+  reversible: false
+- step: 4
+  action: astype
+  field: value
+  reason: 聚合度量必须为数值
+  affected_rows: 8572465
+  detail: 列 value 类型转换为 float64
+  reversible: true

@@ -1,0 +1,129 @@
+dataset: sz_bike
+mapped_at: '2026-09-06T21:00:34'
+mainline: H3 网格化 → 空间权重矩阵 → 空间滞后 → 距离环溢出
+params:
+  h3_res: 8
+  hot_top_n: 100
+  rings_km:
+  - - 0
+    - 1
+  - - 1
+    - 3
+  - - 3
+    - 5
+  - - 5
+    - 10
+  marked: 合成参数，非真实业务数据
+shape:
+  before_rows: 8572465
+  after_rows: 2661
+  before_cols: 3
+  after_cols: 6
+operations:
+- op: geocode
+  object: lat,lon
+  result: h3_cell（res=8）
+  reason: L0 网格化
+- op: aggregate
+  object: value by h3_cell
+  result: value（求和）
+  reason: 点值聚合到格
+- op: spatial_weights
+  object: h3 邻接
+  result: W（n=2661，行标准化）
+  reason: L1 空间权重矩阵
+- op: derive
+  object: Wx
+  result: spatial_lag
+  reason: L2 空间滞后
+- op: derive
+  object: moran(value, W)
+  result: moran_i=0.707687
+  reason: L2 Moran's I
+- op: aggregate
+  object: top-100 热点 × 4 环
+  result: L3_ring_spillover.csv
+  reason: L3 距离环溢出
+tiers:
+  L0:
+    tier: L0
+    chapter: H3 网格化
+    h3_version: 4.5.0
+    h3_res: 8
+    points: 8572465
+    cells: 2661
+    value_total: 8572465.0
+    value_top10_cells:
+      88411cb9a9fffff: 68545.0
+      88411caa55fffff: 56202.0
+      88411cb9b3fffff: 55086.0
+      88411cb9adfffff: 51322.0
+      88411cb9a1fffff: 51018.0
+      88411ca9e1fffff: 49380.0
+      88411caa51fffff: 48842.0
+      88411ca8dbfffff: 48712.0
+      88411ca825fffff: 47626.0
+      88411cae65fffff: 47355.0
+  L1:
+    tier: L1
+    chapter: 空间权重矩阵（H3 邻接 → libpysal W，行标准化）
+    n: 2661
+    mean_neighbors: 5.06651634723788
+    islands: 121
+    transform: R
+    row_sum_standardized: true
+  L2:
+    tier: L2
+    chapter: 空间滞后（Wx）+ Moran's I
+    moran_i: 0.7076865029059817
+    lag_corr: 0.8581371081924403
+    value_mean: 3221.5201052236002
+    spatial_lag_mean: 3282.042728297632
+  L3:
+    tier: L3
+    chapter: 距离环溢出（热点圆心）
+    centers: 100
+    ring_km:
+    - - 0
+      - 1
+    - - 1
+      - 3
+    - - 3
+      - 5
+    - - 5
+      - 10
+    mean_spill_by_ring:
+      spill_0_1km: 171725.05
+      spill_1_3km: 441272.86
+      spill_3_5km: 604740.18
+      spill_5_10km: 1421334.86
+    mean_spill_density_by_ring:
+      spillden_0_1km: 24612.434761904762
+      spillden_1_3km: 15870.472887629845
+      spillden_3_5km: 10056.02433652752
+      spillden_5_10km: 6866.730795993034
+    note: 环内格数随距离增加，求和口径不衰减；按环内格均摊（溢出密度）才反映距离衰减——聚合口径影响结论，对应 L1→L2→L3 认知阶梯
+assertions:
+- name: h3_cell_not_null
+  severity: P1
+  passed: true
+  actual: 0
+  expected: 0
+  message: 网格化后不得出现空格
+- name: weights_row_standardized
+  severity: P1
+  passed: true
+  actual: 孤岛 121
+  expected: W 行和为 1（孤岛除外）
+  message: 未行标准化的权重会扭曲空间滞后量级
+- name: moran_i_in_range
+  severity: P2
+  passed: true
+  actual: 0.707687
+  expected: '[-1, 1]'
+  message: ''
+blocking_fail: 0
+outputs:
+- mapped.csv
+- L2_spatial_lag.csv
+- L3_ring_spillover.csv

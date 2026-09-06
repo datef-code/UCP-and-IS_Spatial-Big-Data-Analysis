@@ -1,0 +1,27 @@
+{
+  "dataset": "sz_bike",
+  "tier": "V",
+  "chapter": "可视化",
+  "form": "开源电子书 + 知乎专栏 + B站视频课",
+  "tech": "GitHub Pages / Jupyter Book / Quarto；Vue+Node.js 自建站可选",
+  "figures": [
+    {
+      "file": "L2_moran_scatter.png",
+      "title": "L2 Moran 散点图",
+      "description": "格值与空间滞后的四象限关系，对应空间自相关认知",
+      "records": 2661
+    },
+    {
+      "file": "L3_ring_spillover.png",
+      "title": "L3 距离环溢出",
+      "description": "以热点为圆心的多环平均溢出值，展示距离衰减结构",
+      "centers": 100
+    }
+  ],
+  "publish": {
+    "github_pages": "将 05_visualize/*.png 与 README 放入 docs/ 即可发布",
+    "jupyter_book": "在 _toc.yml 引用 05_visualize/*.png 作为章节插图",
+    "quarto": "在 .qmd 中使用 ![](05_visualize/L2_moran_scatter.png) 引用"
+  },
+  "note": "可视化是『放大器』：不引入新算法，只把 L0→L3 结果转化为可传播的图文/视频素材"
+}

@@ -1,0 +1,60 @@
+dataset: fdic
+validated_at: '2026-09-06T20:55:19'
+summary:
+  total: 7
+  pass: 7
+  fail: 0
+  by_severity:
+    P0:
+      total: 5
+      pass: 5
+    P1:
+      total: 2
+      pass: 2
+    P2:
+      total: 0
+      pass: 0
+  blocking: false
+checks:
+- name: lat_in_range
+  severity: P0
+  passed: true
+  actual: 0
+  expected: 0
+  message: 字段 lat 越界 0 个
+- name: lon_in_range
+  severity: P0
+  passed: true
+  actual: 0
+  expected: 0
+  message: 字段 lon 越界 0 个
+- name: lat_not_null
+  severity: P0
+  passed: true
+  actual: 0.0
+  expected: <= 0.0
+  message: 字段 lat 缺失率 0.0000%
+- name: lon_not_null
+  severity: P0
+  passed: true
+  actual: 0.0
+  expected: <= 0.0
+  message: 字段 lon 缺失率 0.0000%
+- name: rows_after_clean
+  severity: P0
+  passed: true
+  actual: 148137
+  expected: '>= 1'
+  message: ''
+- name: value_non_negative
+  severity: P1
+  passed: true
+  actual: 0
+  expected: 0
+  message: 字段 value 负值 0 个
+- name: version_lock_reproducible
+  severity: P1
+  passed: true
+  actual: 首次冻结（无历史版本可比对）
+  expected: version_lock.json 中的库版本与本次运行一致
+  message: 教学代码随版本冻结，版本漂移须重新出图

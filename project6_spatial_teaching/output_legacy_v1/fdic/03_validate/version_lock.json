@@ -1,0 +1,43 @@
+{
+  "dataset": "fdic",
+  "frozen_at": "2026-09-03T23:58:44.106199",
+  "fingerprints": {
+    "source": "复用 project1_fdic_spatial/output/data/branch_dim.csv（口径：UNINUMBR 维度表）",
+    "files": 32,
+    "total_bytes": 1698610746,
+    "md5": null,
+    "note": "1.7 GB 大文件不计算 MD5，仅记录大小与文件数"
+  },
+  "library_versions": {
+    "python": "3.13.15",
+    "pandas": "3.0.5",
+    "numpy": "2.5.2",
+    "h3": "4.5.0",
+    "libpysal": "4.15.0",
+    "datakit": "0.1.0"
+  },
+  "cost_params": {
+    "h3_res": 8,
+    "ring_km": [
+      [
+        0.0,
+        1.0
+      ],
+      [
+        1.0,
+        3.0
+      ],
+      [
+        3.0,
+        5.0
+      ],
+      [
+        5.0,
+        10.0
+      ]
+    ],
+    "hot_top_n": 100,
+    "sz_sample_day": "15",
+    "marked": "合成参数，非真实业务数据"
+  }
+}

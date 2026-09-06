@@ -1,0 +1,62 @@
+dataset: fdic
+rows_before: 152538
+rows_after: 148137
+removed_rate: 0.028852
+null_cells_before: 8798
+null_cells_after: 0
+outliers_before: 8964
+outliers_after: 8960
+recommendations:
+- severity: P2
+  target: lat
+  advice: 必要/重要字段仍有统计异常值：可缩尾或分箱（不删除行）
+- severity: P2
+  target: lon
+  advice: 必要/重要字段仍有统计异常值：可缩尾或分箱（不删除行）
+verdict: 可进入 ⑤ 映射（附优化建议）
+fields:
+- field: lat
+  level: required
+  dtype_before: float64
+  dtype_after: float64
+  null_rate_before: 0.02883871559873605
+  null_rate_after: 0.0
+  null_rate_diff: -0.02883871559873605
+  unique_before: 143947
+  unique_after: 143168
+  mean_before: 37.65645938083416
+  mean_after: 37.65496743973484
+  median_before: 38.902174848552
+  median_after: 38.902133
+  outliers_before: 1352
+  outliers_after: 1350
+- field: lon
+  level: required
+  dtype_before: float64
+  dtype_after: float64
+  null_rate_before: 0.02883871559873605
+  null_rate_after: 0.0
+  null_rate_diff: -0.02883871559873605
+  unique_before: 144164
+  unique_after: 143674
+  mean_before: -89.9542745285558
+  mean_after: -89.95559983533487
+  median_before: -86.2223770312138
+  median_after: -86.222575
+  outliers_before: 7612
+  outliers_after: 7610
+- field: value
+  level: required
+  dtype_before: int64
+  dtype_after: float64
+  null_rate_before: 0.0
+  null_rate_after: 0.0
+  null_rate_diff: 0
+  unique_before: 2
+  unique_after: 2
+  mean_before: 0.5290157206728815
+  mean_after: 0.5295638496796884
+  median_before: 1.0
+  median_after: 1.0
+  outliers_before: 0
+  outliers_after: 0

@@ -1,0 +1,45 @@
+# datakit.yaml —— 项目元信息（规范 datakit/PROJECT_STRUCTURE.md §1 / §8）
+name: project1_fdic_spatial
+title: FDIC 网点关闭对周边同业的空间溢出（空间结构化 + DID/事件研究）
+version: 1
+
+# ---- 数据源（只读，任何脚本不得写入） ----
+source_root: '../data_raw/fdic'
+source_note: 'FDIC SOD 1994–2025，32 年 × 81 列，约 1.7 GB，只读；实际数据在仓库根 data_raw/（共享），本项目 data_raw/ 仅登记口径，暂不搬迁'
+group: 'fdic_sod_#'
+datasets: []
+
+# ---- 内置五阶段 ----
+stages: [01_discover, 02_profile, 03_clean, 04_validate, 05_map]
+
+# ---- 扩展阶段（插件，NN >= 06；见规范 §8） ----
+extensions:
+  - stage: 06_estimate
+    kind: modeling
+    depends_on: [05_map]
+    requires: [closure_exposure.csv, branch_year_panel.parquet]
+    extras: [modeling]
+    blocking: false
+    outputs: [estimate.json]
+  - stage: 07_visualize
+    kind: visualization
+    depends_on: [06_estimate, 05_map]
+    requires: [estimate.json]
+    extras: [geo]
+    blocking: false
+    outputs: [manifest.json, figures/, kepler/]
+  - stage: 08_conclude
+    kind: conclusion
+    depends_on: [06_estimate, 07_visualize]
+    requires: [estimate.json]
+    extras: []
+    blocking: false
+    outputs: [technical_report.md, replication_manifest.json]
+
+# ---- 全局口径 ----
+options:
+  with_md5: false        # 源数据量大，默认不做全量 MD5
+  count_rows: true       # ① 采集需报行数（规范 §2-①）；成本 O(文件体积)，约 1 分钟
+  outlier_method: iqr
+  drop_row_warn_ratio: 0.05   # 删除行比例 > 5% → 阶段 4 给 P1 建议
+  fill_warn_ratio: 0.50       # 某字段填充量 > 50% → 阶段 4 给 P1 建议

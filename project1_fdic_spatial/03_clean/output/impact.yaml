@@ -1,0 +1,131 @@
+by_operation:
+- action: astype
+  executions: 3
+  affected_rows: 8108148
+- action: clip
+  executions: 3
+  affected_rows: 5
+- action: drop_duplicates
+  executions: 1
+  affected_rows: 0
+- action: drop_na
+  executions: 1
+  affected_rows: 120261
+by_field:
+  UNINUMBR:
+    filled: 0
+    clipped_to_null: 0
+    clipped: 0
+    replaced: 0
+    winsorized: 0
+    dropped_rows: 120261
+    dtype_before: float64
+    dtype_after: float64
+  BRNUM:
+    filled: 0
+    clipped_to_null: 0
+    clipped: 0
+    replaced: 0
+    winsorized: 0
+    dropped_rows: 0
+    dtype_before: int64
+    dtype_after: int64
+  CERT:
+    filled: 0
+    clipped_to_null: 0
+    clipped: 0
+    replaced: 0
+    winsorized: 0
+    dropped_rows: 0
+    dtype_before: int64
+    dtype_after: int64
+  YEAR:
+    filled: 0
+    clipped_to_null: 0
+    clipped: 0
+    replaced: 0
+    winsorized: 0
+    dropped_rows: 0
+    dtype_before: Int64
+    dtype_after: Int64
+  SIMS_ESTABLISHED_DATE:
+    filled: 0
+    clipped_to_null: 0
+    clipped: 0
+    replaced: 0
+    winsorized: 0
+    dropped_rows: 0
+    dtype_before: datetime64[us]
+    dtype_after: datetime64[ns]
+  SIMS_ACQUIRED_DATE:
+    filled: 0
+    clipped_to_null: 0
+    clipped: 0
+    replaced: 0
+    winsorized: 0
+    dropped_rows: 0
+    dtype_before: datetime64[us]
+    dtype_after: datetime64[ns]
+  DEPSUMBR:
+    filled: 0
+    clipped_to_null: 0
+    clipped: 0
+    replaced: 0
+    winsorized: 0
+    dropped_rows: 0
+    dtype_before: int64
+    dtype_after: int64
+  SIMS_LATITUDE:
+    filled: 0
+    clipped_to_null: 0
+    clipped: 5
+    replaced: 0
+    winsorized: 0
+    dropped_rows: 0
+    dtype_before: float64
+    dtype_after: float64
+  SIMS_LONGITUDE:
+    filled: 0
+    clipped_to_null: 0
+    clipped: 0
+    replaced: 0
+    winsorized: 0
+    dropped_rows: 0
+    dtype_before: float64
+    dtype_after: float64
+  BKCLASS:
+    filled: 0
+    clipped_to_null: 0
+    clipped: 0
+    replaced: 0
+    winsorized: 0
+    dropped_rows: 0
+    dtype_before: string
+    dtype_after: string
+  MSABR:
+    filled: 0
+    clipped_to_null: 0
+    clipped: 0
+    replaced: 0
+    winsorized: 0
+    dropped_rows: 0
+    dtype_before: string
+    dtype_after: string
+  METROBR:
+    filled: 0
+    clipped_to_null: 0
+    clipped: 0
+    replaced: 0
+    winsorized: 0
+    dropped_rows: 0
+    dtype_before: float64
+    dtype_after: float64
+  SIMS_PROJECTION:
+    filled: 0
+    clipped_to_null: 0
+    clipped: 0
+    replaced: 0
+    winsorized: 0
+    dropped_rows: 0
+    dtype_before: string
+    dtype_after: string

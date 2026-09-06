@@ -1,0 +1,119 @@
+dataset: snap_gowalla
+profiled_at: '2026-09-06T20:53:44'
+license:
+  role: 辅助示例
+  license: 仅限研究用途（SNAP），不允许商用
+  restriction: 数据年代 2010–2013（实测 2009-02 ~ 2010-10，见 version_lock）
+value_semantics: 签到次数（每次签到计 1）
+fingerprint:
+  source: data_raw/snap_gowalla/loc-gowalla_totalCheckins.txt.gz
+  files: 1
+  total_bytes: 105470044
+  md5: null
+  rows: 6442892
+  time_range:
+    min: '2009-02-04 05:17:38'
+    max: '2010-10-23 05:22:06'
+  era_note: SNAP 数据年代 2010–2013（方案口径标注；实测范围见上）
+summary:
+  rows: 6442892
+  columns: 3
+  null_cells: 0
+  null_rate: 0.0
+  outlier_count: 162952
+outlier_method: iqr
+outliers_by_field:
+  lat: 160033
+  lon: 2919
+outlier_row_cap: 20000
+fields:
+- name: lat
+  dtype: float64
+  role: spatial
+  count: 6442892
+  non_null: 6442892
+  null_count: 0
+  null_rate: 0.0
+  unique: 1247095
+  min: -90.0
+  max: 405.658498
+  mean: 40.521771173747986
+  median: 39.8899309
+  std: 14.76713642374588
+  negative_rate: 0.017490903153428616
+  zero_rate: 2.095332344543413e-05
+  level: required
+  description: 纬度（清洗后统一命名，源字段 lat / SIMS_LATITUDE / START_LAT）
+- name: lon
+  dtype: float64
+  role: spatial
+  count: 6442892
+  non_null: 6442892
+  null_count: 0
+  null_rate: 0.0
+  unique: 1246818
+  min: -176.30859375
+  max: 177.462490797
+  mean: -47.44337948856272
+  median: -78.069550395
+  std: 66.36129533113711
+  negative_rate: 0.6401007497875177
+  zero_rate: 2.1108533248733644e-05
+  level: required
+  description: 经度（清洗后统一命名，源字段 lng / SIMS_LONGITUDE / START_LNG）
+- name: value
+  dtype: int64
+  role: numeric
+  count: 6442892
+  non_null: 6442892
+  null_count: 0
+  null_rate: 0.0
+  unique: 1
+  min: 1.0
+  max: 1.0
+  mean: 1.0
+  median: 1.0
+  std: 0.0
+  negative_rate: 0.0
+  zero_rate: 0.0
+  level: required
+  description: 聚合到格的度量值（各数据集语义不同，见 per_dataset）
+nulls:
+- field: lat
+  null_count: 0
+  null_rate: 0.0
+  role: spatial
+  semantic: 需处理：缺失坐标影响映射，可近似或置空
+- field: lon
+  null_count: 0
+  null_rate: 0.0
+  role: spatial
+  semantic: 需处理：缺失坐标影响映射，可近似或置空
+- field: value
+  null_count: 0
+  null_rate: 0.0
+  role: numeric
+  semantic: 可选：缺失可标记或填充
+level_distribution:
+  required: 3
+  important: 0
+  optional: 0
+  ignore: 0
+violation_count: 1
+violations:
+- field: lat
+  level: required
+  severity: P0
+  rule: geo_lat
+  message: ''
+  violations: 29
+  rate: 4.5010842956858505e-06
+  samples:
+  - '405.550734'
+  - '404.629219'
+  - '405.646925'
+  - '405.658498'
+  - '405.624976'
+  note: ''
+missing_fields: []
+unregistered_fields: []

@@ -1,0 +1,259 @@
+stage: 05_map
+mapped_at: '2026-09-06T19:21:10'
+scheme:
+  source: config/mapping.yaml
+  ops:
+  - op: geocode
+    from:
+    - SIMS_LATITUDE
+    - SIMS_LONGITUDE
+    to: h3_cell
+    engine: h3
+    params:
+      res: 8
+    reason: R8 平均边长 ≈ 0.46 km，匹配 0–1 km 细环
+  - op: derive
+    to: event_type
+    expr: closed_ma if SIMS_ACQUIRED_DATE notnull else (attrition if last_year < 2025
+      else alive)
+    reason: 区分并购关闭 / 仍存活 / 数据缺失（attrition）
+  - op: derive
+    to: dep_sum_chg
+    expr: DEPSUMBR - DEPSUMBR.shift(1) over (UNINUMBR order by YEAR)
+    reason: 存款年度变动额（结果变量）
+  - op: derive
+    to: dep_sum_growth
+    expr: dep_sum_chg / DEPSUMBR.shift(1)
+    reason: 存款年度变动率
+  - op: aggregate
+    to: closure_exposure
+    by: closure_event
+    params:
+      rings_km:
+      - - 0
+        - 1
+      - - 1
+        - 3
+      - - 3
+        - 5
+      - - 5
+        - 10
+      rings_km_sensitivity:
+      - - 0
+        - 2
+      - - 2
+        - 5
+      - - 5
+        - 10
+      strength: 同 BKCLASS 网点数
+      control: 同 MSABR 存活网点
+    reason: 构造 exposure 结构（处理组强度 + 对照）
+  - op: drop
+    fields:
+    - BRNUM
+    reason: 跨年不稳定，弃用
+operations:
+- op: geocode
+  reason: R8 平均边长 ≈ 0.46 km，匹配 0–1 km 细环
+  detail: 新增列 h3 (res=8)；5483 行坐标缺失，h3 置空
+- op: derive
+  detail: 新增列 event_type
+  reason: 区分并购关闭 / 仍存活（右删失）/ 数据缺失
+- op: derive
+  detail: 新增列 left_truncated
+  reason: 设立年份早于观测起点 → 左截断标记
+- op: derive
+  detail: 长表新增列 dep_chg / dep_chg_rate
+  reason: 存款年度变动额 / 变动率（结果变量）
+- op: aggregate
+  detail: 关闭事件 × 距离环 exposure（27,018 行）
+  reason: 处理组强度 = 各环内同 BKCLASS 网点数；对照 = 同 MSABR 存活网点
+shape:
+  panel_rows: 2702716
+  branch_dim_rows: 152538
+  exposure_rows: 27018
+  exposure_cols: 15
+  h3_cells: 70109
+h3:
+  version: 4.5.0
+  res: 8
+  ring_k: 23
+rings_km:
+  fine:
+  - - 0.0
+    - 1.0
+  - - 1.0
+    - 3.0
+  - - 3.0
+    - 5.0
+  - - 5.0
+    - 10.0
+  coarse_sensitivity:
+  - - 0.0
+    - 2.0
+  - - 2.0
+    - 5.0
+  - - 5.0
+    - 10.0
+event_type_dist:
+  alive_censored: 76097
+  attrition_missing: 46828
+  closed_ma: 29613
+mean_same_ind_by_ring:
+  same_ind_ring_0_1km: 5.01
+  same_ind_ring_1_3km: 8.47
+  same_ind_ring_3_5km: 11.86
+  same_ind_ring_5_10km: 40.38
+  same_ind_ring_0_2km: 8.81
+  same_ind_ring_2_5km: 16.54
+exposure_structure:
+  treated: 各环内同业（同 BKCLASS）网点数 = 处理组强度
+  control: 同 MSABR 存活网点（远环 / 同城对照，见 04_validate control_coverage）
+l1_design_note: L1 设计取向：空间特征（距离环强度列）而非区域 one-hot
+mapped_fields:
+- field: UNINUMBR
+  dtype: int64
+  non_null: 27018
+  null_rate: 0.0
+  unique: 27018
+  min: 5.0
+  max: 550623.0
+  mean: 228246.14368198978
+  median: 236023.5
+- field: acq_year
+  dtype: float64
+  non_null: 27018
+  null_rate: 0.0
+  unique: 46
+  min: 1970.0
+  max: 2015.0
+  mean: 1999.4868976238063
+  median: 1999.0
+- field: CERT
+  dtype: int64
+  non_null: 27018
+  null_rate: 0.0
+  unique: 2324
+  min: 8.0
+  max: 91393.0
+  mean: 13791.229809756458
+  median: 8273.0
+- field: BKCLASS
+  dtype: str
+  non_null: 27018
+  null_rate: 0.0
+  unique: 6
+  top:
+    N: 15935
+    SM: 4897
+    NM: 4729
+    SB: 780
+    SA: 675
+- field: MSABR
+  dtype: str
+  non_null: 27018
+  null_rate: 0.0
+  unique: 389
+  top:
+    '0': 3765
+    '35620': 1810
+    '16980': 798
+    '37980': 771
+    '47900': 641
+- field: lat
+  dtype: float64
+  non_null: 27018
+  null_rate: 0.0
+  unique: 26451
+  min: 0.0
+  max: 64.837292
+  mean: 37.47010632860186
+  median: 38.906373
+- field: lng
+  dtype: float64
+  non_null: 27018
+  null_rate: 0.0
+  unique: 26465
+  min: -159.377012
+  max: 0.0
+  mean: -88.55896825829373
+  median: -84.2600515
+- field: h3
+  dtype: str
+  non_null: 27018
+  null_rate: 0.0
+  unique: 20771
+  top:
+    88283082a3fffff: 34
+    882a100d67fffff: 30
+    882a134d69fffff: 21
+    8828d542c9fffff: 19
+    882a107289fffff: 18
+- field: n_same_ind_10km
+  dtype: int64
+  non_null: 27018
+  null_rate: 0.0
+  unique: 1148
+  min: 1.0
+  max: 2296.0
+  mean: 174.81097786660746
+  median: 71.0
+- field: same_ind_ring_0_1km
+  dtype: int64
+  non_null: 27018
+  null_rate: 0.0
+  unique: 150
+  min: 1.0
+  max: 243.0
+  mean: 5.009845288326301
+  median: 3.0
+- field: same_ind_ring_1_3km
+  dtype: int64
+  non_null: 27018
+  null_rate: 0.0
+  unique: 215
+  min: 0.0
+  max: 467.0
+  mean: 8.472425790213931
+  median: 4.0
+- field: same_ind_ring_3_5km
+  dtype: int64
+  non_null: 27018
+  null_rate: 0.0
+  unique: 231
+  min: 0.0
+  max: 528.0
+  mean: 11.864386705159523
+  median: 5.0
+- field: same_ind_ring_5_10km
+  dtype: int64
+  non_null: 27018
+  null_rate: 0.0
+  unique: 479
+  min: 0.0
+  max: 1025.0
+  mean: 40.381560441187354
+  median: 17.0
+- field: same_ind_ring_0_2km
+  dtype: int64
+  non_null: 27018
+  null_rate: 0.0
+  unique: 203
+  min: 1.0
+  max: 413.0
+  mean: 8.80979347101932
+  median: 5.0
+- field: same_ind_ring_2_5km
+  dtype: int64
+  non_null: 27018
+  null_rate: 0.0
+  unique: 289
+  min: 0.0
+  max: 614.0
+  mean: 16.536864312680436
+  median: 8.0
+outputs:
+- mapped.csv
+- data/branch_year_panel.parquet
+- data/branch_dim.csv
+- data/closure_exposure.csv

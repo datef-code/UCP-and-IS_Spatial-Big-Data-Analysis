@@ -1,0 +1,93 @@
+{
+  "generated_at": "2026-09-06T19:59:34",
+  "generator": {
+    "tool": "matplotlib",
+    "version": "3.11.1",
+    "script": "07_visualize/07_visualize.py",
+    "encoding": "utf-8",
+    "font": "Microsoft YaHei",
+    "reproducible": true,
+    "sklearn": "1.9.0"
+  },
+  "n_figures": 6,
+  "figures": [
+    {
+      "file": "figures/01-baseline-hazard-by-year.png",
+      "pdf": "figures/01-baseline-hazard-by-year.pdf",
+      "title": "危机后整合窗口，网点关闭率翻倍",
+      "type": "baseline-hazard-by-year",
+      "question": "网点关闭风险随日历年份如何变化？",
+      "alt_text": "上格年关闭率在 2009–2014 抬升至两倍量级，下格模型年份效应同向",
+      "scope": "按年关闭数 / 当年风险集；logit 年份虚拟变量相对 1994 的 exp(β)",
+      "unit": "x=日历年，y=关闭率 或 相对风险",
+      "source": "05_map/output/data/ + 06_train/output/",
+      "n": 140751,
+      "range": "1994–2025；右删失计入风险集；左截断已剔除"
+    },
+    {
+      "file": "figures/02-km-by-group.png",
+      "pdf": "figures/02-km-by-group.pdf",
+      "title": "银行越脆弱，网点存活率越低",
+      "type": "km-by-group",
+      "question": "不同银行脆弱性 / 类别 / 历史关闭率分层的网点存活曲线是否有差异？",
+      "alt_text": "三格 KM 曲线：L2 地理分散银行与高历史关闭率银行的网点存活率最低",
+      "scope": "Kaplan–Meier，右删失计入风险集，左截断样本已剔除",
+      "unit": "x=进入风险集后年数，y=存活率",
+      "source": "05_map/output/data/ + 06_train/output/",
+      "n": 140751,
+      "range": "1994–2025；右删失计入风险集；左截断已剔除"
+    },
+    {
+      "file": "figures/03-shap-importance.png",
+      "pdf": "figures/03-shap-importance.pdf",
+      "title": "年份之后，银行层因素最强",
+      "type": "shap-importance",
+      "question": "哪些特征驱动网点的关闭风险？",
+      "alt_text": "条形图显示 year 之后为银行脆弱性与历史关闭率、网点规模",
+      "scope": "LinearExplainer，变换后特征空间，聚合回原始特征",
+      "unit": "x=mean |SHAP|",
+      "source": "05_map/output/data/ + 06_train/output/",
+      "n": 140751,
+      "range": "1994–2025；右删失计入风险集；左截断已剔除"
+    },
+    {
+      "file": "figures/04-roc-calibration.png",
+      "pdf": "figures/04-roc-calibration.pdf",
+      "title": "区分度良好，高危段概率略低估",
+      "type": "roc-calibration",
+      "question": "离散时间风险模型在测试集上的区分度与校准如何？",
+      "alt_text": "左 ROC 明显优于对角，右校准曲线低中风险贴合、高风险略低于对角",
+      "scope": "测试集按 event 分层划分；校准按预测风险 10 分位分箱",
+      "unit": "x=预测概率 / 假阳性率，y=实际关闭率 / 真阳性率",
+      "source": "05_map/output/data/ + 06_train/output/",
+      "n": 140751,
+      "range": "1994–2025；右删失计入风险集；左截断已剔除"
+    },
+    {
+      "file": "figures/05-cloglog-forest.png",
+      "pdf": "figures/05-cloglog-forest.pdf",
+      "title": "规模是护城河，地理分散更易被整合",
+      "type": "cloglog-forest",
+      "question": "非时间因素里，哪些延长、哪些缩短网点寿命？",
+      "alt_text": "森林图显示银行历史关闭率与地理分散为正，存款规模为负",
+      "scope": "cloglog GLM，剔年份虚拟与完美分离项，仅保留显著项",
+      "unit": "x=cloglog 系数（>0 缩短寿命）",
+      "source": "05_map/output/data/ + 06_train/output/",
+      "n": 140751,
+      "range": "1994–2025；右删失计入风险集；左截断已剔除"
+    },
+    {
+      "file": "figures/06-spatial-closures.png",
+      "pdf": "figures/06-spatial-closures.pdf",
+      "title": "残差仍有空间聚集，本地因素未进模型",
+      "type": "spatial-closures",
+      "question": "控制银行与年份后，关闭风险是否仍有空间结构？",
+      "alt_text": "左右两格密度图分布相近，但残差 Moran's I 显著为正",
+      "scope": "hexbin 密度（120 网格）；Moran's I 用 k=8 近邻 + 置换检验",
+      "unit": "x=经度，y=纬度，色=网点数/格",
+      "source": "05_map/output/data/ + 06_train/output/",
+      "n": 140751,
+      "range": "1994–2025；右删失计入风险集；左截断已剔除"
+    }
+  ]
+}

@@ -1,0 +1,108 @@
+{
+  "01_discover": {
+    "stage": "01_discover",
+    "file_count": 32,
+    "group_count": 1,
+    "total_size_human": "1.58 GB",
+    "columns_consistent": true,
+    "ok": true,
+    "blocking": true,
+    "seconds": 2.4
+  },
+  "02_profile": {
+    "stage": "02_profile",
+    "rows": 2822977,
+    "columns": 13,
+    "year_range": "1994-2025",
+    "level_distribution": {
+      "important": 5,
+      "required": 4,
+      "optional": 3,
+      "ignore": 1
+    },
+    "outliers": 2383023,
+    "violation_kinds": 3,
+    "ok": true,
+    "blocking": true,
+    "seconds": 24.1
+  },
+  "03_clean": {
+    "stage": "03_clean",
+    "rows_before": 2822977,
+    "rows_after": 2702716,
+    "removed_rate": "4.26%",
+    "steps": 8,
+    "ok": true,
+    "blocking": true,
+    "seconds": 9.0
+  },
+  "04_validate": {
+    "stage": "04_validate",
+    "checks": 8,
+    "passed": 8,
+    "blocking": false,
+    "recommendations": 1,
+    "control_coverage": 0.983386,
+    "ok": true,
+    "seconds": 7.7
+  },
+  "05_map": {
+    "stage": "05_map",
+    "panel_rows": 2702716,
+    "branches": 152538,
+    "h3_cells": 70109,
+    "closure_events": 27018,
+    "event_type_dist": {
+      "alive_censored": 76097,
+      "attrition_missing": 46828,
+      "closed_ma": 29613
+    },
+    "ok": true,
+    "blocking": true,
+    "seconds": 22.6
+  },
+  "06_estimate": {
+    "stage": "06_estimate",
+    "blocking": false,
+    "twfe_post": -0.05259387020663611,
+    "twfe_post_x_strength": 0.013823280070386227,
+    "twfe_p": 0.0,
+    "event_study_tau0": -0.04379581109171783,
+    "resid_moran_p": 0.001,
+    "artifacts": [
+      "estimate.json",
+      "metrics.json",
+      "replication_manifest.json"
+    ],
+    "ok": true,
+    "seconds": 141.1
+  },
+  "07_visualize": {
+    "stage": "07_visualize",
+    "blocking": false,
+    "figures": 6,
+    "h3_cells": 51251,
+    "closure_events": 27018,
+    "artifacts": [
+      "manifest.json",
+      "figures/",
+      "kepler/kepler_map.html"
+    ],
+    "ok": true,
+    "seconds": 6.6
+  },
+  "08_conclude": {
+    "stage": "08_conclude",
+    "blocking": false,
+    "conclusion": "同业关闭后周边存活网点存款增速下行（τ=0 -4.38pp → τ=4 -10.1pp；TWFE post -5.26pp）；聚合层再配置而非区域净增 → 关联证据，非严格因果",
+    "artifacts": [
+      "conclusion.md",
+      "conclusion_report.json",
+      "technical_report.md",
+      "short_essay.md",
+      "replication_manifest.json"
+    ],
+    "ok": true,
+    "seconds": 0.0
+  }
+}

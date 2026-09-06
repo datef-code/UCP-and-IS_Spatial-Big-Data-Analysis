@@ -1,0 +1,286 @@
+{
+  "model_overview": {
+    "primary": "TWFE (entity + time FE) post × treat_strength；处理组 = 10km 内同业关闭事件辐射的存续网点",
+    "event_study": "branch-level event-time dummies (within entity+time demean + cluster)",
+    "spatial": [
+      "OLS",
+      "SAR (GM_Lag)",
+      "SEM (GM_Error)",
+      "SLX (OLS + W·X)"
+    ],
+    "model_selection": "Robust LM-Lag vs LM-Error + 都显著时升 SDM（手册 §5.2 / §7.3 建议）；SAR 不稳时以 SLX 的 W·X 代理溢出",
+    "thresholds": [
+      "POST_WINDOW = 4 年（事件后窗口）",
+      "PRE_WINDOW = 3 年（事件前窗口，预期效应检查）",
+      "COHORT ∈ [1994, 2020]（留 5 年 post 余量）",
+      "SPATIAL_T=2010→2014；处理源 = (2007, 2010)",
+      "KNN_K = 6"
+    ]
+  },
+  "twfe": {
+    "model": "PanelOLS_TWFE (linearmodels, event-window sample)",
+    "n_obs": 955025,
+    "n_entities": 73324,
+    "n_times": 31,
+    "params": {
+      "post_x_strength": 0.013823280070386227,
+      "post": -0.05259387020663611
+    },
+    "std_err": {
+      "post_x_strength": 0.00171193124972214,
+      "post": 0.0016430377821804692
+    },
+    "tvalues": {
+      "post_x_strength": 8.074670097078872,
+      "post": -32.01014047092635
+    },
+    "pvalues": {
+      "post_x_strength": 6.661338147750939e-16,
+      "post": 0.0
+    },
+    "r2_within": 0.003054444836813941,
+    "r2_overall": -0.04351407414149033
+  },
+  "event_study": {
+    "model": "branch_event_time_TWFE_within",
+    "baseline": -1,
+    "rels": [
+      -3,
+      -2,
+      -1,
+      0,
+      1,
+      2,
+      3,
+      4
+    ],
+    "table": [
+      {
+        "rel_year": -3,
+        "dynamic_effect": -0.0018907193923828345,
+        "std_err": 0.0019443290870724658,
+        "pvalue": 0.3308410427744116
+      },
+      {
+        "rel_year": -2,
+        "dynamic_effect": -0.006881715596122951,
+        "std_err": 0.0016696063512316834,
+        "pvalue": 3.764027190666229e-05
+      },
+      {
+        "rel_year": -1,
+        "dynamic_effect": 0.0,
+        "std_err": 0.0,
+        "pvalue": 1.0
+      },
+      {
+        "rel_year": 0,
+        "dynamic_effect": -0.04379581109171783,
+        "std_err": 0.0012692187847814773,
+        "pvalue": 7.813392542674715e-259
+      },
+      {
+        "rel_year": 1,
+        "dynamic_effect": -0.043035792452816204,
+        "std_err": 0.0011502147790718733,
+        "pvalue": 1.6236224758789194e-303
+      },
+      {
+        "rel_year": 2,
+        "dynamic_effect": -0.07359545055442644,
+        "std_err": 0.0011666038506011971,
+        "pvalue": 0.0
+      },
+      {
+        "rel_year": 3,
+        "dynamic_effect": -0.08929199316782027,
+        "std_err": 0.0012087253324875456,
+        "pvalue": 0.0
+      },
+      {
+        "rel_year": 4,
+        "dynamic_effect": -0.10067675352931099,
+        "std_err": 0.0012236098602472526,
+        "pvalue": 0.0
+      }
+    ],
+    "n_obs": 955025,
+    "n_treated_rows": 207727,
+    "n_entities": 73324,
+    "r2_within": 0.013861861990301927,
+    "pre_trend_max_abs_t": 4.12175935426111,
+    "interpretation": "τ<0 应≈0（无预期效应/平行趋势）；τ≥0 是事件后动态；基线为 τ=-1"
+  },
+  "spatial_fits": {
+    "ols": {
+      "n": 30000,
+      "k": 4,
+      "r2": 0.030907900203911765,
+      "sigma2": 0.06877502991263128,
+      "logll": -2414.437937586189,
+      "params": {
+        "const": 0.5634393787680855,
+        "treat_strength": 0.0073134452273349556,
+        "log_dep_t0": -0.04242659547835196,
+        "n_branches": 0.019860949870729252
+      },
+      "std_err": {
+        "const": 0.01384165069084557,
+        "treat_strength": 0.0009998789481819076,
+        "log_dep_t0": 0.0013849202357805622,
+        "n_branches": 0.001249563121447181
+      },
+      "LM_Lag": {
+        "stat": 38.952966415642166,
+        "p": 4.3414005723718674e-10
+      },
+      "LM_Error": {
+        "stat": 0.001489705199414718,
+        "p": 0.9692119338841989
+      },
+      "Robust_LM_Lag": {
+        "stat": 0.07914166177393714,
+        "p": 0.7784639911305359
+      },
+      "Robust_LM_Error": {
+        "stat": 0.07914166177393714,
+        "p": 0.7784639911305359
+      }
+    },
+    "sar": {
+      "n": 30000,
+      "k": 5,
+      "r2": 0.010842341616878477,
+      "logll": NaN,
+      "aic": NaN,
+      "rho": -0.1701324779388358,
+      "rho_se": 0.10161862080993174,
+      "params": {
+        "const": 0.583801488483326,
+        "treat_strength": 0.007885929125981073,
+        "log_dep_t0": -0.04211178745544977,
+        "n_branches": 0.020361172466157762,
+        "rho": -0.1701324779388358
+      },
+      "std_err": {
+        "const": 0.01857454301655627,
+        "treat_strength": 0.0010702379293644005,
+        "log_dep_t0": 0.0014172068037986,
+        "n_branches": 0.0013021307963287934,
+        "rho": 0.10161862080993174
+      },
+      "method": "spreg.GM_Lag (Anselin, 2SLS)"
+    },
+    "sem": {
+      "n": 30000,
+      "k": 4,
+      "r2": 0.030841943327971147,
+      "logll": NaN,
+      "aic": NaN,
+      "lambda": 0.2001239956801025,
+      "lambda_se": 0.0012576983524497903,
+      "params": {
+        "const": 0.5910755112452911,
+        "treat_strength": 0.007130871659819751,
+        "log_dep_t0": -0.04495975223400547,
+        "n_branches": 0.019782290207523368,
+        "lambda": 0.2001239956801025
+      },
+      "std_err": {
+        "const": 0.013978906813929912,
+        "treat_strength": 0.0011866761249774511,
+        "log_dep_t0": 0.0013956990946960295,
+        "n_branches": 0.0012576983524497903
+      },
+      "method": "spreg.GM_Error (Anselin, GMM)"
+    },
+    "slx": {
+      "n": 30000,
+      "k": 7,
+      "r2": 0.036965526108280744,
+      "r2_adj": 0.03677287426140485,
+      "logll": -2318.381144057894,
+      "aic": 4650.762288115788,
+      "params": {
+        "const": 0.27994918464772844,
+        "treat_strength": -0.005888076428926709,
+        "log_dep_t0": -0.04522386095526043,
+        "n_branches": 0.019958919666443108,
+        "W_treat_strength": 0.008986047028245209,
+        "W_log_dep_t0": 0.028790914932654156,
+        "W_n_branches": 0.0036067165948022125
+      },
+      "std_err": {
+        "const": 0.028468107232044362,
+        "treat_strength": 0.002636713053138217,
+        "log_dep_t0": 0.0014159397403534731,
+        "n_branches": 0.0012749389486704274,
+        "W_treat_strength": 0.0027869748018758533,
+        "W_log_dep_t0": 0.0027829050660246944,
+        "W_n_branches": 0.00252917769268746
+      },
+      "pvalues": {
+        "const": 8.718920876971034e-23,
+        "treat_strength": 0.02554888479513136,
+        "log_dep_t0": 3.7561058677617456e-220,
+        "n_branches": 5.089077316062592e-55,
+        "W_treat_strength": 0.0012641548429567222,
+        "W_log_dep_t0": 4.826440403894383e-25,
+        "W_n_branches": 0.15386628670968708
+      },
+      "method": "OLS with W·X (manual lag_spatial)"
+    },
+    "residuals_morans_i": {
+      "I": 0.07032862790689301,
+      "E_I": -3.333444448148272e-05,
+      "Var_I": 9.630505125924428e-06,
+      "z_sim": 23.344368670577172,
+      "p_sim": 0.001,
+      "interpretation": "p_sim<0.05 支持加空间项（待选 SEM/SAR/SDM）"
+    },
+    "chosen": "ols"
+  },
+  "spatial_effect_decomposition": {
+    "available_models": [
+      "sar_approx",
+      "sem"
+    ],
+    "sar_approx": {
+      "rho": -0.1701324779388358,
+      "b_treat_strength": 0.007885929125981073,
+      "direct_effect": 0.006739347274482949,
+      "spillover_effect": -0.0009798735383516606,
+      "total_effect": 0.005759473736131289,
+      "spillover_share": -0.1701324779388358,
+      "note": "SAR 含 W·Y 不含 W·X；一阶近似"
+    },
+    "sem": {
+      "lambda": 0.2001239956801025,
+      "b_treat_strength": 0.007130871659819751,
+      "note": "SEM 空间结构只在残差；direct = β_treat",
+      "direct_effect": 0.007130871659819751,
+      "spillover_effect": 0.0,
+      "total_effect": 0.007130871659819751
+    }
+  },
+  "sensitivity": {
+    "rings_alternative": {
+      "fine": [
+        "0_1",
+        "1_3",
+        "3_5",
+        "5_10"
+      ],
+      "coarse": [
+        "0_2",
+        "2_5",
+        "5_10"
+      ]
+    },
+    "coordinate_precision": {
+      "EXACT_pct_45.45": true,
+      "explanation": "EXACT<100% → <1 km 距离环存在系统性失真；主表用 5 km 中等环"
+    },
+    "main_choice": "5 km 内关闭事件 cell 数；标准环与合并环两套口径见 06_visualize.py"
+  }
+}

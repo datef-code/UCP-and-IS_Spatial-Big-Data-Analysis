@@ -1,0 +1,39 @@
+{
+  "tier": "C",
+  "chapter": "结论",
+  "positioning": {
+    "role": "放大器",
+    "not_role": "主菜",
+    "purpose": "让 ③ 校验（版本冻结）与 ④ 映射（空间结构化）的结果更易被理解、传播与教学",
+    "metric": "不以阅读量/付费转化作为核心指标，而以『读者能否按章节顺序复现 L0→L3』为质量判据"
+  },
+  "prerequisites": {
+    "must_have": [
+      "③ 校验：所有代码块随数据集版本冻结，git clone 后可复现",
+      "④ 映射：h3·libpysal 教学主线已实际跑通（L0→L3）"
+    ],
+    "note": "⑤ 不适用：本方案不引入任何新算法、不做新建模，全部复用 ③④ 已验证的产出",
+    "kill_switch": "若 ③④ 未做，本方向退化为官方文档翻译——那时应直接砍掉"
+  },
+  "deliverables": {
+    "open_ebook": {
+      "platform": "GitHub Pages / Jupyter Book / Quarto",
+      "content": "L0→L3 四阶认知阶梯，每章对应一个数据集的实际产出"
+    },
+    "zhihu_column": {
+      "platform": "知乎专栏",
+      "content": "逐章图文，强调许可状态、合成参数标注与可复现性"
+    },
+    "bilibili": {
+      "platform": "B站视频课",
+      "content": "配合代码仓库，演示从 H3 网格化到距离环溢出的完整流程"
+    }
+  },
+  "datasets": [
+    "fdic",
+    "sz_bike",
+    "snap_brightkite",
+    "snap_gowalla"
+  ],
+  "generated_at": "2026-09-04T00:00:28.608399"
+}

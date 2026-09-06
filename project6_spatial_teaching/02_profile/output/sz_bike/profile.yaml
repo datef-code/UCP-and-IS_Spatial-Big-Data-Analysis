@@ -1,0 +1,123 @@
+dataset: sz_bike
+profiled_at: '2026-09-06T20:53:15'
+license:
+  role: 辅助示例
+  license: 研究用途
+  restriction: 源标注数据源已停更（最后数据 2021-08）；全量 30 GB 不做全量载入
+value_semantics: 抽样日起点骑行次数（每次骑行计 1）
+fingerprint:
+  source: data_raw/sz_bike/bike_*_15_p*.csv（每月 15 日抽样）
+  files: 873
+  total_bytes: 1102080239
+  md5: null
+  sample_days:
+  - '20200115'
+  - '20200215'
+  - '20200315'
+  - '20200415'
+  - '20200515'
+  - '20200615'
+  - '20200715'
+  - '20200815'
+  - '20200915'
+  - '20201015'
+  - '20201115'
+  - '20201215'
+  - '20210115'
+  - '20210215'
+  - '20210315'
+  - '20210415'
+  - '20210515'
+  - '20210615'
+  - '20210715'
+  - '20210815'
+  sampling: 每月 15 日（合成抽样参数，非真实业务数据）
+  rows: 8572465
+summary:
+  rows: 8572465
+  columns: 3
+  null_cells: 0
+  null_rate: 0.0
+  outlier_count: 87487
+outlier_method: iqr
+outliers_by_field:
+  lat: 71183
+  lon: 16304
+outlier_row_cap: 20000
+fields:
+- name: lat
+  dtype: float64
+  role: spatial
+  count: 8572465
+  non_null: 8572465
+  null_count: 0
+  null_rate: 0.0
+  unique: 4913739
+  min: 0.0
+  max: 47.6609125
+  mean: 22.586643822787178
+  median: 22.57095176
+  std: 0.5265080252516691
+  negative_rate: 0.0
+  zero_rate: 0.00045284524346264464
+  level: required
+  description: 纬度（清洗后统一命名，源字段 lat / SIMS_LATITUDE / START_LAT）
+- name: lon
+  dtype: float64
+  role: spatial
+  count: 8572465
+  non_null: 8572465
+  null_count: 0
+  null_rate: 0.0
+  unique: 5175542
+  min: 0.0
+  max: 132.5358773
+  mean: 113.93949937057039
+  median: 114.00583238
+  std: 2.4312356874910424
+  negative_rate: 0.0
+  zero_rate: 0.00045284524346264464
+  level: required
+  description: 经度（清洗后统一命名，源字段 lng / SIMS_LONGITUDE / START_LNG）
+- name: value
+  dtype: int64
+  role: numeric
+  count: 8572465
+  non_null: 8572465
+  null_count: 0
+  null_rate: 0.0
+  unique: 1
+  min: 1.0
+  max: 1.0
+  mean: 1.0
+  median: 1.0
+  std: 0.0
+  negative_rate: 0.0
+  zero_rate: 0.0
+  level: required
+  description: 聚合到格的度量值（各数据集语义不同，见 per_dataset）
+nulls:
+- field: lat
+  null_count: 0
+  null_rate: 0.0
+  role: spatial
+  semantic: 需处理：缺失坐标影响映射，可近似或置空
+- field: lon
+  null_count: 0
+  null_rate: 0.0
+  role: spatial
+  semantic: 需处理：缺失坐标影响映射，可近似或置空
+- field: value
+  null_count: 0
+  null_rate: 0.0
+  role: numeric
+  semantic: 可选：缺失可标记或填充
+level_distribution:
+  required: 3
+  important: 0
+  optional: 0
+  ignore: 0
+violation_count: 0
+violations: []
+missing_fields: []
+unregistered_fields: []

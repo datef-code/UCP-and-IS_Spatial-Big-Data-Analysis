@@ -1,0 +1,16 @@
+# 原始数据目录（大量 CSV 文件，不入版本库）
+data_raw/
+# 非本项目
+project7_mnist_eda/
+
+# 数据类文件全部不入库（GitHub 只保留代码/文档/图表/配置）
+*.csv
+*.parquet
+*.zip
+*.pkl
+*.log
+
+# 不追踪的目录
+gov-sdk/
+html/
+docs/

@@ -1,0 +1,68 @@
+# config/mapping.yaml —— ⑤ 映射方案（纯业务意图，全人写）
+# 说明：映射 = 产品想法，机器帮不上忙；这里的 ops 是**口径声明**，
+#       05_map/05_map.py 用 dk.MappingScheme 按同样顺序执行（表达式为 lambda）。
+version: 2
+target: 离散时间生存分析数据底座
+
+ops:
+  - op: derive
+    name: birth_year
+    expr: "year(SIMS_ESTABLISHED_DATE)"
+    reason: 出生年；缺失 → 左截断候选
+
+  - op: derive
+    name: death_year
+    expr: "year(SIMS_ACQUIRED_DATE)"
+    reason: 死亡年；缺失 = 右删失
+
+  - op: derive
+    name: left_truncated
+    expr: "int(birth_year < 1994) —— 出生早于面板首期（出生年缺失按左截断）"
+    reason: 左截断标记
+
+  - op: derive
+    name: right_censored
+    expr: "int(death_year is null)"
+    reason: 右删失标记（仍存活）
+
+  - op: derive
+    name: event
+    expr: "closed if death_year notnull else alive"
+    reason: 事件类型（离散时间风险模型的因变量来源）
+
+  - op: derive
+    name: duration
+    expr: "obs_end - first_year + 1（obs_end = death_year 或 last_year）"
+    reason: 风险集内的存活年数
+
+  - op: geocode
+    name: spatial_key
+    expr: "h3.latlng_to_cell(lat, lng, 8)；h3 缺失时降级 0.01° 网格"
+    reason: 空间网格（竞争强度 / 残差空间自相关的聚合单元）
+
+  - op: derive
+    name: neighbor_count
+    expr: "同网格内网点数（含自身）"
+    reason: 本地竞争强度代理
+
+  - op: aggregate
+    name: bank_fragility
+    by: CERT
+    params:
+      n_branches: 网点数
+      n_closed: 已关闭网点数
+      geo_spread: sqrt(var(lat) + var(lng)) 的平方根，地理分散度
+      levels:
+        L0: 单网点
+        L1: 多网点且地理集中（geo_spread < 中位数）
+        L2: 多网点且地理分散（geo_spread >= 中位数）
+    reason: 银行层共享脆弱性分层（离散时间风险模型的核心协变量）
+
+  - op: drop
+    fields: [BRNUM]
+    reason: 跨年重编号，弃用（见 04_validate brnum_not_tracking_key）
+
+outputs:
+  - mapped.csv                 # 网点维度表（= branch_panel，交付下游 ⑥）
+  - data/branch_panel.csv      # 网点维度表（每 UNINUMBR 一行）
+  - data/bank_fragility.csv    # 银行脆弱性分层（每 CERT 一行）

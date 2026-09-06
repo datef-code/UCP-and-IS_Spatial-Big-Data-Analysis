@@ -1,0 +1,29 @@
+{
+  "generated_at": "2026-09-06T21:01:24",
+  "generator": {
+    "tool": "matplotlib",
+    "version": "3.11.1",
+    "script": "06_visualize/06_visualize.py",
+    "encoding": "utf-8",
+    "font": "Microsoft YaHei",
+    "reproducible": true
+  },
+  "scope": "跨数据集对比（导论章）",
+  "figures": [
+    {
+      "file": "figures/01-global-ladder-comparison.png",
+      "pdf": "figures/01-global-ladder-comparison.pdf",
+      "title": "sz_bike 空间聚集最强，snap_brightkite 最弱",
+      "type": "small_multiples",
+      "question": "四个数据集的规模与空间自相关差多少？",
+      "alt_text": "三联柱状图：sz_bike 的 Moran's I 最高、snap_brightkite 最低",
+      "unit": "左/中=数量（对数），右=Moran's I",
+      "notes": "导论章用图：说明空间权重矩阵定义对结论敏感",
+      "source": "05_map/output/<dataset>/ladder_report.json",
+      "n": 604173,
+      "scope": "四数据集；H3 R8；Moran's I 为行标准化 W 下的全局值",
+      "tool": "matplotlib",
+      "reproducible": true
+    }
+  ]
+}

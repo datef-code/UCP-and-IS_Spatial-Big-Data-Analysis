@@ -1,0 +1,28 @@
+project: project6_spatial_teaching
+scanned_at: '2026-09-06T20:52:46'
+source_root: E:\workspace\workbuddy\project\data_use\data_raw
+dataset_count: 4
+file_count: 24975
+total_size: 33360734208
+total_size_human: 31.1 GB
+datasets:
+- dataset: fdic
+  file_count: 32
+  total_size_human: 1.6 GB
+  group_count: 1
+  license: 公共领域（美国联邦政府数据），可商用
+- dataset: sz_bike
+  file_count: 24939
+  total_size_human: 29.3 GB
+  group_count: 1
+  license: 研究用途
+- dataset: snap_brightkite
+  file_count: 2
+  total_size_human: 58.5 MB
+  group_count: 2
+  license: 仅限研究用途（SNAP），不允许商用
+- dataset: snap_gowalla
+  file_count: 2
+  total_size_human: 106.6 MB
+  group_count: 2
+  license: 仅限研究用途（SNAP），不允许商用

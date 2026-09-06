@@ -1,0 +1,57 @@
+# config/schema.yaml —— 字段规格（多数据集项目：公共空间字段 + 各数据集差异）
+# role : key | event | time_varying | spatial | categorical | numeric | target | ignore
+# level: required | important | optional | ignore
+# 规范 §3：机器起草事实层（类型/范围/枚举），人拍板判断层（等级/阈值）与意图层（说明/口径）
+version: 2
+datasets: [fdic, sz_bike, snap_brightkite, snap_gowalla]
+
+fields:
+  - name: lon
+    role: spatial
+    level: required
+    dtype: numeric
+    description: 经度（清洗后统一命名，源字段 lng / SIMS_LONGITUDE / START_LNG）
+    rules:
+      - kind: geo_lon          # 内置 [-180, 180]
+      - kind: not_null
+        message: 无坐标点位无法进入 L0 网格化
+
+  - name: lat
+    role: spatial
+    level: required
+    dtype: numeric
+    description: 纬度（清洗后统一命名，源字段 lat / SIMS_LATITUDE / START_LAT）
+    rules:
+      - kind: geo_lat          # 内置 [-90, 90]
+      - kind: not_null
+        message: 无坐标点位无法进入 L0 网格化
+
+  - name: value
+    role: numeric
+    level: required
+    dtype: numeric
+    description: 聚合到格的度量值（各数据集语义不同，见 per_dataset）
+
+per_dataset:
+  fdic:
+    role: 主示例
+    value_semantics: 网点关闭 0/1 聚合
+    source: project1_fdic_spatial/output/data/branch_dim.csv（UNINUMBR 口径）；缺失时从 data_raw/fdic/fdic_sod_*.csv 重建
+    license: 公共领域（美国联邦政府数据），可商用
+    note: 示例可自由分发
+  sz_bike:
+    role: 辅助示例
+    value_semantics: 抽样日起点活跃度（抽样日 = 每月 15 日，共 20 天）
+    sample_day: '15'           # 合成抽样参数：全量 30 GB 不做全量载入
+    license: 研究用途
+    note: 源标注数据源已停更（最后数据 2021-08）；全量 30 GB 不做全量载入
+  snap_brightkite:
+    role: 辅助示例
+    value_semantics: 签到次数
+    license: 仅限研究用途（SNAP），不允许商用
+    note: 数据年代 2010–2013（实测 2008-03 ~ 2010-10，见 version_lock）
+  snap_gowalla:
+    role: 辅助示例
+    value_semantics: 签到次数
+    license: 仅限研究用途（SNAP），不允许商用
+    note: 数据年代 2010–2013（实测 2009-02 ~ 2010-10，见 version_lock）

@@ -1,0 +1,58 @@
+{
+  "project": "project1_fdic_spatial",
+  "preconditions": [
+    "datakit（项目根 venv）含：pandas, numpy, scipy, statsmodels, linearmodels, libpysal>=4.12, esda, spreg>=1.9, h3",
+    "Windows / PowerShell；可执行 E:\\workspace\\workbuddy\\project\\data_use\\datakit\\.venv\\Scripts\\python.exe",
+    "上游产物存在 (project1_fdic_spatial/output/data/ 下 *.parquet 与 *.csv)",
+    "内存：事件-长表 ~ 200MB；H3 R8 截面对 ~ 800MB；建议机器 ≥ 16GB",
+    "网络：可下载 kepler.gl@3.2.0 UMD bundle（首次打开 HTML）"
+  ],
+  "commands": {
+    "end_to_end": "python main.py",
+    "stage_06": "python main.py --stage 06",
+    "stage_07": "python main.py --stage 07",
+    "stage_08": "python main.py --stage 08"
+  },
+  "stages": [
+    {
+      "stage": "01_discover",
+      "output": "01_discover/output/{catalog.yaml,catalog.md,files.csv}"
+    },
+    {
+      "stage": "02_profile",
+      "output": "02_profile/output/{profile.yaml,fields.csv,nulls.csv,outliers.csv,violations.csv}"
+    },
+    {
+      "stage": "03_clean",
+      "output": "03_clean/output/{clean_report.md,decisions.yaml,impact.yaml,cleaned.csv}"
+    },
+    {
+      "stage": "04_validate",
+      "output": "04_validate/output/{validation.yaml,comparison.yaml,before_after.csv}"
+    },
+    {
+      "stage": "05_map",
+      "output": "05_map/output/{map.yaml,lineage.csv,fields.csv,mapped.csv,data/}"
+    },
+    {
+      "stage": "06_estimate",
+      "output": "06_estimate/output/{estimate.json,metrics.json,replication_manifest.json}"
+    },
+    {
+      "stage": "07_visualize",
+      "output": "07_visualize/output/{manifest.json,figures/*,kepler/kepler_map.html}"
+    },
+    {
+      "stage": "08_conclude",
+      "output": "08_conclude/output/{conclusion.md,technical_report.md,short_essay.md}"
+    }
+  ],
+  "expected_outputs": {
+    "twfe_post_x_strength_beta": 0.013823280070386227,
+    "twfe_post_x_strength_p": 6.661338147750939e-16,
+    "sar_rho": -0.1701324779388358,
+    "sem_lambda": 0.2001239956801025,
+    "slx_w_treat": 0.008986047028245209,
+    "residuals_morans_i_p": 0.001
+  }
+}

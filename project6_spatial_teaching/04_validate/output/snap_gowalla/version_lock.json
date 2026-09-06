@@ -1,0 +1,54 @@
+{
+  "dataset": "snap_gowalla",
+  "frozen_at": "2026-09-06T20:55:29",
+  "fingerprints": {
+    "source": "data_raw/snap_gowalla/loc-gowalla_totalCheckins.txt.gz",
+    "files": 1,
+    "total_bytes": 105470044,
+    "md5": null,
+    "rows": 6442892,
+    "time_range": {
+      "min": "2009-02-04 05:17:38",
+      "max": "2010-10-23 05:22:06"
+    },
+    "era_note": "SNAP 数据年代 2010–2013（方案口径标注；实测范围见上）"
+  },
+  "rows": {
+    "raw": 6442892,
+    "cleaned": 6442863
+  },
+  "library_versions": {
+    "python": "3.13.15",
+    "pandas": "3.0.5",
+    "numpy": "2.5.2",
+    "datakit": "0.1.0",
+    "h3": "4.5.0",
+    "libpysal": "4.15.0",
+    "matplotlib": "3.11.1"
+  },
+  "cost_params": {
+    "h3_res": 8,
+    "hot_top_n": 100,
+    "rings_km": [
+      [
+        0,
+        1
+      ],
+      [
+        1,
+        3
+      ],
+      [
+        3,
+        5
+      ],
+      [
+        5,
+        10
+      ]
+    ],
+    "sz_sample_day": "15",
+    "marked": "合成参数，非真实业务数据"
+  },
+  "reproducible": true
+}

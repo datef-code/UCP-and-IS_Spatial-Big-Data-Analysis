@@ -1,0 +1,62 @@
+dataset: snap_gowalla
+rows_before: 6442892
+rows_after: 6442863
+removed_rate: 5.0e-06
+null_cells_before: 0
+null_cells_after: 0
+outliers_before: 162952
+outliers_after: 162923
+recommendations:
+- severity: P2
+  target: lat
+  advice: 必要/重要字段仍有统计异常值：可缩尾或分箱（不删除行）
+- severity: P2
+  target: lon
+  advice: 必要/重要字段仍有统计异常值：可缩尾或分箱（不删除行）
+verdict: 可进入 ⑤ 映射（附优化建议）
+fields:
+- field: lat
+  level: required
+  dtype_before: float64
+  dtype_after: float64
+  null_rate_before: 0.0
+  null_rate_after: 0.0
+  null_rate_diff: 0
+  unique_before: 1247095
+  unique_after: 1201277
+  mean_before: 40.521771173747986
+  mean_after: 40.5201414293703
+  median_before: 39.8899309
+  median_after: 39.889847
+  outliers_before: 160033
+  outliers_after: 160004
+- field: lon
+  level: required
+  dtype_before: float64
+  dtype_after: float64
+  null_rate_before: 0.0
+  null_rate_after: 0.0
+  null_rate_diff: 0
+  unique_before: 1246818
+  unique_after: 1218090
+  mean_before: -47.44337948856272
+  mean_after: -47.44428079122807
+  median_before: -78.069550395
+  median_after: -78.070889
+  outliers_before: 2919
+  outliers_after: 2919
+- field: value
+  level: required
+  dtype_before: int64
+  dtype_after: float64
+  null_rate_before: 0.0
+  null_rate_after: 0.0
+  null_rate_diff: 0
+  unique_before: 1
+  unique_after: 1
+  mean_before: 1.0
+  mean_after: 1.0
+  median_before: 1.0
+  median_after: 1.0
+  outliers_before: 0
+  outliers_after: 0

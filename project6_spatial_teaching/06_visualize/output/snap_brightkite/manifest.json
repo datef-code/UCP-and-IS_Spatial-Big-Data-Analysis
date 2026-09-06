@@ -1,0 +1,61 @@
+{
+  "generated_at": "2026-09-06T21:01:24",
+  "generator": {
+    "tool": "matplotlib",
+    "version": "3.11.1",
+    "script": "06_visualize/06_visualize.py",
+    "encoding": "utf-8",
+    "font": "Microsoft YaHei",
+    "h3": "4.5.0",
+    "reproducible": true
+  },
+  "dataset": "snap_brightkite",
+  "license": "仅限研究用途（SNAP），不允许商用",
+  "figures": [
+    {
+      "file": "figures/01-L0-cell-value-ecdf.png",
+      "pdf": "figures/01-L0-cell-value-ecdf.pdf",
+      "title": "前 10% 的格贡献 84% 的总量",
+      "type": "ecdf",
+      "question": "格值是均匀分布还是高度集中？",
+      "alt_text": "ECDF 曲线显示格值长尾，前 10% 的格贡献 84% 的总量",
+      "unit": "x=格值（对数），y=累计占比",
+      "notes": "零值格已剔除；口径为 R8 求和聚合",
+      "source": "05_map/output/snap_brightkite/{L2_spatial_lag.csv, L3_ring_spillover.csv, ladder_report.json}",
+      "n": 228476,
+      "scope": "H3 R8；W 行标准化；孤岛 67189 个",
+      "tool": "matplotlib",
+      "reproducible": true
+    },
+    {
+      "file": "figures/02-L2-moran-scatter.png",
+      "pdf": "figures/02-L2-moran-scatter.pdf",
+      "title": "几乎无空间聚集：Moran's I=0.01",
+      "type": "moran_scatter",
+      "question": "格值与其邻居均值是否同向变化？",
+      "alt_text": "六边形分箱散点显示格值与空间滞后正相关，I=0.01",
+      "unit": "x=格值，y=空间滞后（均为对数刻度）",
+      "notes": "零值格已剔除；虚线为 y=x 参考线",
+      "source": "05_map/output/snap_brightkite/{L2_spatial_lag.csv, L3_ring_spillover.csv, ladder_report.json}",
+      "n": 228476,
+      "scope": "H3 R8；W 行标准化；孤岛 67189 个",
+      "tool": "matplotlib",
+      "reproducible": true
+    },
+    {
+      "file": "figures/03-L3-ring-spillover.png",
+      "pdf": "figures/03-L3-ring-spillover.pdf",
+      "title": "溢出密度随距离衰减",
+      "type": "bar",
+      "question": "热点周边溢出是否随距离衰减？",
+      "alt_text": "柱状图显示四个距离环的溢出密度由近及远递减",
+      "unit": "x=距离环（km），y=溢出密度",
+      "notes": "圆心为格值 Top-100 的热点格；密度 = 环内求和 ÷ 环内格数",
+      "source": "05_map/output/snap_brightkite/{L2_spatial_lag.csv, L3_ring_spillover.csv, ladder_report.json}",
+      "n": 228476,
+      "scope": "H3 R8；W 行标准化；孤岛 67189 个",
+      "tool": "matplotlib",
+      "reproducible": true
+    }
+  ]
+}

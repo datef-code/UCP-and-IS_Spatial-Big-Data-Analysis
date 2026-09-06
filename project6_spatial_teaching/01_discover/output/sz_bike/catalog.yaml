@@ -1,0 +1,49 @@
+dataset: sz_bike
+scan_root: E:\workspace\workbuddy\project\data_use\data_raw\sz_bike
+scanned_at: '2026-09-06T20:52:46'
+license:
+  role: 辅助示例
+  license: 研究用途
+  restriction: 源标注数据源已停更（最后数据 2021-08）；全量 30 GB 不做全量载入
+value_semantics: 抽样日起点活跃度（抽样日 = 每月 15 日，共 20 天）
+overview:
+  file_count: 24939
+  total_size: 31488950590
+  total_size_human: 29.3 GB
+  group_count: 1
+  directory_count: 1
+format_distribution:
+- format: csv
+  file_count: 24939
+  total_size: 31488950590
+  total_size_human: 29.3 GB
+  ratio: 1.0
+directory_distribution:
+- parent: .
+  file_count: 24939
+  total_size: 31488950590
+  total_size_human: 29.3 GB
+  ratio: 1.0
+groups:
+- group: bike_#_p#
+  file_count: 24939
+  formats:
+  - csv
+  total_size: 31488950590
+  total_size_human: 29.3 GB
+  column_count: 8
+  column_sample:
+  - COM_ID
+  - END_LAT
+  - END_LNG
+  - END_TIME
+  - START_LAT
+  - START_LNG
+  - START_TIME
+  - USER_ID
+  drift_files: 0
+  added_columns: []
+  missing_columns: []
+fingerprint_options:
+  with_md5: false
+  count_rows: false

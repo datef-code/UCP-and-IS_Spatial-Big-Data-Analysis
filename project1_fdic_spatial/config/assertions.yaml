@@ -1,0 +1,48 @@
+# config/assertions.yaml —— ④ 校验断言（P0 阻断 / P1 / P2）
+version: 1
+
+assertions:
+  - name: uninumbr_not_null
+    severity: P0
+    kind: not_null
+    field: UNINUMBR
+    message: 追踪主键 UNINUMBR 不得为空
+
+  - name: uninumbr_year_unique
+    severity: P0
+    kind: unique
+    fields: [UNINUMBR, YEAR]
+    message: 网点-年面板必须唯一
+
+  - name: brnum_not_tracking_key
+    severity: P1
+    kind: custom
+    expr: BRNUM 不得作为跨年连接键
+    message: 前置验证③——并购关闭网点中 72.43% 的 BRNUM 跨年变化，必须使用 UNINUMBR
+
+  - name: lat_in_range
+    severity: P1
+    kind: geo_lat
+    field: SIMS_LATITUDE
+
+  - name: lon_in_range
+    severity: P1
+    kind: geo_lon
+    field: SIMS_LONGITUDE
+
+  - name: depsumbr_non_negative
+    severity: P1
+    kind: non_negative
+    field: DEPSUMBR
+
+  - name: control_coverage
+    severity: P1
+    kind: custom
+    expr: 每起关闭事件必须有同 MSABR 存活网点作对照
+    message: 无对照的关闭事件不得进入估计
+
+  - name: coordinate_exact_ratio
+    severity: P2
+    kind: custom
+    expr: SIMS_PROJECTION 中 EXACT 占比 < 100%
+    message: 坐标存在插值，< 1 km 环有系统性失真，须同时产出合并环敏感性结果

@@ -1,0 +1,73 @@
+{
+  "dataset": "fdic",
+  "mainline": "H3 网格化 → 空间权重矩阵 → 空间滞后 → 距离环溢出",
+  "tiers": {
+    "L0": {
+      "tier": "L0",
+      "chapter": "H3 网格化",
+      "h3_version": "4.5.0",
+      "h3_res": 8,
+      "points": 147055,
+      "cells": 70109,
+      "value_total": 27018.0,
+      "value_top10_cells": {
+        "88283082a3fffff": 34.0,
+        "882a100d67fffff": 30.0,
+        "882a134d69fffff": 21.0,
+        "8828d542c9fffff": 19.0,
+        "882a107289fffff": 18.0,
+        "8826cb9a5bfffff": 18.0,
+        "88446ca983fffff": 15.0,
+        "882a134d45fffff": 14.0,
+        "882a100d61fffff": 14.0,
+        "882752689dfffff": 13.0
+      }
+    },
+    "L1": {
+      "tier": "L1",
+      "chapter": "空间权重矩阵（h3 邻接 → libpysal W，行标准化）",
+      "n": 70109,
+      "mean_neighbors": 1.410061475702121,
+      "islands": 19715,
+      "transform": "R"
+    },
+    "L2": {
+      "tier": "L2",
+      "chapter": "空间滞后（Wx）+ Moran's I",
+      "moran_i": 0.11164653254519263,
+      "lag_corr": 0.17251827059902883,
+      "value_mean": 0.38537135032592107,
+      "spatial_lag_mean": 0.31881023358865007
+    },
+    "L3": {
+      "tier": "L3",
+      "chapter": "距离环溢出（热点圆心）",
+      "centers": 100,
+      "ring_km": [
+        [
+          0.0,
+          1.0
+        ],
+        [
+          1.0,
+          3.0
+        ],
+        [
+          3.0,
+          5.0
+        ],
+        [
+          5.0,
+          10.0
+        ]
+      ],
+      "mean_spill_by_ring": {
+        "spill_0_1km": 18.93,
+        "spill_1_3km": 10.74,
+        "spill_3_5km": 12.48,
+        "spill_5_10km": 44.46
+      },
+      "note": "距圆心越近溢出值越高 → 距离衰减结构（对应 L1→L2→L3 认知阶梯）"
+    }
+  }
+}

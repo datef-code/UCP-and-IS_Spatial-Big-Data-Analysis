@@ -1,0 +1,35 @@
+{
+  "dataset": "sz_bike",
+  "note": "内容全部来自本管线实际跑通的管道（不写没跑过的内容）",
+  "summary": {
+    "rows": 8572465,
+    "columns": 3,
+    "null_cells": 0,
+    "null_rate": 0.0,
+    "outlier_count": 87487
+  },
+  "null_summary": [
+    {
+      "field": "lat",
+      "null_count": 0,
+      "null_rate": 0.0,
+      "role": "spatial",
+      "semantic": "需处理：缺失坐标影响映射，可近似或置空"
+    },
+    {
+      "field": "lng",
+      "null_count": 0,
+      "null_rate": 0.0,
+      "role": "spatial",
+      "semantic": "需处理：缺失坐标影响映射，可近似或置空"
+    },
+    {
+      "field": "trips",
+      "null_count": 0,
+      "null_rate": 0.0,
+      "role": "time_varying",
+      "semantic": "可选：缺失可标记或填充"
+    }
+  ],
+  "value_semantics": "抽样日起点骑行次数 → 格活跃度"
+}

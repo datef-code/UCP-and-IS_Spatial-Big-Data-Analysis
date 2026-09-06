@@ -1,0 +1,26 @@
+# 清洗决策日志
+
+- **步骤 1** `drop_na` 字段=UNINUMBR 影响行=120261 可逆=False
+  - 原因：追踪主键缺失无法定位网点，必须删除
+  - 说明：删除 120261 行（字段 UNINUMBR 缺失）
+- **步骤 2** `drop_duplicates` 字段=UNINUMBR,YEAR 影响行=0 可逆=False
+  - 原因：网点-年面板要求 UNINUMBR × YEAR 唯一；同一年重复行保留最后一条
+  - 说明：去重删除 0 行
+- **步骤 3** `clip` 字段=SIMS_LATITUDE 影响行=5 可逆=True
+  - 原因：越界坐标置空（不截断），不参与距离环 / H3 空间计算
+  - 说明：将 5 个越界值置空（[-90, 90] 之外；置空而非截断，避免伪造坐标/金额）
+- **步骤 4** `clip` 字段=SIMS_LONGITUDE 影响行=0 可逆=True
+  - 原因：同上
+  - 说明：将 0 个越界值置空（[-180, 180] 之外；置空而非截断，避免伪造坐标/金额）
+- **步骤 5** `clip` 字段=DEPSUMBR 影响行=0 可逆=True
+  - 原因：存款不能为负；负值视为数据错误置空
+  - 说明：将 0 个越界值置空（[0, None] 之外；置空而非截断，避免伪造坐标/金额）
+- **步骤 6** `astype` 字段=YEAR 影响行=2702716 可逆=True
+  - 原因：年份用于面板对齐，统一为可空整型
+  - 说明：列 YEAR 类型转换为 Int64
+- **步骤 7** `astype` 字段=SIMS_ESTABLISHED_DATE 影响行=2702716 可逆=True
+  - 原因：事件日期需可比较
+  - 说明：列 SIMS_ESTABLISHED_DATE 类型转换为 datetime64[ns]
+- **步骤 8** `astype` 字段=SIMS_ACQUIRED_DATE 影响行=2702716 可逆=True
+  - 原因：事件日期需可比较（缺失 = 右删失，禁止填充）
+  - 说明：列 SIMS_ACQUIRED_DATE 类型转换为 datetime64[ns]

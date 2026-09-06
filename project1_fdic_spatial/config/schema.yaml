@@ -1,0 +1,111 @@
+# config/schema.yaml —— 字段规格（role + level + 业务规则）
+# role : key | event | time_varying | spatial | categorical | numeric | target | ignore
+# level: required | important | optional | ignore
+version: 1
+dataset: fdic_sod
+group_pattern: 'fdic_sod_#'
+
+fields:
+  - name: UNINUMBR
+    role: key
+    level: required
+    dtype: string
+    description: 跨年唯一网点号；本项目唯一追踪主键
+    rules:
+      - kind: not_null
+      - kind: unique
+        fields: [UNINUMBR, YEAR]
+        message: UNINUMBR × YEAR 必须唯一
+    note: BRNUM 跨年重编号（并购关闭网点 72.43% 发生变化），不可作跨年键
+
+  - name: CERT
+    role: key
+    level: required
+    dtype: string
+    description: 银行（机构）编号，用于银行层聚合
+    rules:
+      - kind: not_null
+
+  - name: YEAR
+    role: key
+    level: required
+    dtype: integer
+    description: 数据年份
+    rules:
+      - kind: range
+        min: 1994
+        max: 2025
+
+  - name: SIMS_ESTABLISHED_DATE
+    role: event
+    level: important
+    dtype: datetime
+    description: 网点设立（出生）日期
+    rules:
+      - kind: no_future_date
+
+  - name: SIMS_ACQUIRED_DATE
+    role: event
+    level: important
+    dtype: datetime
+    description: 网点被并购 / 关闭（死亡）日期
+    missing_semantics: 缺失 = 右删失（仍存活），是有意义信息，禁止填充
+    rules:
+      - kind: no_future_date
+
+  - name: DEPSUMBR
+    role: time_varying
+    level: required
+    dtype: numeric
+    description: 网点存款余额（美元）；结果变量来源
+    rules:
+      - kind: non_negative
+        message: 存款不能为负
+
+  - name: SIMS_LATITUDE
+    role: spatial
+    level: important
+    dtype: numeric
+    description: 网点纬度
+    rules:
+      - kind: geo_lat          # 内置 [-90, 90]
+
+  - name: SIMS_LONGITUDE
+    role: spatial
+    level: important
+    dtype: numeric
+    description: 网点经度
+    rules:
+      - kind: geo_lon          # 内置 [-180, 180]
+
+  - name: BKCLASS
+    role: categorical
+    level: important
+    dtype: string
+    description: 银行类别；用于「同业」判定（处理组强度按同 BKCLASS 计数）
+
+  - name: MSABR
+    role: categorical
+    level: optional
+    dtype: string
+    description: 都会统计区编号；早年 SOD 无 CBSA_METRO，以此作同城 / 同都会区对照的代理口径
+
+  - name: METROBR
+    role: categorical
+    level: optional
+    dtype: string
+    description: 都会区标识，与 MSABR 共同构成对照口径
+
+  - name: SIMS_PROJECTION
+    role: categorical
+    level: optional
+    dtype: string
+    description: 坐标投影方式；EXACT 占比 < 100% 说明存在插值坐标
+    note: 实测 EXACT 占 45.45% → < 1 km 距离环有系统性失真，须做环宽敏感性
+
+  - name: BRNUM
+    role: ignore
+    level: ignore
+    dtype: string
+    description: 银行内网点序号
+    note: 跨年不稳定，已弃用为追踪主键

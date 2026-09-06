@@ -1,0 +1,73 @@
+# config/assertions.yaml —— 校验断言（P0 阻断 / P1 / P2）
+# when: 04_validate（清洗后、进入映射前）| 05_map（映射产物）
+version: 2
+
+assertions:
+  - name: lat_in_range
+    when: 04_validate
+    severity: P0
+    kind: geo_lat
+    field: lat
+
+  - name: lon_in_range
+    when: 04_validate
+    severity: P0
+    kind: geo_lon
+    field: lon
+
+  - name: lat_not_null
+    when: 04_validate
+    severity: P0
+    kind: not_null
+    field: lat
+    message: 清洗后不得再有空纬度
+
+  - name: lon_not_null
+    when: 04_validate
+    severity: P0
+    kind: not_null
+    field: lon
+    message: 清洗后不得再有空经度
+
+  - name: rows_after_clean
+    when: 04_validate
+    severity: P0
+    kind: row_count_ge
+    min: 1
+    message: 清洗后至少保留 1 行，否则 L0 网格化无法启动
+
+  - name: value_non_negative
+    when: 04_validate
+    severity: P1
+    kind: non_negative
+    field: value
+    message: 计数/0-1 度量不应为负
+
+  - name: version_lock_reproducible
+    when: 04_validate
+    severity: P1
+    kind: custom
+    expr: version_lock.json 中的库版本与本次运行一致
+    message: 教学代码随版本冻结，版本漂移须重新出图
+
+  - name: h3_cell_not_null
+    when: 05_map
+    severity: P1
+    kind: not_null
+    field: h3_cell
+    message: 网格化后不得出现空格
+
+  - name: weights_row_standardized
+    when: 05_map
+    severity: P1
+    kind: custom
+    expr: W 行和为 1（孤岛除外）
+    message: 未行标准化的权重会扭曲空间滞后量级
+
+  - name: moran_i_in_range
+    when: 05_map
+    severity: P2
+    kind: range
+    field: moran_i
+    min: -1
+    max: 1

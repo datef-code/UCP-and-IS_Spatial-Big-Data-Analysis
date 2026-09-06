@@ -1,0 +1,141 @@
+dataset: fdic
+profiled_at: '2026-09-06T20:53:03'
+license:
+  role: 主示例
+  license: 公共领域（美国联邦政府数据），可商用
+  restriction: 示例可自由分发
+value_semantics: 网点是否关闭（0/1，按 UNINUMBR 聚合）
+fingerprint:
+  source: 原始 fdic_sod_*.csv 重建（UNINUMBR last 口径；value=1 表示曾出现收购/关闭记录）
+  files: 32
+  total_bytes: 1698610746
+  md5: null
+  note: 源数据 GB 级，只记录文件数与体积，不计算 MD5
+  rows: 152538
+summary:
+  rows: 152538
+  columns: 3
+  null_cells: 8798
+  null_rate: 0.01922581039915737
+  outlier_count: 8964
+outlier_method: iqr
+outliers_by_field:
+  lon: 7612
+  lat: 1352
+outlier_row_cap: 20000
+fields:
+- name: lat
+  dtype: float64
+  role: spatial
+  count: 152538
+  non_null: 148139
+  null_count: 4399
+  null_rate: 0.02883871559873605
+  unique: 143947
+  min: -14.3200149999999
+  max: 158.227518485
+  mean: 37.65645938083416
+  median: 38.902174848552
+  std: 5.308065110958457
+  negative_rate: 2.0251250514719283e-05
+  zero_rate: 0.00022951417250015188
+  level: required
+  description: 纬度（清洗后统一命名，源字段 lat / SIMS_LATITUDE / START_LAT）
+- name: lon
+  dtype: float64
+  role: spatial
+  count: 152538
+  non_null: 148139
+  null_count: 4399
+  null_rate: 0.02883871559873605
+  unique: 144164
+  min: -170.718609999999
+  max: 162.981
+  mean: -89.9542745285558
+  median: -86.2223770312138
+  std: 15.516860343188812
+  negative_rate: 0.9994869683202938
+  zero_rate: 0.00022951417250015188
+  level: required
+  description: 经度（清洗后统一命名，源字段 lng / SIMS_LONGITUDE / START_LNG）
+- name: value
+  dtype: int64
+  role: numeric
+  count: 152538
+  non_null: 152538
+  null_count: 0
+  null_rate: 0.0
+  unique: 2
+  min: 0.0
+  max: 1.0
+  mean: 0.5290157206728815
+  median: 1.0
+  std: 0.4991573779419005
+  negative_rate: 0.0
+  zero_rate: 0.4709842793271185
+  level: required
+  description: 聚合到格的度量值（各数据集语义不同，见 per_dataset）
+nulls:
+- field: lat
+  null_count: 4399
+  null_rate: 0.02883871559873605
+  role: spatial
+  semantic: 需处理：缺失坐标影响映射，可近似或置空
+- field: lon
+  null_count: 4399
+  null_rate: 0.02883871559873605
+  role: spatial
+  semantic: 需处理：缺失坐标影响映射，可近似或置空
+- field: value
+  null_count: 0
+  null_rate: 0.0
+  role: numeric
+  semantic: 可选：缺失可标记或填充
+level_distribution:
+  required: 3
+  important: 0
+  optional: 0
+  ignore: 0
+violation_count: 3
+violations:
+- field: lon
+  level: required
+  severity: P0
+  rule: not_null
+  message: 无坐标点位无法进入 L0 网格化
+  violations: 4399
+  rate: 0.02883871559873605
+  samples:
+  - null
+  - null
+  - null
+  - null
+  - null
+  note: ''
+- field: lat
+  level: required
+  severity: P0
+  rule: geo_lat
+  message: ''
+  violations: 2
+  rate: 1.3111486973737692e-05
+  samples:
+  - '158.227518485'
+  - '138.097'
+  note: ''
+- field: lat
+  level: required
+  severity: P0
+  rule: not_null
+  message: 无坐标点位无法进入 L0 网格化
+  violations: 4399
+  rate: 0.02883871559873605
+  samples:
+  - null
+  - null
+  - null
+  - null
+  - null
+  note: ''
+missing_fields: []
+unregistered_fields: []

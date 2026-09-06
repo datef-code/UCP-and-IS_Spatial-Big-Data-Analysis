@@ -1,0 +1,300 @@
+stage: 05_map
+mapped_at: '2026-09-06T19:59:13'
+scheme:
+  source: config/mapping.yaml
+  ops:
+  - op: derive
+    name: birth_year
+    expr: year(SIMS_ESTABLISHED_DATE)
+    reason: 出生年；缺失 → 左截断候选
+  - op: derive
+    name: death_year
+    expr: year(SIMS_ACQUIRED_DATE)
+    reason: 死亡年；缺失 = 右删失
+  - op: derive
+    name: left_truncated
+    expr: int(birth_year < 1994) —— 出生早于面板首期（出生年缺失按左截断）
+    reason: 左截断标记
+  - op: derive
+    name: right_censored
+    expr: int(death_year is null)
+    reason: 右删失标记（仍存活）
+  - op: derive
+    name: event
+    expr: closed if death_year notnull else alive
+    reason: 事件类型（离散时间风险模型的因变量来源）
+  - op: derive
+    name: duration
+    expr: obs_end - first_year + 1（obs_end = death_year 或 last_year）
+    reason: 风险集内的存活年数
+  - op: geocode
+    name: spatial_key
+    expr: h3.latlng_to_cell(lat, lng, 8)；h3 缺失时降级 0.01° 网格
+    reason: 空间网格（竞争强度 / 残差空间自相关的聚合单元）
+  - op: derive
+    name: neighbor_count
+    expr: 同网格内网点数（含自身）
+    reason: 本地竞争强度代理
+  - op: aggregate
+    name: bank_fragility
+    by: CERT
+    params:
+      n_branches: 网点数
+      n_closed: 已关闭网点数
+      geo_spread: sqrt(var(lat) + var(lng)) 的平方根，地理分散度
+      levels:
+        L0: 单网点
+        L1: 多网点且地理集中（geo_spread < 中位数）
+        L2: 多网点且地理分散（geo_spread >= 中位数）
+    reason: 银行层共享脆弱性分层（离散时间风险模型的核心协变量）
+  - op: drop
+    fields:
+    - BRNUM
+    reason: 跨年重编号，弃用（见 04_validate brnum_not_tracking_key）
+operations:
+- op: geocode
+  reason: H3 R7（平均边长 ≈ 0.46 km）作空间聚合单元
+  detail: 新增列 h3 (res=7)；4399 行坐标缺失，h3 置空
+- op: derive
+  detail: 新增列 obs_end
+  reason: 观察期终点：死亡年；仍存活则用最后一次出现年
+- op: derive
+  detail: 新增列 duration
+  reason: 风险集内的存活年数（离散时间风险模型的 duration）
+- op: derive
+  detail: 新增列 right_censored
+  reason: 右删失标记：无死亡年 = 仍存活
+- op: derive
+  detail: 新增列 event
+  reason: 事件类型（closed / alive）
+- op: derive
+  detail: 新增列 left_truncated
+  reason: 左截断：出生早于面板首期（出生年缺失按左截断处理）
+- op: derive
+  detail: 新增列 age
+  reason: 网点年龄（末次观测年 − 出生年；出生年缺失用首次出现年代替）
+- op: derive
+  detail: 新增列 alive_years
+  reason: 在面板中出现的年数
+- op: derive
+  reason: 本地竞争强度代理
+  detail: 新增列 neighbor_count（同网格网点数，含自身）
+- op: aggregate
+  detail: 长表 → 网点维度表（按 UNINUMBR 聚合）
+  reason: 离散时间生存模型的风险集骨架：每网点一行
+- op: aggregate
+  detail: 银行脆弱性分层（按 CERT，15,505 家）
+  reason: 银行层共享脆弱性：L0/L1/L2
+shape:
+  long_rows: 2702716
+  branch_panel_rows: 152538
+  branch_panel_cols: 20
+  bank_rows: 15505
+  spatial_cells: 43099
+panel_scope:
+  first_year: 1994
+  last_year: 2025
+geo_method: h3_r7
+cert_attribution:
+  rule: 首次观测所属银行（CERT.first()）
+  why: 银行层共享脆弱性按基线归属；并购导致的 CERT 变更不追溯重标，避免把事后结果倒灌进事前协变量
+event_dist:
+  closed: 80695
+  alive: 71843
+right_censored_rate: 0.4709842793271185
+closed_rate: 0.5290157206728815
+left_truncated_rate: 0.5175693925448085
+fragility_dist:
+  L2_多网点地理分散: 6028
+  L1_多网点高集中: 5918
+  L0_单网点: 3559
+mapped_fields:
+- field: UNINUMBR
+  dtype: int64
+  non_null: 152538
+  null_rate: 0.0
+  unique: 152538
+  min: 1.0
+  max: 686773.0
+  mean: 292035.5389214491
+  median: 255821.5
+- field: CERT
+  dtype: int64
+  non_null: 152538
+  null_rate: 0.0
+  unique: 15505
+  min: 8.0
+  max: 91393.0
+  mean: 16918.31870091387
+  median: 14869.0
+- field: BKCLASS
+  dtype: string
+  non_null: 152538
+  null_rate: 0.0
+  unique: 7
+  top:
+    N: 62247
+    NM: 50657
+    SM: 18951
+    SA: 11720
+    SB: 8880
+- field: first_year
+  dtype: Int64
+  non_null: 152538
+  null_rate: 0.0
+  unique: 32
+  min: 1994.0
+  max: 2025.0
+  mean: 2000.2290511216877
+  median: 1995.0
+- field: last_year
+  dtype: Int64
+  non_null: 152538
+  null_rate: 0.0
+  unique: 32
+  min: 1994.0
+  max: 2025.0
+  mean: 2017.1949153653516
+  median: 2024.0
+- field: est_year
+  dtype: float64
+  non_null: 141335
+  null_rate: 0.073444
+  unique: 221
+  min: 1782.0
+  max: 2015.0
+  mean: 1976.6740580889377
+  median: 1989.0
+- field: acq_year
+  dtype: float64
+  non_null: 80695
+  null_rate: 0.470984
+  unique: 46
+  min: 1970.0
+  max: 2015.0
+  mean: 2002.4346118099015
+  median: 2004.0
+- field: DEPSUMBR_last
+  dtype: int64
+  non_null: 152538
+  null_rate: 0.0
+  unique: 93025
+  min: 0.0
+  max: 727192402.0
+  mean: 151330.3508306127
+  median: 39362.5
+- field: lat
+  dtype: float64
+  non_null: 148139
+  null_rate: 0.028839
+  unique: 143946
+  min: -14.3200149999999
+  max: 71.293282
+  mean: 37.65457688558493
+  median: 38.901991
+- field: lng
+  dtype: float64
+  non_null: 148139
+  null_rate: 0.028839
+  unique: 144164
+  min: -170.718609999999
+  max: 162.981
+  mean: -89.9542745285558
+  median: -86.2223770312138
+- field: h3
+  dtype: str
+  non_null: 148139
+  null_rate: 0.028839
+  unique: 43099
+  top:
+    872a100d6ffffff: 415
+    872a100d2ffffff: 231
+    87283082affffff: 187
+    872664c1affffff: 146
+    872aa845affffff: 145
+- field: obs_end
+  dtype: float64
+  non_null: 152538
+  null_rate: 0.0
+  unique: 56
+  min: 1970.0
+  max: 2025.0
+  mean: 2009.8509092816216
+  median: 2009.0
+- field: duration
+  dtype: int64
+  non_null: 152538
+  null_rate: 0.0
+  unique: 32
+  min: 1.0
+  max: 32.0
+  mean: 11.007552216496872
+  median: 8.0
+- field: right_censored
+  dtype: int64
+  non_null: 152538
+  null_rate: 0.0
+  unique: 2
+  min: 0.0
+  max: 1.0
+  mean: 0.4709842793271185
+  median: 0.0
+- field: event
+  dtype: str
+  non_null: 152538
+  null_rate: 0.0
+  unique: 2
+  top:
+    closed: 80695
+    alive: 71843
+- field: left_truncated
+  dtype: int64
+  non_null: 152538
+  null_rate: 0.0
+  unique: 2
+  min: 0.0
+  max: 1.0
+  mean: 0.5175693925448085
+  median: 1.0
+- field: age
+  dtype: Float64
+  non_null: 152538
+  null_rate: 0.0
+  unique: 229
+  min: 0.0
+  max: 241.0
+  mean: 37.35479028176586
+  median: 25.0
+- field: alive_years
+  dtype: Int64
+  non_null: 152538
+  null_rate: 0.0
+  unique: 32
+  min: 1.0
+  max: 32.0
+  mean: 17.965864243663873
+  median: 18.0
+- field: spatial_key
+  dtype: str
+  non_null: 148139
+  null_rate: 0.028839
+  unique: 43099
+  top:
+    872a100d6ffffff: 415
+    872a100d2ffffff: 231
+    87283082affffff: 187
+    872664c1affffff: 146
+    872aa845affffff: 145
+- field: neighbor_count
+  dtype: int64
+  non_null: 152538
+  null_rate: 0.0
+  unique: 82
+  min: 0.0
+  max: 415.0
+  mean: 10.609402247308868
+  median: 5.0
+outputs:
+- mapped.csv
+- data/branch_panel.csv
+- data/bank_fragility.csv

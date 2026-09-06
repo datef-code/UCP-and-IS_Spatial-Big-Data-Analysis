@@ -1,0 +1,47 @@
+# config/assertions.yaml —— ④ 校验断言（P0 阻断 / P1 / P2）
+version: 1
+
+assertions:
+  - name: uninumbr_not_null
+    severity: P0
+    kind: not_null
+    field: UNINUMBR
+    message: 寿命追踪主键不得为空
+
+  - name: uninumbr_year_unique
+    severity: P0
+    kind: unique
+    fields: [UNINUMBR, YEAR]
+
+  - name: brnum_not_tracking_key
+    severity: P1
+    kind: custom
+    expr: BRNUM 不得作为跨年连接键
+    message: 1994 年 81,297 行仅 1,531 个 BRNUM 唯一值，同年即大量重复
+
+  - name: lat_in_range
+    severity: P1
+    kind: geo_lat
+    field: SIMS_LATITUDE
+
+  - name: lon_in_range
+    severity: P1
+    kind: geo_lon
+    field: SIMS_LONGITUDE
+
+  - name: depsumbr_non_negative
+    severity: P1
+    kind: non_negative
+    field: DEPSUMBR
+
+  - name: death_after_birth
+    severity: P1
+    kind: custom
+    expr: SIMS_ACQUIRED_DATE >= SIMS_ESTABLISHED_DATE
+    message: 死亡日期不得早于出生日期
+
+  - name: censored_ratio_reasonable
+    severity: P2
+    kind: custom
+    expr: 0 < 右删失比例 < 1
+    message: 右删失比例异常说明事件判定口径有误

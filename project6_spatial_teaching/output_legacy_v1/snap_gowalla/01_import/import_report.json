@@ -1,0 +1,18 @@
+{
+  "dataset": "snap_gowalla",
+  "role": "辅助示例",
+  "license": "仅限研究用途（SNAP, Stanford Network Analysis Project）",
+  "note": "不允许商用；数据年代 2010–2013（方案口径标注，实测范围见 version_lock）",
+  "license_header": "本章数据许可状态：仅限研究用途（SNAP, Stanford Network Analysis Project）；限制：不允许商用；数据年代 2010–2013（方案口径标注，实测范围见 version_lock）。不满足许可要求时不使用该数据。",
+  "fingerprint": {
+    "file": "loc-gowalla_totalCheckins.txt.gz",
+    "bytes": 105470044,
+    "md5": null,
+    "rows": 6442892,
+    "time_range": {
+      "min": "2009-02-04 05:17:38",
+      "max": "2010-10-23 05:22:06"
+    },
+    "era_note": "SNAP 数据年代 2010–2013（方案口径标注）"
+  }
+}

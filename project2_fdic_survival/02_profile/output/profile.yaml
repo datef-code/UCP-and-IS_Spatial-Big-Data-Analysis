@@ -1,0 +1,1073 @@
+stage: 02_profile
+profiled_at: '2026-09-06T19:58:58'
+source:
+  root: E:\workspace\workbuddy\project\data_use\data_raw\fdic
+  group: fdic_sod_#
+  rows: 2822977
+  columns:
+  - UNINUMBR
+  - BRNUM
+  - CERT
+  - YEAR
+  - SIMS_ESTABLISHED_DATE
+  - SIMS_ACQUIRED_DATE
+  - DEPSUMBR
+  - SIMS_LATITUDE
+  - SIMS_LONGITUDE
+  - BKCLASS
+  year_range:
+  - 1994
+  - 2025
+summary:
+  rows: 2822977
+  columns: 10
+  null_cells: 3458580
+  null_rate: 0.12251534461669365
+  outlier_count: 506766
+level_distribution:
+  important: 5
+  required: 4
+  ignore: 1
+fields:
+- field: UNINUMBR
+  dtype: float64
+  role: key
+  level: required
+  registered: true
+  non_null: 2702716
+  null_count: 120261
+  null_rate: 0.042601
+  unique: 152538
+  min: 1.0
+  max: 686773.0
+  mean: 241893.44717387992
+  median: 233969.0
+  std: 153834.7784038683
+  negative_rate: 0.0
+  zero_rate: 0.0
+  top1: null
+- field: BRNUM
+  dtype: int64
+  role: ignore
+  level: ignore
+  registered: true
+  non_null: 2822977
+  null_count: 0
+  null_rate: 0.0
+  unique: 10437
+  min: 0.0
+  max: 10561.0
+  mean: 934.0980705829343
+  median: 67.0
+  std: 1926.2646901181802
+  negative_rate: 0.0
+  zero_rate: 0.08980094418055833
+  top1: null
+- field: CERT
+  dtype: int64
+  role: key
+  level: required
+  registered: true
+  non_null: 2822977
+  null_count: 0
+  null_rate: 0.0
+  unique: 15505
+  min: 8.0
+  max: 91393.0
+  mean: 15331.023288181235
+  median: 11577.0
+  std: 14131.754301859142
+  negative_rate: 0.0
+  zero_rate: 0.0
+  top1: null
+- field: YEAR
+  dtype: Int64
+  role: key
+  level: required
+  registered: true
+  non_null: 2822977
+  null_count: 0
+  null_rate: 0.0
+  unique: 32
+  min: 1994.0
+  max: 2025.0
+  mean: 2009.4550334629012
+  median: 2009.0
+  std: 8.920749047520433
+  negative_rate: 0.0
+  zero_rate: 0.0
+  top1: null
+- field: SIMS_ESTABLISHED_DATE
+  dtype: datetime64[us]
+  role: event
+  level: important
+  registered: true
+  non_null: 1811989
+  null_count: 1010988
+  null_rate: 0.358128
+  unique: 24382
+  min: '1782-01-01 00:00:00'
+  max: '2015-06-30 00:00:00'
+  mean: null
+  median: null
+  std: null
+  negative_rate: null
+  zero_rate: null
+  top1: null
+- field: SIMS_ACQUIRED_DATE
+  dtype: datetime64[us]
+  role: event
+  level: important
+  registered: true
+  non_null: 949516
+  null_count: 1873461
+  null_rate: 0.663647
+  unique: 5832
+  min: '1970-01-02 00:00:00'
+  max: '2015-06-30 00:00:00'
+  mean: null
+  median: null
+  std: null
+  negative_rate: null
+  zero_rate: null
+  top1: null
+- field: DEPSUMBR
+  dtype: int64
+  role: time_varying
+  level: required
+  registered: true
+  non_null: 2822977
+  null_count: 0
+  null_rate: 0.0
+  unique: 312301
+  min: 0.0
+  max: 727192402.0
+  mean: 100930.74554096615
+  median: 35899.0
+  std: 2024473.6500673264
+  negative_rate: 0.0
+  zero_rate: 0.039156535813079596
+  top1: null
+- field: SIMS_LATITUDE
+  dtype: float64
+  role: spatial
+  level: important
+  registered: true
+  non_null: 2596045
+  null_count: 226932
+  null_rate: 0.080387
+  unique: 500715
+  min: -35.25960006
+  max: 158.227518485
+  mean: 37.913290559587146
+  median: 39.039821
+  std: 5.212519660199828
+  negative_rate: 9.24483204258786e-06
+  zero_rate: 0.0002203351636816773
+  top1: null
+- field: SIMS_LONGITUDE
+  dtype: float64
+  role: spatial
+  level: important
+  registered: true
+  non_null: 2596039
+  null_count: 226938
+  null_rate: 0.08039
+  unique: 514256
+  min: -170.71861
+  max: 174.12399994
+  mean: -90.0180520933612
+  median: -86.689238
+  std: 14.992692824522546
+  negative_rate: 0.9996756597262214
+  zero_rate: 0.00022033567292324962
+  top1: null
+- field: BKCLASS
+  dtype: string
+  role: categorical
+  level: important
+  registered: true
+  non_null: 2822977
+  null_count: 0
+  null_rate: 0.0
+  unique: 7
+  min: null
+  max: null
+  mean: null
+  median: null
+  std: null
+  negative_rate: null
+  zero_rate: null
+  top1: N
+nulls:
+- field: UNINUMBR
+  null_count: 120261
+  null_rate: 0.042601
+  role: key
+  semantic: 缺陷：主键缺失，通常需剔除
+- field: BRNUM
+  null_count: 0
+  null_rate: 0.0
+  role: ignore
+  semantic: 忽略
+- field: CERT
+  null_count: 0
+  null_rate: 0.0
+  role: key
+  semantic: 缺陷：主键缺失，通常需剔除
+- field: YEAR
+  null_count: 0
+  null_rate: 0.0
+  role: key
+  semantic: 缺陷：主键缺失，通常需剔除
+- field: SIMS_ESTABLISHED_DATE
+  null_count: 1010988
+  null_rate: 0.358128
+  role: event
+  semantic: 信息：缺失常表示右删失/未发生，不当作脏数据
+- field: SIMS_ACQUIRED_DATE
+  null_count: 1873461
+  null_rate: 0.663647
+  role: event
+  semantic: 信息：缺失常表示右删失/未发生，不当作脏数据
+- field: DEPSUMBR
+  null_count: 0
+  null_rate: 0.0
+  role: time_varying
+  semantic: 可选：缺失可标记或填充
+- field: SIMS_LATITUDE
+  null_count: 226932
+  null_rate: 0.080387
+  role: spatial
+  semantic: 需处理：缺失坐标影响映射，可近似或置空
+- field: SIMS_LONGITUDE
+  null_count: 226938
+  null_rate: 0.08039
+  role: spatial
+  semantic: 需处理：缺失坐标影响映射，可近似或置空
+- field: BKCLASS
+  null_count: 0
+  null_rate: 0.0
+  role: categorical
+  semantic: 可重编码：缺失可归入 UNKNOWN 类
+outliers:
+  method: iqr
+  threshold: 3.0
+  total: 506766
+  by_field:
+  - field: BRNUM
+    outliers: 336298
+    lower_bound: -2089.0
+    upper_bound: 2797.0
+    outlier_rate: 0.119129
+  - field: CERT
+    outliers: 13056
+    lower_bound: -54100.0
+    upper_bound: 81210.0
+    outlier_rate: 0.004625
+  - field: DEPSUMBR
+    outliers: 110465
+    lower_bound: -154110.0
+    upper_bound: 242643.0
+    outlier_rate: 0.039131
+  - field: SIMS_LATITUDE
+    outliers: 1422
+    lower_bound: 12.182865000000014
+    upper_bound: 63.47693299999999
+    outlier_rate: 0.000504
+  - field: SIMS_LONGITUDE
+    outliers: 11291
+    lower_bound: -145.32272299999997
+    upper_bound: -30.834573000000034
+    outlier_rate: 0.004
+  - field: UNINUMBR
+    outliers: 34234
+    lower_bound: -116758.0
+    upper_bound: 596017.0
+    outlier_rate: 0.012127
+  top_examples:
+  - field: UNINUMBR
+    index: 2082373
+    value: 596447.0
+    method: iqr
+    lower_bound: -116758.0
+    upper_bound: 596017.0
+  - field: UNINUMBR
+    index: 2084736
+    value: 602985.0
+    method: iqr
+    lower_bound: -116758.0
+    upper_bound: 596017.0
+  - field: UNINUMBR
+    index: 2086055
+    value: 598276.0
+    method: iqr
+    lower_bound: -116758.0
+    upper_bound: 596017.0
+  - field: UNINUMBR
+    index: 2089598
+    value: 602833.0
+    method: iqr
+    lower_bound: -116758.0
+    upper_bound: 596017.0
+  - field: UNINUMBR
+    index: 2090252
+    value: 603220.0
+    method: iqr
+    lower_bound: -116758.0
+    upper_bound: 596017.0
+  - field: UNINUMBR
+    index: 2092773
+    value: 602834.0
+    method: iqr
+    lower_bound: -116758.0
+    upper_bound: 596017.0
+  - field: UNINUMBR
+    index: 2093931
+    value: 602821.0
+    method: iqr
+    lower_bound: -116758.0
+    upper_bound: 596017.0
+  - field: UNINUMBR
+    index: 2094346
+    value: 598165.0
+    method: iqr
+    lower_bound: -116758.0
+    upper_bound: 596017.0
+  - field: UNINUMBR
+    index: 2099801
+    value: 602957.0
+    method: iqr
+    lower_bound: -116758.0
+    upper_bound: 596017.0
+  - field: UNINUMBR
+    index: 2100360
+    value: 602992.0
+    method: iqr
+    lower_bound: -116758.0
+    upper_bound: 596017.0
+  - field: UNINUMBR
+    index: 2104813
+    value: 603002.0
+    method: iqr
+    lower_bound: -116758.0
+    upper_bound: 596017.0
+  - field: UNINUMBR
+    index: 2106920
+    value: 602951.0
+    method: iqr
+    lower_bound: -116758.0
+    upper_bound: 596017.0
+  - field: UNINUMBR
+    index: 2111229
+    value: 596207.0
+    method: iqr
+    lower_bound: -116758.0
+    upper_bound: 596017.0
+  - field: UNINUMBR
+    index: 2114529
+    value: 602576.0
+    method: iqr
+    lower_bound: -116758.0
+    upper_bound: 596017.0
+  - field: UNINUMBR
+    index: 2115323
+    value: 596331.0
+    method: iqr
+    lower_bound: -116758.0
+    upper_bound: 596017.0
+  - field: UNINUMBR
+    index: 2117503
+    value: 597056.0
+    method: iqr
+    lower_bound: -116758.0
+    upper_bound: 596017.0
+  - field: UNINUMBR
+    index: 2120542
+    value: 602737.0
+    method: iqr
+    lower_bound: -116758.0
+    upper_bound: 596017.0
+  - field: UNINUMBR
+    index: 2139587
+    value: 602832.0
+    method: iqr
+    lower_bound: -116758.0
+    upper_bound: 596017.0
+  - field: UNINUMBR
+    index: 2144358
+    value: 602836.0
+    method: iqr
+    lower_bound: -116758.0
+    upper_bound: 596017.0
+  - field: UNINUMBR
+    index: 2144559
+    value: 602941.0
+    method: iqr
+    lower_bound: -116758.0
+    upper_bound: 596017.0
+  - field: BRNUM
+    index: 5494
+    value: 9901.0
+    method: iqr
+    lower_bound: -2089.0
+    upper_bound: 2797.0
+  - field: BRNUM
+    index: 13984
+    value: 9901.0
+    method: iqr
+    lower_bound: -2089.0
+    upper_bound: 2797.0
+  - field: BRNUM
+    index: 13985
+    value: 9902.0
+    method: iqr
+    lower_bound: -2089.0
+    upper_bound: 2797.0
+  - field: BRNUM
+    index: 13986
+    value: 9903.0
+    method: iqr
+    lower_bound: -2089.0
+    upper_bound: 2797.0
+  - field: BRNUM
+    index: 13987
+    value: 9904.0
+    method: iqr
+    lower_bound: -2089.0
+    upper_bound: 2797.0
+  - field: BRNUM
+    index: 13988
+    value: 9905.0
+    method: iqr
+    lower_bound: -2089.0
+    upper_bound: 2797.0
+  - field: BRNUM
+    index: 13989
+    value: 9906.0
+    method: iqr
+    lower_bound: -2089.0
+    upper_bound: 2797.0
+  - field: BRNUM
+    index: 13990
+    value: 9907.0
+    method: iqr
+    lower_bound: -2089.0
+    upper_bound: 2797.0
+  - field: BRNUM
+    index: 13991
+    value: 9908.0
+    method: iqr
+    lower_bound: -2089.0
+    upper_bound: 2797.0
+  - field: BRNUM
+    index: 13992
+    value: 9909.0
+    method: iqr
+    lower_bound: -2089.0
+    upper_bound: 2797.0
+  - field: BRNUM
+    index: 13993
+    value: 9910.0
+    method: iqr
+    lower_bound: -2089.0
+    upper_bound: 2797.0
+  - field: BRNUM
+    index: 13994
+    value: 9911.0
+    method: iqr
+    lower_bound: -2089.0
+    upper_bound: 2797.0
+  - field: BRNUM
+    index: 13995
+    value: 9912.0
+    method: iqr
+    lower_bound: -2089.0
+    upper_bound: 2797.0
+  - field: BRNUM
+    index: 13996
+    value: 9913.0
+    method: iqr
+    lower_bound: -2089.0
+    upper_bound: 2797.0
+  - field: BRNUM
+    index: 13997
+    value: 9914.0
+    method: iqr
+    lower_bound: -2089.0
+    upper_bound: 2797.0
+  - field: BRNUM
+    index: 13998
+    value: 9915.0
+    method: iqr
+    lower_bound: -2089.0
+    upper_bound: 2797.0
+  - field: BRNUM
+    index: 13999
+    value: 9916.0
+    method: iqr
+    lower_bound: -2089.0
+    upper_bound: 2797.0
+  - field: BRNUM
+    index: 14000
+    value: 9917.0
+    method: iqr
+    lower_bound: -2089.0
+    upper_bound: 2797.0
+  - field: BRNUM
+    index: 14001
+    value: 9918.0
+    method: iqr
+    lower_bound: -2089.0
+    upper_bound: 2797.0
+  - field: BRNUM
+    index: 14002
+    value: 9919.0
+    method: iqr
+    lower_bound: -2089.0
+    upper_bound: 2797.0
+  - field: CERT
+    index: 78007
+    value: 90017.0
+    method: iqr
+    lower_bound: -54100.0
+    upper_bound: 81210.0
+  - field: CERT
+    index: 78009
+    value: 90030.0
+    method: iqr
+    lower_bound: -54100.0
+    upper_bound: 81210.0
+  - field: CERT
+    index: 78010
+    value: 90038.0
+    method: iqr
+    lower_bound: -54100.0
+    upper_bound: 81210.0
+  - field: CERT
+    index: 78012
+    value: 90040.0
+    method: iqr
+    lower_bound: -54100.0
+    upper_bound: 81210.0
+  - field: CERT
+    index: 78013
+    value: 90056.0
+    method: iqr
+    lower_bound: -54100.0
+    upper_bound: 81210.0
+  - field: CERT
+    index: 78014
+    value: 90056.0
+    method: iqr
+    lower_bound: -54100.0
+    upper_bound: 81210.0
+  - field: CERT
+    index: 78015
+    value: 90056.0
+    method: iqr
+    lower_bound: -54100.0
+    upper_bound: 81210.0
+  - field: CERT
+    index: 78031
+    value: 90140.0
+    method: iqr
+    lower_bound: -54100.0
+    upper_bound: 81210.0
+  - field: CERT
+    index: 78032
+    value: 90140.0
+    method: iqr
+    lower_bound: -54100.0
+    upper_bound: 81210.0
+  - field: CERT
+    index: 78033
+    value: 90140.0
+    method: iqr
+    lower_bound: -54100.0
+    upper_bound: 81210.0
+  - field: CERT
+    index: 78034
+    value: 90141.0
+    method: iqr
+    lower_bound: -54100.0
+    upper_bound: 81210.0
+  - field: CERT
+    index: 78035
+    value: 90141.0
+    method: iqr
+    lower_bound: -54100.0
+    upper_bound: 81210.0
+  - field: CERT
+    index: 78036
+    value: 90146.0
+    method: iqr
+    lower_bound: -54100.0
+    upper_bound: 81210.0
+  - field: CERT
+    index: 78037
+    value: 90146.0
+    method: iqr
+    lower_bound: -54100.0
+    upper_bound: 81210.0
+  - field: CERT
+    index: 78038
+    value: 90146.0
+    method: iqr
+    lower_bound: -54100.0
+    upper_bound: 81210.0
+  - field: CERT
+    index: 78039
+    value: 90146.0
+    method: iqr
+    lower_bound: -54100.0
+    upper_bound: 81210.0
+  - field: CERT
+    index: 78040
+    value: 90146.0
+    method: iqr
+    lower_bound: -54100.0
+    upper_bound: 81210.0
+  - field: CERT
+    index: 78041
+    value: 90147.0
+    method: iqr
+    lower_bound: -54100.0
+    upper_bound: 81210.0
+  - field: CERT
+    index: 78042
+    value: 90147.0
+    method: iqr
+    lower_bound: -54100.0
+    upper_bound: 81210.0
+  - field: CERT
+    index: 78043
+    value: 90148.0
+    method: iqr
+    lower_bound: -54100.0
+    upper_bound: 81210.0
+  - field: DEPSUMBR
+    index: 166
+    value: 336487.0
+    method: iqr
+    lower_bound: -154110.0
+    upper_bound: 242643.0
+  - field: DEPSUMBR
+    index: 242
+    value: 404351.0
+    method: iqr
+    lower_bound: -154110.0
+    upper_bound: 242643.0
+  - field: DEPSUMBR
+    index: 366
+    value: 906329.0
+    method: iqr
+    lower_bound: -154110.0
+    upper_bound: 242643.0
+  - field: DEPSUMBR
+    index: 432
+    value: 290371.0
+    method: iqr
+    lower_bound: -154110.0
+    upper_bound: 242643.0
+  - field: DEPSUMBR
+    index: 661
+    value: 705616.0
+    method: iqr
+    lower_bound: -154110.0
+    upper_bound: 242643.0
+  - field: DEPSUMBR
+    index: 789
+    value: 493501.0
+    method: iqr
+    lower_bound: -154110.0
+    upper_bound: 242643.0
+  - field: DEPSUMBR
+    index: 922
+    value: 244003.0
+    method: iqr
+    lower_bound: -154110.0
+    upper_bound: 242643.0
+  - field: DEPSUMBR
+    index: 938
+    value: 1468916.0
+    method: iqr
+    lower_bound: -154110.0
+    upper_bound: 242643.0
+  - field: DEPSUMBR
+    index: 1184
+    value: 1012192.0
+    method: iqr
+    lower_bound: -154110.0
+    upper_bound: 242643.0
+  - field: DEPSUMBR
+    index: 1342
+    value: 376060.0
+    method: iqr
+    lower_bound: -154110.0
+    upper_bound: 242643.0
+  - field: DEPSUMBR
+    index: 1612
+    value: 256820.0
+    method: iqr
+    lower_bound: -154110.0
+    upper_bound: 242643.0
+  - field: DEPSUMBR
+    index: 1639
+    value: 305237.0
+    method: iqr
+    lower_bound: -154110.0
+    upper_bound: 242643.0
+  - field: DEPSUMBR
+    index: 1646
+    value: 351607.0
+    method: iqr
+    lower_bound: -154110.0
+    upper_bound: 242643.0
+  - field: DEPSUMBR
+    index: 1903
+    value: 254763.0
+    method: iqr
+    lower_bound: -154110.0
+    upper_bound: 242643.0
+  - field: DEPSUMBR
+    index: 2796
+    value: 304161.0
+    method: iqr
+    lower_bound: -154110.0
+    upper_bound: 242643.0
+  - field: DEPSUMBR
+    index: 2871
+    value: 519743.0
+    method: iqr
+    lower_bound: -154110.0
+    upper_bound: 242643.0
+  - field: DEPSUMBR
+    index: 2965
+    value: 251933.0
+    method: iqr
+    lower_bound: -154110.0
+    upper_bound: 242643.0
+  - field: DEPSUMBR
+    index: 3085
+    value: 824823.0
+    method: iqr
+    lower_bound: -154110.0
+    upper_bound: 242643.0
+  - field: DEPSUMBR
+    index: 3185
+    value: 1819702.0
+    method: iqr
+    lower_bound: -154110.0
+    upper_bound: 242643.0
+  - field: DEPSUMBR
+    index: 3763
+    value: 952000.0
+    method: iqr
+    lower_bound: -154110.0
+    upper_bound: 242643.0
+  - field: SIMS_LATITUDE
+    index: 14794
+    value: 64.840455
+    method: iqr
+    lower_bound: 12.182865000000014
+    upper_bound: 63.47693299999999
+  - field: SIMS_LATITUDE
+    index: 14805
+    value: 64.83609
+    method: iqr
+    lower_bound: 12.182865000000014
+    upper_bound: 63.47693299999999
+  - field: SIMS_LATITUDE
+    index: 16189
+    value: 64.852226
+    method: iqr
+    lower_bound: 12.182865000000014
+    upper_bound: 63.47693299999999
+  - field: SIMS_LATITUDE
+    index: 16197
+    value: 64.851388
+    method: iqr
+    lower_bound: 12.182865000000014
+    upper_bound: 63.47693299999999
+  - field: SIMS_LATITUDE
+    index: 16208
+    value: 64.750712
+    method: iqr
+    lower_bound: 12.182865000000014
+    upper_bound: 63.47693299999999
+  - field: SIMS_LATITUDE
+    index: 16210
+    value: 64.497135
+    method: iqr
+    lower_bound: 12.182865000000014
+    upper_bound: 63.47693299999999
+  - field: SIMS_LATITUDE
+    index: 16211
+    value: 71.293346
+    method: iqr
+    lower_bound: 12.182865000000014
+    upper_bound: 63.47693299999999
+  - field: SIMS_LATITUDE
+    index: 16212
+    value: 66.895829
+    method: iqr
+    lower_bound: 12.182865000000014
+    upper_bound: 63.47693299999999
+  - field: SIMS_LATITUDE
+    index: 16219
+    value: 64.849087
+    method: iqr
+    lower_bound: 12.182865000000014
+    upper_bound: 63.47693299999999
+  - field: SIMS_LATITUDE
+    index: 23091
+    value: 64.842894
+    method: iqr
+    lower_bound: 12.182865000000014
+    upper_bound: 63.47693299999999
+  - field: SIMS_LATITUDE
+    index: 25931
+    value: 0.0
+    method: iqr
+    lower_bound: 12.182865000000014
+    upper_bound: 63.47693299999999
+  - field: SIMS_LATITUDE
+    index: 28645
+    value: 64.845184
+    method: iqr
+    lower_bound: 12.182865000000014
+    upper_bound: 63.47693299999999
+  - field: SIMS_LATITUDE
+    index: 28646
+    value: 64.855721
+    method: iqr
+    lower_bound: 12.182865000000014
+    upper_bound: 63.47693299999999
+  - field: SIMS_LATITUDE
+    index: 28648
+    value: 64.846828
+    method: iqr
+    lower_bound: 12.182865000000014
+    upper_bound: 63.47693299999999
+  - field: SIMS_LATITUDE
+    index: 28649
+    value: 64.807924
+    method: iqr
+    lower_bound: 12.182865000000014
+    upper_bound: 63.47693299999999
+  - field: SIMS_LATITUDE
+    index: 31359
+    value: 0.0
+    method: iqr
+    lower_bound: 12.182865000000014
+    upper_bound: 63.47693299999999
+  - field: SIMS_LATITUDE
+    index: 35205
+    value: 64.845976
+    method: iqr
+    lower_bound: 12.182865000000014
+    upper_bound: 63.47693299999999
+  - field: SIMS_LATITUDE
+    index: 35206
+    value: 64.836372
+    method: iqr
+    lower_bound: 12.182865000000014
+    upper_bound: 63.47693299999999
+  - field: SIMS_LATITUDE
+    index: 35220
+    value: 0.0
+    method: iqr
+    lower_bound: 12.182865000000014
+    upper_bound: 63.47693299999999
+  - field: SIMS_LATITUDE
+    index: 54077
+    value: 0.0
+    method: iqr
+    lower_bound: 12.182865000000014
+    upper_bound: 63.47693299999999
+  - field: SIMS_LONGITUDE
+    index: 14787
+    value: -149.872305
+    method: iqr
+    lower_bound: -145.32272299999997
+    upper_bound: -30.834573000000034
+  - field: SIMS_LONGITUDE
+    index: 14788
+    value: -153.47315
+    method: iqr
+    lower_bound: -145.32272299999997
+    upper_bound: -30.834573000000034
+  - field: SIMS_LONGITUDE
+    index: 14789
+    value: -149.440439
+    method: iqr
+    lower_bound: -145.32272299999997
+    upper_bound: -30.834573000000034
+  - field: SIMS_LONGITUDE
+    index: 14791
+    value: -149.742963
+    method: iqr
+    lower_bound: -145.32272299999997
+    upper_bound: -30.834573000000034
+  - field: SIMS_LONGITUDE
+    index: 14792
+    value: -146.350242
+    method: iqr
+    lower_bound: -145.32272299999997
+    upper_bound: -30.834573000000034
+  - field: SIMS_LONGITUDE
+    index: 14793
+    value: -149.782074
+    method: iqr
+    lower_bound: -145.32272299999997
+    upper_bound: -30.834573000000034
+  - field: SIMS_LONGITUDE
+    index: 14794
+    value: -147.715504
+    method: iqr
+    lower_bound: -145.32272299999997
+    upper_bound: -30.834573000000034
+  - field: SIMS_LONGITUDE
+    index: 14795
+    value: -149.884953
+    method: iqr
+    lower_bound: -145.32272299999997
+    upper_bound: -30.834573000000034
+  - field: SIMS_LONGITUDE
+    index: 14796
+    value: -145.76461
+    method: iqr
+    lower_bound: -145.32272299999997
+    upper_bound: -30.834573000000034
+  - field: SIMS_LONGITUDE
+    index: 14797
+    value: -149.118302
+    method: iqr
+    lower_bound: -145.32272299999997
+    upper_bound: -30.834573000000034
+  - field: SIMS_LONGITUDE
+    index: 14798
+    value: -149.895449
+    method: iqr
+    lower_bound: -145.32272299999997
+    upper_bound: -30.834573000000034
+  - field: SIMS_LONGITUDE
+    index: 14800
+    value: -149.887242
+    method: iqr
+    lower_bound: -145.32272299999997
+    upper_bound: -30.834573000000034
+  - field: SIMS_LONGITUDE
+    index: 14802
+    value: -149.73345
+    method: iqr
+    lower_bound: -145.32272299999997
+    upper_bound: -30.834573000000034
+  - field: SIMS_LONGITUDE
+    index: 14803
+    value: -149.862686
+    method: iqr
+    lower_bound: -145.32272299999997
+    upper_bound: -30.834573000000034
+  - field: SIMS_LONGITUDE
+    index: 14804
+    value: -151.064759
+    method: iqr
+    lower_bound: -145.32272299999997
+    upper_bound: -30.834573000000034
+  - field: SIMS_LONGITUDE
+    index: 14805
+    value: -147.800845
+    method: iqr
+    lower_bound: -145.32272299999997
+    upper_bound: -30.834573000000034
+  - field: SIMS_LONGITUDE
+    index: 14806
+    value: -149.431085
+    method: iqr
+    lower_bound: -145.32272299999997
+    upper_bound: -30.834573000000034
+  - field: SIMS_LONGITUDE
+    index: 14807
+    value: -161.741058
+    method: iqr
+    lower_bound: -145.32272299999997
+    upper_bound: -30.834573000000034
+  - field: SIMS_LONGITUDE
+    index: 14808
+    value: -151.066422
+    method: iqr
+    lower_bound: -145.32272299999997
+    upper_bound: -30.834573000000034
+  - field: SIMS_LONGITUDE
+    index: 14809
+    value: -151.531612
+    method: iqr
+    lower_bound: -145.32272299999997
+    upper_bound: -30.834573000000034
+violations:
+- field: UNINUMBR
+  level: required
+  severity: P0
+  rule: not_null
+  message: ''
+  violations: 120261
+  rate: 0.04260077216357058
+  samples:
+  - null
+  - null
+  - null
+  - null
+  - null
+  note: BRNUM 跨年重编号（全期 50.11% 的网点 BRNUM 发生变化），不可作跨年键
+- field: UNINUMBR
+  level: required
+  severity: P0
+  rule: unique(fields=['UNINUMBR', 'YEAR'])
+  message: UNINUMBR × YEAR 必须唯一
+  violations: 120261
+  rate: 0.04260077216357058
+  samples:
+  - null
+  - null
+  - null
+  - null
+  - null
+  note: BRNUM 跨年重编号（全期 50.11% 的网点 BRNUM 发生变化），不可作跨年键
+- field: SIMS_LATITUDE
+  level: important
+  severity: P1
+  rule: geo_lat
+  message: ''
+  violations: 5
+  rate: 1.7711798572924965e-06
+  samples:
+  - '138.097'
+  - '158.227518485'
+  - '158.227518485'
+  - '138.097'
+  - '158.227518485'
+  note: ''
+schema_check:
+  declared_but_missing_in_data: []
+  in_data_but_unregistered: []
+  note: 规格声明但数据里没有 → 拼写错误 / 数据源变更；数据里有但未登记 → 默认按 optional 处理
+key_findings:
+  tracking_key:
+    conclusion: UNINUMBR 是跨年稳定的寿命追踪主键；BRNUM 是银行内序号，同年即大量重复且会跨年重编号
+    first_year: 1994
+    rows_first_year: 81297
+    BRNUM_unique_first_year: 1531
+    BRNUM_duplicate_rows_first_year: 79766
+    UNINUMBR_unique_first_year: 73469
+    UNINUMBR_null_rate: 0.04260077216357058
+    BRNUM_renumbered_branches: 76440
+    BRNUM_tracked_branches: 152538
+    BRNUM_renumber_rate: 0.5011210321362546
+  survival_missing_rates:
+    SIMS_ESTABLISHED_DATE（出生，缺失=左截断候选）: 0.3581283163128853
+    SIMS_ACQUIRED_DATE（死亡，缺失=右删失，禁止填充）: 0.6636472773246116
+    SIMS_LATITUDE/SIMS_LONGITUDE（缺失=无法入网格）: 0.08038747747502016
+    DEPSUMBR: 0.0
+    BKCLASS: 0.0

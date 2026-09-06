@@ -1,0 +1,39 @@
+{
+  "tier": "V",
+  "chapter": "全局可视化（跨数据集对比）",
+  "file": "figures/01-global-ladder-comparison.png",
+  "title": "sz_bike 空间聚集最强，snap_brightkite 最弱",
+  "datasets": [
+    "fdic",
+    "sz_bike",
+    "snap_brightkite",
+    "snap_gowalla"
+  ],
+  "metrics": {
+    "points": {
+      "fdic": 148137,
+      "sz_bike": 8572465,
+      "snap_brightkite": 4747172,
+      "snap_gowalla": 6442863
+    },
+    "cells": {
+      "fdic": 70456,
+      "sz_bike": 2661,
+      "snap_brightkite": 228476,
+      "snap_gowalla": 302580
+    },
+    "moran_i": {
+      "fdic": 0.13310910409030818,
+      "sz_bike": 0.7076865029059817,
+      "snap_brightkite": 0.013182832844203757,
+      "snap_gowalla": 0.5090157876067666
+    },
+    "mean_neighbors": {
+      "fdic": 1.4129953446122403,
+      "sz_bike": 5.06651634723788,
+      "snap_brightkite": 2.014942488488944,
+      "snap_gowalla": 2.4044682398043493
+    }
+  },
+  "generated_at": "2026-09-06T21:01:24"
+}

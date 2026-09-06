@@ -1,0 +1,250 @@
+stage: 03_clean
+cleaned_at: '2026-09-06T19:58:59'
+shape:
+  rows_before: 2822977
+  rows_after: 2702716
+  rows_removed: 120261
+  removed_rate: 0.04260077216357058
+  cols_before: 10
+  cols_after: 10
+  cols_dropped: []
+missing_cells:
+  before: 3458580
+  after: 2870909
+  filled: 587671
+  note: 清洗只做删除与越界置空，**不做任何填充**（见 clean_plan.forbidden）；空单元格增加来自越界值置空
+impact:
+  by_operation:
+  - action: astype
+    executions: 1
+    affected_rows: 2702716
+  - action: clip
+    executions: 3
+    affected_rows: 5
+  - action: drop_duplicates
+    executions: 1
+    affected_rows: 0
+  - action: drop_na
+    executions: 1
+    affected_rows: 120261
+  by_field:
+    UNINUMBR:
+      filled: 0
+      clipped_to_null: 0
+      clipped: 0
+      replaced: 0
+      winsorized: 0
+      dropped_rows: 120261
+      dtype_before: float64
+      dtype_after: float64
+    BRNUM:
+      filled: 0
+      clipped_to_null: 0
+      clipped: 0
+      replaced: 0
+      winsorized: 0
+      dropped_rows: 0
+      dtype_before: int64
+      dtype_after: int64
+    CERT:
+      filled: 0
+      clipped_to_null: 0
+      clipped: 0
+      replaced: 0
+      winsorized: 0
+      dropped_rows: 0
+      dtype_before: int64
+      dtype_after: int64
+    YEAR:
+      filled: 0
+      clipped_to_null: 0
+      clipped: 0
+      replaced: 0
+      winsorized: 0
+      dropped_rows: 0
+      dtype_before: Int64
+      dtype_after: Int64
+    SIMS_ESTABLISHED_DATE:
+      filled: 0
+      clipped_to_null: 0
+      clipped: 0
+      replaced: 0
+      winsorized: 0
+      dropped_rows: 0
+      dtype_before: datetime64[us]
+      dtype_after: datetime64[us]
+    SIMS_ACQUIRED_DATE:
+      filled: 0
+      clipped_to_null: 0
+      clipped: 0
+      replaced: 0
+      winsorized: 0
+      dropped_rows: 0
+      dtype_before: datetime64[us]
+      dtype_after: datetime64[us]
+    DEPSUMBR:
+      filled: 0
+      clipped_to_null: 0
+      clipped: 0
+      replaced: 0
+      winsorized: 0
+      dropped_rows: 0
+      dtype_before: int64
+      dtype_after: int64
+    SIMS_LATITUDE:
+      filled: 0
+      clipped_to_null: 0
+      clipped: 5
+      replaced: 0
+      winsorized: 0
+      dropped_rows: 0
+      dtype_before: float64
+      dtype_after: float64
+    SIMS_LONGITUDE:
+      filled: 0
+      clipped_to_null: 0
+      clipped: 0
+      replaced: 0
+      winsorized: 0
+      dropped_rows: 0
+      dtype_before: float64
+      dtype_after: float64
+    BKCLASS:
+      filled: 0
+      clipped_to_null: 0
+      clipped: 0
+      replaced: 0
+      winsorized: 0
+      dropped_rows: 0
+      dtype_before: string
+      dtype_after: string
+decisions:
+- step: 1
+  action: drop_na
+  field: UNINUMBR
+  reason: 寿命追踪主键缺失，无法跨年追踪，必须删除
+  affected_rows: 120261
+  detail: 删除 120261 行（字段 UNINUMBR 缺失）
+  reversible: false
+  dropped_indices:
+  - 105
+  - 405
+  - 719
+  - 745
+  - 835
+  - 995
+  - 2139
+  - 2140
+  - 2142
+  - 2145
+  - 2146
+  - 2147
+  - 2186
+  - 2638
+  - 2642
+  - 2837
+  - 3114
+  - 3687
+  - 4092
+  - 4449
+  - 4478
+  - 4853
+  - 5415
+  - 5461
+  - 5494
+  - 5744
+  - 6156
+  - 6787
+  - 6792
+  - 7570
+  - 7575
+  - 7576
+  - 7579
+  - 7646
+  - 7650
+  - 7923
+  - 7954
+  - 8336
+  - 8682
+  - 8692
+  - 8818
+  - 8824
+  - 9290
+  - 9337
+  - 9338
+  - 10235
+  - 10271
+  - 10842
+  - 10994
+  - 11218
+  before: null
+  after: null
+- step: 2
+  action: drop_duplicates
+  field: UNINUMBR,YEAR
+  reason: 网点-年面板要求主键唯一
+  affected_rows: 0
+  detail: 去重删除 0 行
+  reversible: false
+  dropped_indices: null
+  before: null
+  after: null
+- step: 3
+  action: clip
+  field: SIMS_LATITUDE
+  reason: 越界坐标置空（不截断），避免伪造空间位置
+  affected_rows: 5
+  detail: 将 5 个越界值置空（[-90, 90] 之外；置空而非截断，避免伪造坐标/金额）
+  reversible: true
+  dropped_indices: null
+  before: 5 个越界值
+  after: 越界值已置为 NaN
+- step: 4
+  action: clip
+  field: SIMS_LONGITUDE
+  reason: 同上
+  affected_rows: 0
+  detail: 将 0 个越界值置空（[-180, 180] 之外；置空而非截断，避免伪造坐标/金额）
+  reversible: true
+  dropped_indices: null
+  before: 0 个越界值
+  after: 越界值已置为 NaN
+- step: 5
+  action: clip
+  field: DEPSUMBR
+  reason: 存款不能为负，负值置为缺失而非截断
+  affected_rows: 0
+  detail: 将 0 个越界值置空（[0, None] 之外；置空而非截断，避免伪造坐标/金额）
+  reversible: true
+  dropped_indices: null
+  before: 0 个越界值
+  after: 越界值已置为 NaN
+- step: 6
+  action: astype
+  field: YEAR
+  reason: 年份用于面板对齐（可空整型，兼容缺失）
+  affected_rows: 2702716
+  detail: 列 YEAR 类型转换为 Int64
+  reversible: true
+  dropped_indices: null
+  before: null
+  after: null
+forbidden_check:
+  declared:
+  - op: fill
+    field:
+    - SIMS_ACQUIRED_DATE
+    reason: 缺失 = 右删失（仍存活），填充会摧毁生存 / 事件信息
+  - op: fill
+    field:
+    - SIMS_ESTABLISHED_DATE
+    reason: 出生年缺失 → 按左截断处理，不填充
+  - op: fill
+    field:
+    - SIMS_LATITUDE
+    - SIMS_LONGITUDE
+    reason: 坐标填充会伪造空间位置，直接影响空间网格与竞争强度
+  violated: []
+outputs:
+- cleaned.csv
+- cleaned.parquet

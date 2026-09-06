@@ -1,0 +1,32 @@
+# config/clean_plan.yaml —— ③ 清洗计划（CleanPlan.from_spec 口径：op / field / lower / upper / dtype）
+# 规范 §5：配置与 datakit 的 from_spec 一一对应
+version: 2
+
+steps:
+  - op: clip
+    field: lat
+    lower: -90
+    upper: 90
+    on_violation: to_null
+    reason: 越界纬度置空（置空而非截断，避免伪造空间位置）
+
+  - op: clip
+    field: lon
+    lower: -180
+    upper: 180
+    on_violation: to_null
+    reason: 越界经度置空
+
+  - op: drop_na
+    field: [lat, lon]
+    reason: 无坐标点位无法进入 L0 网格化
+
+  - op: astype
+    field: value
+    dtype: float64
+    reason: 聚合度量必须为数值
+
+forbidden:
+  - fields: [lat, lon]
+    op: fill
+    reason: 坐标填充会伪造空间位置，直接污染 L1 权重矩阵与 L2/L3 结论

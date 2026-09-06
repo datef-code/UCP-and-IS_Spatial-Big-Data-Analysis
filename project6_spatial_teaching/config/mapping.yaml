@@ -1,0 +1,45 @@
+# config/mapping.yaml —— ⑤ 映射方案（教学主线 L0→L3，全人写）
+version: 1
+
+ops:
+  - op: geocode
+    from: [lat, lon]
+    to: h3_cell
+    engine: h3
+    params: {res: 8}
+    reason: L0 网格化，平均边长 ≈ 0.46 km（合成参数）
+
+  - op: aggregate
+    to: cell_value
+    by: h3_cell
+    how: sum            # fdic 为 0/1 聚合；SNAP / 单车为计数
+    reason: 点值聚合到格
+
+  - op: spatial_weights
+    to: W
+    engine: libpysal
+    params: {from: h3_adjacency, transform: row_standardized, mark_isolates: true}
+    reason: L1 空间权重矩阵（孤岛自动标记）
+
+  - op: derive
+    to: spatial_lag
+    expr: "W @ cell_value"
+    reason: L2 空间滞后
+
+  - op: derive
+    to: moran_i
+    expr: "moran(cell_value, W)"
+    reason: L2 Moran's I
+
+  - op: aggregate
+    to: ring_spillover
+    by: hot_cell
+    params:
+      hot_top_n: 100                          # 合成参数
+      rings_km: [[0, 1], [1, 3], [3, 5], [5, 10]]
+    reason: L3 距离环溢出
+
+outputs:
+  - ladder_report.json     # L0→L3 教学主线报告
+  - L2_spatial_lag.csv     # 格值 + 空间滞后
+  - L3_ring_spillover.csv  # 热点圆心 × 距离环溢出

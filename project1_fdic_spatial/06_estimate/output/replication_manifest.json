@@ -1,0 +1,46 @@
+{
+  "project": "project1_fdic_spatial",
+  "stage": "06_estimate",
+  "generated_at": "2026-09-06T19:23:31",
+  "environment": {
+    "python": "3.13.15",
+    "platform": "Windows-11-10.0.26200-SP0",
+    "pandas": "3.0.5",
+    "numpy": "2.5.2"
+  },
+  "parameters": {
+    "RANDOM_STATE": 20251114,
+    "POST_WINDOW": 4,
+    "PRE_WINDOW": 3,
+    "SPATIAL_T0": 2010,
+    "SPATIAL_T1": 2014,
+    "SPATIAL_TREAT": [
+      2007,
+      2010
+    ],
+    "SPATIAL_SAMPLE_MAX": 30000,
+    "KNN_K": 6
+  },
+  "inputs": {
+    "branch_year_panel.parquet": {
+      "path": "E:\\workspace\\workbuddy\\project\\data_use\\project1_fdic_spatial\\05_map\\output\\data\\branch_year_panel.parquet",
+      "sha256_16": "aba63d239a860692"
+    },
+    "branch_dim.csv": {
+      "path": "E:\\workspace\\workbuddy\\project\\data_use\\project1_fdic_spatial\\05_map\\output\\data\\branch_dim.csv",
+      "sha256_16": "0ac57f1bb7dc85f1"
+    },
+    "closure_exposure.csv": {
+      "path": "E:\\workspace\\workbuddy\\project\\data_use\\project1_fdic_spatial\\05_map\\output\\data\\closure_exposure.csv",
+      "sha256_16": "2513b84ff3904808"
+    }
+  },
+  "outputs": [
+    "estimate.json",
+    "metrics.json",
+    "data/did_panel.parquet",
+    "data/did_event_long.parquet",
+    "data/spatial_cross_section.parquet"
+  ],
+  "command": "python main.py --stage 06"
+}

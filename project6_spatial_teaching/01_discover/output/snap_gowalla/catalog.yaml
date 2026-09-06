@@ -1,0 +1,52 @@
+dataset: snap_gowalla
+scan_root: E:\workspace\workbuddy\project\data_use\data_raw\snap_gowalla
+scanned_at: '2026-09-06T20:52:46'
+license:
+  role: 辅助示例
+  license: 仅限研究用途（SNAP），不允许商用
+  restriction: 数据年代 2010–2013（实测 2009-02 ~ 2010-10，见 version_lock）
+value_semantics: 签到次数
+overview:
+  file_count: 2
+  total_size: 111821567
+  total_size_human: 106.6 MB
+  group_count: 2
+  directory_count: 1
+format_distribution:
+- format: txt
+  file_count: 2
+  total_size: 111821567
+  total_size_human: 106.6 MB
+  ratio: 1.0
+directory_distribution:
+- parent: .
+  file_count: 2
+  total_size: 111821567
+  total_size_human: 106.6 MB
+  ratio: 1.0
+groups:
+- group: loc-gowalla_edges.txt
+  file_count: 1
+  formats:
+  - txt
+  total_size: 6351523
+  total_size_human: 6.1 MB
+  column_count: 0
+  column_sample: []
+  drift_files: 0
+  added_columns: []
+  missing_columns: []
+- group: loc-gowalla_totalCheckins.txt
+  file_count: 1
+  formats:
+  - txt
+  total_size: 105470044
+  total_size_human: 100.6 MB
+  column_count: 0
+  column_sample: []
+  drift_files: 0
+  added_columns: []
+  missing_columns: []
+fingerprint_options:
+  with_md5: false
+  count_rows: false

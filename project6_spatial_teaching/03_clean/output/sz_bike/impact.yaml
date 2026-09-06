@@ -1,0 +1,55 @@
+dataset: sz_bike
+shape:
+  rows_before: 8572465
+  rows_after: 8572465
+  removed_rows: 0
+  removed_rate: 0.0
+  cols_before: 3
+  cols_after: 3
+missing_cells:
+  before: 0
+  after: 0
+  filled: 0
+by_field:
+  lat:
+    filled: 0
+    nulled: 0
+    clipped: 0
+    winsorized: 0
+    replaced: 0
+    dropped_rows: 0
+    type_change: ''
+  lon:
+    filled: 0
+    nulled: 0
+    clipped: 0
+    winsorized: 0
+    replaced: 0
+    dropped_rows: 0
+    type_change: ''
+  value:
+    filled: 0
+    nulled: 0
+    clipped: 0
+    winsorized: 0
+    replaced: 0
+    dropped_rows: 0
+    type_change: float64
+by_op:
+  clip:
+    times: 2
+    affected_rows: 0
+    detail:
+    - step1:clip(lat)
+    - step2:clip(lon)
+  drop_na:
+    times: 1
+    affected_rows: 0
+    detail:
+    - step3:drop_na(lat,lon)
+  astype:
+    times: 1
+    affected_rows: 8572465
+    detail:
+    - step4:astype(value)
+forbidden_violations: []

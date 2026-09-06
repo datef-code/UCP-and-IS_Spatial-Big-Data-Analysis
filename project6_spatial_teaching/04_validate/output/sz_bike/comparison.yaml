@@ -1,0 +1,62 @@
+dataset: sz_bike
+rows_before: 8572465
+rows_after: 8572465
+removed_rate: 0.0
+null_cells_before: 0
+null_cells_after: 0
+outliers_before: 87487
+outliers_after: 87487
+recommendations:
+- severity: P2
+  target: lat
+  advice: 必要/重要字段仍有统计异常值：可缩尾或分箱（不删除行）
+- severity: P2
+  target: lon
+  advice: 必要/重要字段仍有统计异常值：可缩尾或分箱（不删除行）
+verdict: 可进入 ⑤ 映射（附优化建议）
+fields:
+- field: lat
+  level: required
+  dtype_before: float64
+  dtype_after: float64
+  null_rate_before: 0.0
+  null_rate_after: 0.0
+  null_rate_diff: 0
+  unique_before: 4913739
+  unique_after: 296412
+  mean_before: 22.586643822787178
+  mean_after: 22.58664382325142
+  median_before: 22.57095176
+  median_after: 22.570952
+  outliers_before: 71183
+  outliers_after: 71183
+- field: lon
+  level: required
+  dtype_before: float64
+  dtype_after: float64
+  null_rate_before: 0.0
+  null_rate_after: 0.0
+  null_rate_diff: 0
+  unique_before: 5175542
+  unique_after: 464161
+  mean_before: 113.93949937057039
+  mean_after: 113.93949937039824
+  median_before: 114.00583238
+  median_after: 114.005832
+  outliers_before: 16304
+  outliers_after: 16304
+- field: value
+  level: required
+  dtype_before: int64
+  dtype_after: float64
+  null_rate_before: 0.0
+  null_rate_after: 0.0
+  null_rate_diff: 0
+  unique_before: 1
+  unique_after: 1
+  mean_before: 1.0
+  mean_after: 1.0
+  median_before: 1.0
+  median_after: 1.0
+  outliers_before: 0
+  outliers_after: 0

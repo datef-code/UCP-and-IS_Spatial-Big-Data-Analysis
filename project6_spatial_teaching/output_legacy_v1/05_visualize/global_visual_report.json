@@ -1,0 +1,31 @@
+{
+  "tier": "V",
+  "chapter": "全局可视化（跨数据集对比）",
+  "file": "global_ladder_comparison.png",
+  "datasets": [
+    "fdic",
+    "sz_bike",
+    "snap_brightkite",
+    "snap_gowalla"
+  ],
+  "metrics": {
+    "points": {
+      "fdic": 147055,
+      "sz_bike": 8572465,
+      "snap_brightkite": 4747172,
+      "snap_gowalla": 6442863
+    },
+    "cells": {
+      "fdic": 70109,
+      "sz_bike": 2661,
+      "snap_brightkite": 228476,
+      "snap_gowalla": 302582
+    },
+    "moran_i": {
+      "fdic": 0.11164653254519263,
+      "sz_bike": 0.7076932426979955,
+      "snap_brightkite": 0.013182832844203757,
+      "snap_gowalla": 0.5090351472724333
+    }
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "passed": true,
+  "pass_count": 2,
+  "fail_count": 0,
+  "summary": {
+    "total": 2,
+    "pass": 2,
+    "fail": 0
+  },
+  "checks": [
+    {
+      "name": "纬度范围",
+      "passed": true,
+      "actual": 0,
+      "expected": 0,
+      "message": "字段 lat 越界 0 个"
+    },
+    {
+      "name": "经度范围",
+      "passed": true,
+      "actual": 0,
+      "expected": 0,
+      "message": "字段 lng 越界 0 个"
+    }
+  ]
+}

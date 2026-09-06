@@ -1,0 +1,63 @@
+# config/clean_plan.yaml —— ③ 清洗计划
+# 机器按「等级 + 缺失率」推荐，人确认或推翻每条（规范 §3.2 / §3.4）。
+# 键名与 datakit.CleanPlan.from_spec 一一对应：op / field / subset / keep / lower / upper / dtype / reason
+version: 1
+
+steps:
+  - op: drop_na
+    field: [UNINUMBR]
+    reason: 追踪主键缺失无法定位网点，必须删除
+    note: 前置验证③已否决 BRNUM（并购关闭网点 72.43% 的 BRNUM 跨年重编号），主键只能是 UNINUMBR
+
+  - op: drop_duplicates
+    subset: [UNINUMBR, YEAR]
+    keep: last
+    reason: 网点-年面板要求 UNINUMBR × YEAR 唯一；同一年重复行保留最后一条
+
+  - op: clip
+    field: SIMS_LATITUDE
+    lower: -90
+    upper: 90
+    on_violation: to_null
+    reason: 越界坐标置空（不截断），不参与距离环 / H3 空间计算
+    note: 截断到 ±90 会伪造位置，故置空
+
+  - op: clip
+    field: SIMS_LONGITUDE
+    lower: -180
+    upper: 180
+    on_violation: to_null
+    reason: 同上
+
+  - op: clip
+    field: DEPSUMBR
+    lower: 0
+    on_violation: to_null
+    reason: 存款不能为负；负值视为数据错误置空
+
+  - op: astype
+    field: YEAR
+    dtype: Int64
+    reason: 年份用于面板对齐，统一为可空整型
+
+  - op: astype
+    field: SIMS_ESTABLISHED_DATE
+    dtype: datetime64[ns]
+    reason: 事件日期需可比较
+
+  - op: astype
+    field: SIMS_ACQUIRED_DATE
+    dtype: datetime64[ns]
+    reason: 事件日期需可比较（缺失 = 右删失，禁止填充）
+
+# 明令禁止的动作：由 ④ 校验阶段复核（规范 §3.4「机器反过来校验人的口径」）
+forbidden:
+  - field: SIMS_ACQUIRED_DATE
+    op: fill
+    reason: 缺失 = 右删失（仍存活），填充会摧毁生存 / 事件信息
+  - field: [SIMS_LATITUDE, SIMS_LONGITUDE]
+    op: fill
+    reason: 坐标填充会伪造空间位置，直接影响距离环 exposure
+  - field: BRNUM
+    op: fill
+    reason: BRNUM 跨年不稳定，不做修复

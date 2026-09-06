@@ -1,0 +1,147 @@
+dataset: snap_brightkite
+profiled_at: '2026-09-06T20:53:28'
+license:
+  role: 辅助示例
+  license: 仅限研究用途（SNAP），不允许商用
+  restriction: 数据年代 2010–2013（实测 2008-03 ~ 2010-10，见 version_lock）
+value_semantics: 签到次数（每次签到计 1）
+fingerprint:
+  source: data_raw/snap_brightkite/loc-brightkite_totalCheckins.txt.gz
+  files: 1
+  total_bytes: 59986698
+  md5: 8ec133cd33b3f47ac9918196429b471b
+  rows: 4747287
+  time_range:
+    min: '2008-03-21 20:36:21'
+    max: '2010-10-18 18:39:58'
+  era_note: SNAP 数据年代 2010–2013（方案口径标注；实测范围见上）
+summary:
+  rows: 4747287
+  columns: 3
+  null_cells: 12
+  null_rate: 8.425865130968488e-07
+  outlier_count: 769774
+outlier_method: iqr
+outliers_by_field:
+  lat: 694029
+  lon: 75745
+outlier_row_cap: 20000
+fields:
+- name: lat
+  dtype: float64
+  role: spatial
+  count: 4747287
+  non_null: 4747281
+  null_count: 6
+  null_rate: 1.2638797696452732e-06
+  unique: 651007
+  min: -163.193333
+  max: 151.198
+  mean: 34.36970923064508
+  median: 37.782406
+  std: 17.392539422918087
+  negative_rate: 0.0367917972414104
+  zero_rate: 0.05395467426512145
+  level: required
+  description: 纬度（清洗后统一命名，源字段 lat / SIMS_LATITUDE / START_LAT）
+- name: lon
+  dtype: float64
+  role: spatial
+  count: 4747287
+  non_null: 4747281
+  null_count: 6
+  null_rate: 1.2638797696452732e-06
+  unique: 659657
+  min: -179.824219
+  max: 179.999
+  mean: -42.1399753963454
+  median: -79.556812
+  std: 84.66700645309403
+  negative_rate: 0.698240108390466
+  zero_rate: 0.053968998253947895
+  level: required
+  description: 经度（清洗后统一命名，源字段 lng / SIMS_LONGITUDE / START_LNG）
+- name: value
+  dtype: int64
+  role: numeric
+  count: 4747287
+  non_null: 4747287
+  null_count: 0
+  null_rate: 0.0
+  unique: 1
+  min: 1.0
+  max: 1.0
+  mean: 1.0
+  median: 1.0
+  std: 0.0
+  negative_rate: 0.0
+  zero_rate: 0.0
+  level: required
+  description: 聚合到格的度量值（各数据集语义不同，见 per_dataset）
+nulls:
+- field: lat
+  null_count: 6
+  null_rate: 1.2638797696452732e-06
+  role: spatial
+  semantic: 需处理：缺失坐标影响映射，可近似或置空
+- field: lon
+  null_count: 6
+  null_rate: 1.2638797696452732e-06
+  role: spatial
+  semantic: 需处理：缺失坐标影响映射，可近似或置空
+- field: value
+  null_count: 0
+  null_rate: 0.0
+  role: numeric
+  semantic: 可选：缺失可标记或填充
+level_distribution:
+  required: 3
+  important: 0
+  optional: 0
+  ignore: 0
+violation_count: 3
+violations:
+- field: lon
+  level: required
+  severity: P0
+  rule: not_null
+  message: 无坐标点位无法进入 L0 网格化
+  violations: 6
+  rate: 1.2638797696452732e-06
+  samples:
+  - null
+  - null
+  - null
+  - null
+  - null
+  note: ''
+- field: lat
+  level: required
+  severity: P0
+  rule: geo_lat
+  message: ''
+  violations: 109
+  rate: 2.2960482481889128e-05
+  samples:
+  - '-94.578567'
+  - '-94.578567'
+  - '-94.578567'
+  - '-94.578567'
+  - '-163.193333'
+  note: ''
+- field: lat
+  level: required
+  severity: P0
+  rule: not_null
+  message: 无坐标点位无法进入 L0 网格化
+  violations: 6
+  rate: 1.2638797696452732e-06
+  samples:
+  - null
+  - null
+  - null
+  - null
+  - null
+  note: ''
+missing_fields: []
+unregistered_fields: []

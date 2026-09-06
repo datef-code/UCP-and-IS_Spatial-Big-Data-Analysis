@@ -1,0 +1,72 @@
+{
+  "project": "project2_fdic_survival",
+  "stage": "06_train",
+  "generated_at": "2026-09-06T19:59:31",
+  "environment": {
+    "python": "3.13.15",
+    "platform": "Windows-11-10.0.26200-SP0",
+    "pandas": "3.0.5",
+    "numpy": "2.5.2",
+    "scipy": "1.18.1",
+    "scikit-learn": "1.9.0",
+    "statsmodels": "0.15.0",
+    "matplotlib": "3.11.1"
+  },
+  "params": {
+    "random_state": 42,
+    "max_total_sample": 500000,
+    "shap_sample_n": 2000,
+    "moran_k": 8,
+    "moran_n_perm": 199,
+    "c_index_max_n": 120000,
+    "duration_proxy": "age（year − est_year）"
+  },
+  "features": {
+    "numeric": [
+      "age",
+      "log_depsumbr",
+      "neighbor_count",
+      "lat",
+      "lng",
+      "bank_closed_rate"
+    ],
+    "categorical": [
+      "year",
+      "BKCLASS",
+      "fragility_tier"
+    ]
+  },
+  "inputs": [
+    {
+      "file": "branch_panel.csv",
+      "size": 19911762,
+      "mtime": "2026-09-06T19:59:12"
+    },
+    {
+      "file": "bank_fragility.csv",
+      "size": 1389648,
+      "mtime": "2026-09-06T19:59:12"
+    }
+  ],
+  "panel": {
+    "rows": 1667283,
+    "branches": 140751,
+    "event_rate": 0.041329516344855675,
+    "year_range": [
+      1994,
+      2025
+    ]
+  },
+  "test_metrics": {
+    "auc": 0.8814362464286707,
+    "brier": 0.16085599031578277,
+    "log_loss": 0.45838984267349764,
+    "c_index": 0.8095709471683596,
+    "event_rate": 0.13782,
+    "n": 100000
+  },
+  "commands": {
+    "end_to_end": "python main.py",
+    "stage_06": "python main.py --stage 06"
+  }
+}

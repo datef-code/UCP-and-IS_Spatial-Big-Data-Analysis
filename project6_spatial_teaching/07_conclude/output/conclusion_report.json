@@ -1,0 +1,303 @@
+{
+  "tier": "C",
+  "chapter": "结论",
+  "generated_at": "2026-09-06T21:01:31",
+  "positioning": {
+    "role": "放大器",
+    "not_role": "主菜",
+    "purpose": "让 ③ 清洗、④ 校验（版本冻结）与 ⑤ 映射（L0→L3 空间结构化）的结果更易被理解、传播与教学",
+    "metric": "不以阅读量/付费转化为核心指标，而以「读者能否按章节顺序复现 L0→L3」为质量判据"
+  },
+  "prerequisites": {
+    "must_have": [
+      "④ 校验：所有代码块随数据集版本冻结，git clone 后可复现",
+      "⑤ 映射：h3·libpysal 教学主线已实际跑通（L0→L3）"
+    ],
+    "note": "⑤ 不适用：本方案不引入任何新算法、不做新建模，全部复用 ③④⑤ 已验证的产出",
+    "kill_switch": "若 ③④⑤ 未做，本方向退化为官方文档翻译——那时应直接砍掉"
+  },
+  "datasets": [
+    {
+      "dataset": "fdic",
+      "license": "公共领域（美国联邦政府数据），可商用",
+      "role": "主示例",
+      "value_semantics": "网点关闭 0/1 聚合",
+      "points": 148137,
+      "cells": 70456,
+      "mean_neighbors": 1.41,
+      "islands": 19786,
+      "moran_i": 0.1331,
+      "lag_corr": 0.2163,
+      "ring_metric": "溢出密度（环内格均摊）",
+      "ring_means": {
+        "spillden_0_1km": 7.62,
+        "spillden_1_3km": 2.13,
+        "spillden_3_5km": 1.72,
+        "spillden_5_10km": 1.64
+      }
+    },
+    {
+      "dataset": "sz_bike",
+      "license": "研究用途",
+      "role": "辅助示例",
+      "value_semantics": "抽样日起点活跃度（抽样日 = 每月 15 日，共 20 天）",
+      "points": 8572465,
+      "cells": 2661,
+      "mean_neighbors": 5.07,
+      "islands": 121,
+      "moran_i": 0.7077,
+      "lag_corr": 0.8581,
+      "ring_metric": "溢出密度（环内格均摊）",
+      "ring_means": {
+        "spillden_0_1km": 24612.43,
+        "spillden_1_3km": 15870.47,
+        "spillden_3_5km": 10056.02,
+        "spillden_5_10km": 6866.73
+      }
+    },
+    {
+      "dataset": "snap_brightkite",
+      "license": "仅限研究用途（SNAP），不允许商用",
+      "role": "辅助示例",
+      "value_semantics": "签到次数",
+      "points": 4747172,
+      "cells": 228476,
+      "mean_neighbors": 2.01,
+      "islands": 67189,
+      "moran_i": 0.0132,
+      "lag_corr": 0.0266,
+      "ring_metric": "溢出密度（环内格均摊）",
+      "ring_means": {
+        "spillden_0_1km": 3006.39,
+        "spillden_1_3km": 341.92,
+        "spillden_3_5km": 147.87,
+        "spillden_5_10km": 65.32
+      }
+    },
+    {
+      "dataset": "snap_gowalla",
+      "license": "仅限研究用途（SNAP），不允许商用",
+      "role": "辅助示例",
+      "value_semantics": "签到次数",
+      "points": 6442863,
+      "cells": 302580,
+      "mean_neighbors": 2.4,
+      "islands": 66069,
+      "moran_i": 0.509,
+      "lag_corr": 0.7246,
+      "ring_metric": "溢出密度（环内格均摊）",
+      "ring_means": {
+        "spillden_0_1km": 4023.51,
+        "spillden_1_3km": 1459.57,
+        "spillden_3_5km": 457.55,
+        "spillden_5_10km": 123.52
+      }
+    }
+  ],
+  "findings": {
+    "strongest": {
+      "dataset": "sz_bike",
+      "moran_i": 0.7077,
+      "why": "同城密集点位，邻接格彼此可观测"
+    },
+    "weakest": {
+      "dataset": "snap_brightkite",
+      "moran_i": 0.0132,
+      "why": "点位稀疏/全球分散，H3 R8 近邻格常为空，权重矩阵定义对结论敏感"
+    },
+    "distance_decay": {
+      "fdic": true,
+      "sz_bike": true,
+      "snap_brightkite": true,
+      "snap_gowalla": true
+    },
+    "lesson": "空间权重矩阵的定义（分辨率、邻接阶数、是否行标准化）直接改变结论：同一个数据集换一种 W，Moran's I 会变——这是本教程的核心观点，而非缺陷。"
+  },
+  "known_limits": [
+    "成本参数为合成参数（h3_res=8、hot_top_n=100、距离环 0–1/1–3/3–5/5–10 km、抽样日=每月 15 日），非真实业务口径",
+    "sz_bike 全量 30 GB 未全量载入，结论仅对抽样日成立；源标注数据源已停更（最后数据 2021-08）",
+    "SNAP 两个数据集仅限研究用途、不允许商用、不再分发原始文件；数据年代 2010–2013",
+    "L3 距离环溢出取 Top-N 热点为圆心，圆心选择影响环内溢出量级",
+    "孤岛格（无邻居）不参与空间滞后，占比见各数据集 L1.islands"
+  ],
+  "reproducibility": {
+    "version_locks": {
+      "fdic": {
+        "frozen_at": "2026-09-06T20:55:18",
+        "library_versions": {
+          "python": "3.13.15",
+          "pandas": "3.0.5",
+          "numpy": "2.5.2",
+          "datakit": "0.1.0",
+          "h3": "4.5.0",
+          "libpysal": "4.15.0",
+          "matplotlib": "3.11.1"
+        },
+        "cost_params": {
+          "h3_res": 8,
+          "hot_top_n": 100,
+          "rings_km": [
+            [
+              0,
+              1
+            ],
+            [
+              1,
+              3
+            ],
+            [
+              3,
+              5
+            ],
+            [
+              5,
+              10
+            ]
+          ],
+          "sz_sample_day": "15",
+          "marked": "合成参数，非真实业务数据"
+        },
+        "rows": {
+          "raw": 152538,
+          "cleaned": 148137
+        }
+      },
+      "sz_bike": {
+        "frozen_at": "2026-09-06T20:55:21",
+        "library_versions": {
+          "python": "3.13.15",
+          "pandas": "3.0.5",
+          "numpy": "2.5.2",
+          "datakit": "0.1.0",
+          "h3": "4.5.0",
+          "libpysal": "4.15.0",
+          "matplotlib": "3.11.1"
+        },
+        "cost_params": {
+          "h3_res": 8,
+          "hot_top_n": 100,
+          "rings_km": [
+            [
+              0,
+              1
+            ],
+            [
+              1,
+              3
+            ],
+            [
+              3,
+              5
+            ],
+            [
+              5,
+              10
+            ]
+          ],
+          "sz_sample_day": "15",
+          "marked": "合成参数，非真实业务数据"
+        },
+        "rows": {
+          "raw": 8572465,
+          "cleaned": 8572465
+        }
+      },
+      "snap_brightkite": {
+        "frozen_at": "2026-09-06T20:55:26",
+        "library_versions": {
+          "python": "3.13.15",
+          "pandas": "3.0.5",
+          "numpy": "2.5.2",
+          "datakit": "0.1.0",
+          "h3": "4.5.0",
+          "libpysal": "4.15.0",
+          "matplotlib": "3.11.1"
+        },
+        "cost_params": {
+          "h3_res": 8,
+          "hot_top_n": 100,
+          "rings_km": [
+            [
+              0,
+              1
+            ],
+            [
+              1,
+              3
+            ],
+            [
+              3,
+              5
+            ],
+            [
+              5,
+              10
+            ]
+          ],
+          "sz_sample_day": "15",
+          "marked": "合成参数，非真实业务数据"
+        },
+        "rows": {
+          "raw": 4747287,
+          "cleaned": 4747172
+        }
+      },
+      "snap_gowalla": {
+        "frozen_at": "2026-09-06T20:55:29",
+        "library_versions": {
+          "python": "3.13.15",
+          "pandas": "3.0.5",
+          "numpy": "2.5.2",
+          "datakit": "0.1.0",
+          "h3": "4.5.0",
+          "libpysal": "4.15.0",
+          "matplotlib": "3.11.1"
+        },
+        "cost_params": {
+          "h3_res": 8,
+          "hot_top_n": 100,
+          "rings_km": [
+            [
+              0,
+              1
+            ],
+            [
+              1,
+              3
+            ],
+            [
+              3,
+              5
+            ],
+            [
+              5,
+              10
+            ]
+          ],
+          "sz_sample_day": "15",
+          "marked": "合成参数，非真实业务数据"
+        },
+        "rows": {
+          "raw": 6442892,
+          "cleaned": 6442863
+        }
+      }
+    },
+    "replay": "python main.py（阶段 01→07 顺序执行；单阶段 python main.py --stage 05）"
+  },
+  "deliverables": {
+    "open_ebook": {
+      "platform": "GitHub Pages / Jupyter Book / Quarto",
+      "content": "L0→L3 四阶认知阶梯，每章对应一个数据集的实际产出"
+    },
+    "zhihu_column": {
+      "platform": "知乎专栏",
+      "content": "逐章图文，强调许可状态、合成参数标注与可复现性"
+    },
+    "bilibili": {
+      "platform": "B站视频课",
+      "content": "配合代码仓库，演示从 H3 网格化到距离环溢出的完整流程"
+    }
+  },
+  "global_figure": "figures/01-global-ladder-comparison.png"
+}

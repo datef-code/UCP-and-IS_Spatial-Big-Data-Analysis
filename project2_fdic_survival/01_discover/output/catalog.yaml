@@ -1,0 +1,309 @@
+stage: 01_discover
+scanned_root: E:\workspace\workbuddy\project\data_use\data_raw\fdic
+scanned_at: '2026-09-06T19:58:38'
+file_count: 32
+total_size: 1698610746
+total_size_human: 1.58 GB
+group_count: 1
+format_distribution:
+- format: csv
+  files: 32
+  size: 1698610746
+  size_human: 1.58 GB
+  size_pct: 1.0
+directory_distribution:
+- parent: .
+  files: 32
+  size: 1698610746
+  formats:
+  - csv
+groups:
+  fdic_sod_#:
+    file_count: 32
+    formats:
+    - csv
+    total_size: 1698610746
+    total_size_human: 1.58 GB
+    total_rows: null
+    column_count: 81
+    columns:
+    - ADDRESBR
+    - ADDRESS
+    - ASSET
+    - BKCLASS
+    - BKMO
+    - BRCENM
+    - BRNUM
+    - BRSERTYP
+    - CALL
+    - CB
+    - CBSA_DIV_NAMB
+    - CERT
+    - CHARTER
+    - CHRTAGNN
+    - CHRTAGNT
+    - CITY
+    - CITY2BR
+    - CITYBR
+    - CITYHCR
+    - CLCODE
+    - CNTRYNA
+    - CNTRYNAB
+    - CNTYNAMB
+    - CNTYNUMB
+    - CONSOLD
+    - CSABR
+    - CSANAMBR
+    - DENOVO
+    - DEPDOM
+    - DEPSUM
+    - DEPSUMBR
+    - DIVISIONB
+    - DOCKET
+    - ESCROW
+    - FDICDBS
+    - FDICNAME
+    - FED
+    - FEDNAME
+    - HCTMULT
+    - ID
+    - INSAGNT1
+    - INSBRDD
+    - INSBRTS
+    - INSURED
+    - METROBR
+    - MICROBR
+    - MSABR
+    - MSANAMB
+    - NAMEBR
+    - NAMEFULL
+    - NAMEHCR
+    - NECNAMB
+    - NECTABR
+    - OCCDIST
+    - OCCNAME
+    - PLACENUM
+    - REGAGNT
+    - RSSDHCR
+    - RSSDID
+    - SIMS_ACQUIRED_DATE
+    - SIMS_DESCRIPTION
+    - SIMS_ESTABLISHED_DATE
+    - SIMS_LATITUDE
+    - SIMS_LONGITUDE
+    - SIMS_PROJECTION
+    - SPECDESC
+    - SPECGRP
+    - STALP
+    - STALPBR
+    - STALPHCR
+    - STCNTY
+    - STCNTYBR
+    - STNAME
+    - STNAMEBR
+    - STNUMBR
+    - UNINUMBR
+    - UNIT
+    - USA
+    - YEAR
+    - ZIP
+    - ZIPBR
+column_drift:
+  note: 同组文件以第一个（年份最早）文件为基准比较列集合；跨年 SOD 字段会增减，本项目只依赖 9 个核心列，漂移不影响追踪主键 UNINUMBR
+  consistent: true
+  files:
+  - group: fdic_sod_#
+    file: fdic_sod_1994.csv
+    cols: 81
+    added_vs_base: []
+    missing_vs_base: []
+    same_as_base: true
+  - group: fdic_sod_#
+    file: fdic_sod_1995.csv
+    cols: 81
+    added_vs_base: []
+    missing_vs_base: []
+    same_as_base: true
+  - group: fdic_sod_#
+    file: fdic_sod_1996.csv
+    cols: 81
+    added_vs_base: []
+    missing_vs_base: []
+    same_as_base: true
+  - group: fdic_sod_#
+    file: fdic_sod_1997.csv
+    cols: 81
+    added_vs_base: []
+    missing_vs_base: []
+    same_as_base: true
+  - group: fdic_sod_#
+    file: fdic_sod_1998.csv
+    cols: 81
+    added_vs_base: []
+    missing_vs_base: []
+    same_as_base: true
+  - group: fdic_sod_#
+    file: fdic_sod_1999.csv
+    cols: 81
+    added_vs_base: []
+    missing_vs_base: []
+    same_as_base: true
+  - group: fdic_sod_#
+    file: fdic_sod_2000.csv
+    cols: 81
+    added_vs_base: []
+    missing_vs_base: []
+    same_as_base: true
+  - group: fdic_sod_#
+    file: fdic_sod_2001.csv
+    cols: 81
+    added_vs_base: []
+    missing_vs_base: []
+    same_as_base: true
+  - group: fdic_sod_#
+    file: fdic_sod_2002.csv
+    cols: 81
+    added_vs_base: []
+    missing_vs_base: []
+    same_as_base: true
+  - group: fdic_sod_#
+    file: fdic_sod_2003.csv
+    cols: 81
+    added_vs_base: []
+    missing_vs_base: []
+    same_as_base: true
+  - group: fdic_sod_#
+    file: fdic_sod_2004.csv
+    cols: 81
+    added_vs_base: []
+    missing_vs_base: []
+    same_as_base: true
+  - group: fdic_sod_#
+    file: fdic_sod_2005.csv
+    cols: 81
+    added_vs_base: []
+    missing_vs_base: []
+    same_as_base: true
+  - group: fdic_sod_#
+    file: fdic_sod_2006.csv
+    cols: 81
+    added_vs_base: []
+    missing_vs_base: []
+    same_as_base: true
+  - group: fdic_sod_#
+    file: fdic_sod_2007.csv
+    cols: 81
+    added_vs_base: []
+    missing_vs_base: []
+    same_as_base: true
+  - group: fdic_sod_#
+    file: fdic_sod_2008.csv
+    cols: 81
+    added_vs_base: []
+    missing_vs_base: []
+    same_as_base: true
+  - group: fdic_sod_#
+    file: fdic_sod_2009.csv
+    cols: 81
+    added_vs_base: []
+    missing_vs_base: []
+    same_as_base: true
+  - group: fdic_sod_#
+    file: fdic_sod_2010.csv
+    cols: 81
+    added_vs_base: []
+    missing_vs_base: []
+    same_as_base: true
+  - group: fdic_sod_#
+    file: fdic_sod_2011.csv
+    cols: 81
+    added_vs_base: []
+    missing_vs_base: []
+    same_as_base: true
+  - group: fdic_sod_#
+    file: fdic_sod_2012.csv
+    cols: 81
+    added_vs_base: []
+    missing_vs_base: []
+    same_as_base: true
+  - group: fdic_sod_#
+    file: fdic_sod_2013.csv
+    cols: 81
+    added_vs_base: []
+    missing_vs_base: []
+    same_as_base: true
+  - group: fdic_sod_#
+    file: fdic_sod_2014.csv
+    cols: 81
+    added_vs_base: []
+    missing_vs_base: []
+    same_as_base: true
+  - group: fdic_sod_#
+    file: fdic_sod_2015.csv
+    cols: 81
+    added_vs_base: []
+    missing_vs_base: []
+    same_as_base: true
+  - group: fdic_sod_#
+    file: fdic_sod_2016.csv
+    cols: 81
+    added_vs_base: []
+    missing_vs_base: []
+    same_as_base: true
+  - group: fdic_sod_#
+    file: fdic_sod_2017.csv
+    cols: 81
+    added_vs_base: []
+    missing_vs_base: []
+    same_as_base: true
+  - group: fdic_sod_#
+    file: fdic_sod_2018.csv
+    cols: 81
+    added_vs_base: []
+    missing_vs_base: []
+    same_as_base: true
+  - group: fdic_sod_#
+    file: fdic_sod_2019.csv
+    cols: 81
+    added_vs_base: []
+    missing_vs_base: []
+    same_as_base: true
+  - group: fdic_sod_#
+    file: fdic_sod_2020.csv
+    cols: 81
+    added_vs_base: []
+    missing_vs_base: []
+    same_as_base: true
+  - group: fdic_sod_#
+    file: fdic_sod_2021.csv
+    cols: 81
+    added_vs_base: []
+    missing_vs_base: []
+    same_as_base: true
+  - group: fdic_sod_#
+    file: fdic_sod_2022.csv
+    cols: 81
+    added_vs_base: []
+    missing_vs_base: []
+    same_as_base: true
+  - group: fdic_sod_#
+    file: fdic_sod_2023.csv
+    cols: 81
+    added_vs_base: []
+    missing_vs_base: []
+    same_as_base: true
+  - group: fdic_sod_#
+    file: fdic_sod_2024.csv
+    cols: 81
+    added_vs_base: []
+    missing_vs_base: []
+    same_as_base: true
+  - group: fdic_sod_#
+    file: fdic_sod_2025.csv
+    cols: 81
+    added_vs_base: []
+    missing_vs_base: []
+    same_as_base: true
+options:
+  with_md5: false
+  count_rows: false

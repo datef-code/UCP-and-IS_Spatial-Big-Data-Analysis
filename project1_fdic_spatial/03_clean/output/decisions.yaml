@@ -1,0 +1,132 @@
+stage: 03_clean
+decisions:
+- step: 1
+  action: drop_na
+  field: UNINUMBR
+  reason: 追踪主键缺失无法定位网点，必须删除
+  affected_rows: 120261
+  detail: 删除 120261 行（字段 UNINUMBR 缺失）
+  reversible: false
+  dropped_indices:
+  - 105
+  - 405
+  - 719
+  - 745
+  - 835
+  - 995
+  - 2139
+  - 2140
+  - 2142
+  - 2145
+  - 2146
+  - 2147
+  - 2186
+  - 2638
+  - 2642
+  - 2837
+  - 3114
+  - 3687
+  - 4092
+  - 4449
+  - 4478
+  - 4853
+  - 5415
+  - 5461
+  - 5494
+  - 5744
+  - 6156
+  - 6787
+  - 6792
+  - 7570
+  - 7575
+  - 7576
+  - 7579
+  - 7646
+  - 7650
+  - 7923
+  - 7954
+  - 8336
+  - 8682
+  - 8692
+  - 8818
+  - 8824
+  - 9290
+  - 9337
+  - 9338
+  - 10235
+  - 10271
+  - 10842
+  - 10994
+  - 11218
+  before: null
+  after: null
+- step: 2
+  action: drop_duplicates
+  field: UNINUMBR,YEAR
+  reason: 网点-年面板要求 UNINUMBR × YEAR 唯一；同一年重复行保留最后一条
+  affected_rows: 0
+  detail: 去重删除 0 行
+  reversible: false
+  dropped_indices: null
+  before: null
+  after: null
+- step: 3
+  action: clip
+  field: SIMS_LATITUDE
+  reason: 越界坐标置空（不截断），不参与距离环 / H3 空间计算
+  affected_rows: 5
+  detail: 将 5 个越界值置空（[-90, 90] 之外；置空而非截断，避免伪造坐标/金额）
+  reversible: true
+  dropped_indices: null
+  before: 5 个越界值
+  after: 越界值已置为 NaN
+- step: 4
+  action: clip
+  field: SIMS_LONGITUDE
+  reason: 同上
+  affected_rows: 0
+  detail: 将 0 个越界值置空（[-180, 180] 之外；置空而非截断，避免伪造坐标/金额）
+  reversible: true
+  dropped_indices: null
+  before: 0 个越界值
+  after: 越界值已置为 NaN
+- step: 5
+  action: clip
+  field: DEPSUMBR
+  reason: 存款不能为负；负值视为数据错误置空
+  affected_rows: 0
+  detail: 将 0 个越界值置空（[0, None] 之外；置空而非截断，避免伪造坐标/金额）
+  reversible: true
+  dropped_indices: null
+  before: 0 个越界值
+  after: 越界值已置为 NaN
+- step: 6
+  action: astype
+  field: YEAR
+  reason: 年份用于面板对齐，统一为可空整型
+  affected_rows: 2702716
+  detail: 列 YEAR 类型转换为 Int64
+  reversible: true
+  dropped_indices: null
+  before: null
+  after: null
+- step: 7
+  action: astype
+  field: SIMS_ESTABLISHED_DATE
+  reason: 事件日期需可比较
+  affected_rows: 2702716
+  detail: 列 SIMS_ESTABLISHED_DATE 类型转换为 datetime64[ns]
+  reversible: true
+  dropped_indices: null
+  before: null
+  after: null
+- step: 8
+  action: astype
+  field: SIMS_ACQUIRED_DATE
+  reason: 事件日期需可比较（缺失 = 右删失，禁止填充）
+  affected_rows: 2702716
+  detail: 列 SIMS_ACQUIRED_DATE 类型转换为 datetime64[ns]
+  reversible: true
+  dropped_indices: null
+  before: null
+  after: null

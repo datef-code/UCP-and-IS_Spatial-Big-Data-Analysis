@@ -1,0 +1,55 @@
+dataset: snap_gowalla
+shape:
+  rows_before: 6442892
+  rows_after: 6442863
+  removed_rows: 29
+  removed_rate: 4.5010842956858505e-06
+  cols_before: 3
+  cols_after: 3
+missing_cells:
+  before: 0
+  after: 0
+  filled: 0
+by_field:
+  lat:
+    filled: 0
+    nulled: 29
+    clipped: 0
+    winsorized: 0
+    replaced: 0
+    dropped_rows: 29
+    type_change: ''
+  lon:
+    filled: 0
+    nulled: 0
+    clipped: 0
+    winsorized: 0
+    replaced: 0
+    dropped_rows: 29
+    type_change: ''
+  value:
+    filled: 0
+    nulled: 0
+    clipped: 0
+    winsorized: 0
+    replaced: 0
+    dropped_rows: 0
+    type_change: float64
+by_op:
+  clip:
+    times: 2
+    affected_rows: 29
+    detail:
+    - step1:clip(lat)
+    - step2:clip(lon)
+  drop_na:
+    times: 1
+    affected_rows: 29
+    detail:
+    - step3:drop_na(lat,lon)
+  astype:
+    times: 1
+    affected_rows: 6442863
+    detail:
+    - step4:astype(value)
+forbidden_violations: []
