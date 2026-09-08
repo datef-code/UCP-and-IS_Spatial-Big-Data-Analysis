@@ -1,0 +1,84 @@
+{
+  "generated_at": "2026-09-08T13:59:00",
+  "generator": {
+    "tool": "plotly + vanilla JS",
+    "version": "7.0.0",
+    "script": "09_interactive/09_interactive.py",
+    "encoding": "utf-8",
+    "font": "Microsoft YaHei",
+    "self_contained": true,
+    "reproducible": true
+  },
+  "entry": "index.html",
+  "n_figures": 3,
+  "fidelity_check": {
+    "auc_reproduced": 0.8815,
+    "auc_reference": 0.8814,
+    "abs_diff": 0.0,
+    "n_test": 100000,
+    "event_rate": 0.13782,
+    "note": "截距由测试集事件率校准（产物未保存截距）；AUC 复现度用于证明本 demo 与主模型一致"
+  },
+  "figures": [
+    {
+      "file": "index.html",
+      "title": "什么样的网点会先死（入口）",
+      "type": "entry",
+      "question": "结论、demo、体检报告能不能一站式看到？",
+      "alt_text": "串联预测 demo、KM/ROC 与体检报告的入口页",
+      "source": "本目录三件产物",
+      "n": 100000,
+      "scope": "1994–2025；右删失计入风险集；左截断已剔除",
+      "tool": "html"
+    },
+    {
+      "file": "predict_demo.html",
+      "title": "这个网点会先死吗（可拖动）",
+      "type": "predict_demo",
+      "question": "给定特征，模型给这个网点打多少风险分？",
+      "alt_text": "拖动特征滑块即时得到关闭风险与逐特征贡献分解",
+      "unit": "y=年度关闭概率；贡献为对数几率",
+      "source": "06_train/output/logit_coefficients.csv + test_predictions.csv",
+      "n": 100000,
+      "scope": "logit 主模型；截距由事件率校准",
+      "tool": "vanilla JS",
+      "reproducible": true
+    },
+    {
+      "file": "km_roc.html",
+      "title": "银行脆弱性越高，网点存活率越低",
+      "type": "km_roc",
+      "question": "不同银行脆弱性分层的网点存活曲线有差异吗？",
+      "alt_text": "三条 KM 阶梯曲线分离，配 ROC 曲线与随机线对照",
+      "unit": "左 x=观测年数 y=存活率；右 x=FPR y=TPR",
+      "source": "05_map/output/data/branch_panel.csv + 06_train/output/test_predictions.csv",
+      "n": 152538,
+      "scope": "右删失计入风险集；左截断已剔除",
+      "tool": "plotly"
+    },
+    {
+      "file": "model_report.html",
+      "title": "模型体检报告：准，但没那么准",
+      "type": "model_report",
+      "question": "模型性能与残差诊断一起看，够不够用？",
+      "alt_text": "系数森林图（点+95%CI）与 AUC/C-index/Brier/Moran's I 指标条",
+      "unit": "左 x=系数；右 x=指标值",
+      "source": "06_train/output/{cloglog_coefficients.csv, metrics.json, moran_i.json}",
+      "n": 100000,
+      "scope": "cloglog 提供 CI；logit 提供性能指标",
+      "tool": "plotly"
+    },
+    {
+      "file": "risk_evolution.html",
+      "title": "网点不是老死，而是被关",
+      "type": "animation",
+      "question": "关闭在时间上是怎么分布的？模型看到的风险怎么变？",
+      "alt_text": "左图年度关闭柱在 2009–2014 明显抬升，右图风险分布同步右移",
+      "unit": "左 x=年份 y=关闭网点数；右 x=预测风险 y=网点数",
+      "source": "05_map/output/data/branch_panel.csv + 06_train/output/test_predictions.csv",
+      "n": 152538,
+      "scope": "mp4（FuncAnimation）内嵌 <video>；按 acq_year 统计",
+      "tool": "matplotlib + ffmpeg"
+    }
+  ]
+}

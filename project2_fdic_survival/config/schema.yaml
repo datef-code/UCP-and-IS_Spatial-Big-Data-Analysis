@@ -1,6 +1,8 @@
 # config/schema.yaml —— 字段规格（role + level + 业务规则）
 # role : key | event | time_varying | spatial | categorical | numeric | target | ignore
 # level: required | important | optional | ignore
+# note : 「为什么是这个角色 / 等级」的判定依据（规范 §3.5），会被 ② 画像写进 fields.csv 的
+#        level_reason 列，不要留空。
 version: 1
 dataset: fdic_sod
 group_pattern: 'fdic_sod_#'
@@ -16,7 +18,11 @@ fields:
       - kind: unique
         fields: [UNINUMBR, YEAR]
         message: UNINUMBR × YEAR 必须唯一
-    note: BRNUM 跨年重编号（全期 50.11% 的网点 BRNUM 发生变化），不可作跨年键
+    note: >-
+      判为 key+required：① 唯一性——非空后唯一值 = 网点数（152,538）；② 非空性——2011 年起零缺失；
+      ③ 稳定性——跨年不重分配；④ 业务标识——对应真实网点。
+      对照 BRNUM：观测 ≥2 年的 146,396 个网点中 52.19% 首末年变化，唯一≠稳定 → 弃用。
+      缺它则寿命追踪无从建立 → required，缺失即 drop_na。
 
   - name: CERT
     role: key
@@ -25,6 +31,10 @@ fields:
     description: 银行（机构）编号，用于银行层聚合；并购后网点会改挂新 CERT，本项目按首次观测归属
     rules:
       - kind: not_null
+    note: >-
+      判为 key+required：银行层脆弱性分层（bank_fragility）的唯一分组键，缺它核心协变量不可得。
+      已知偏差：52.17% 的网点首末年 CERT 变化（并购改挂），因此只作分组键、不作跨年追踪键；
+      归属口径取「首次观测」（改按末次则测试 AUC 0.881 → 0.812）。
 
   - name: YEAR
     role: key
@@ -35,6 +45,9 @@ fields:
       - kind: range
         min: 1994
         max: 2025
+    note: >-
+      判为 key+required：离散时间风险模型的「期」；与 UNINUMBR 组成复合主键
+      （唯一性断言即 UNINUMBR × YEAR）。缺它无法构造 duration 与风险集。
 
   - name: SIMS_ESTABLISHED_DATE
     role: event
@@ -43,6 +56,9 @@ fields:
     description: 网点设立（出生）日期
     rules:
       - kind: no_future_date
+    note: >-
+      判为 event+important：出生时间决定「网点年龄」与左截断判定，直接影响 duration，
+      但不决定记录能否定位，故 important 而非 required。缺失 35.81% → 按左截断处理，不填充。
 
   - name: SIMS_ACQUIRED_DATE
     role: event
@@ -52,6 +68,10 @@ fields:
     missing_semantics: 缺失 = 右删失（仍存活），是有意义信息，禁止填充
     rules:
       - kind: no_future_date
+    note: >-
+      判为 event+important：生存分析的事件指示（有值 = 死亡，缺失 = 右删失）。
+      缺失率 66.36%，但缺失本身携带「仍存活」的信息 → **明令禁止 fill**
+      （填充会摧毁生存信息），level 只到 important。
 
   - name: DEPSUMBR
     role: time_varying
@@ -61,6 +81,9 @@ fields:
     rules:
       - kind: non_negative
         message: 存款不能为负
+    note: >-
+      判为 time_varying+required：核心协变量 log_depsumbr 的来源，缺它样本无法进入估计。
+      实测无缺失、无负值（负值规则作护栏）。
 
   - name: SIMS_LATITUDE
     role: spatial
@@ -69,6 +92,10 @@ fields:
     description: 网点纬度
     rules:
       - kind: geo_lat          # 内置 [-90, 90]
+    note: >-
+      判为 spatial+important：承担空间结构（H3 R7 网格化 → neighbor_count → 残差 Moran's I）。
+      缺失 8.04%（97.8% 落在 1994–2010，时间结构化缺失）；坐标列**禁止 fill**，
+      越界值 `to_null` 而非截断（截断会伪造位置）。无坐标网点不进网格，neighbor_count 记 0。
 
   - name: SIMS_LONGITUDE
     role: spatial
@@ -77,12 +104,16 @@ fields:
     description: 网点经度
     rules:
       - kind: geo_lon          # 内置 [-180, 180]
+    note: 同 SIMS_LATITUDE。另需注意：全期有 572 条落在 (0, 0) 空岛，不被范围断言捕获。
 
   - name: BKCLASS
     role: categorical
     level: important
     dtype: string
-    description: 银行类别；用于「同业」判定（处理组强度按同 BKCLASS 计数）
+    description: 银行类别；直接进入模型的类别协变量
+    note: >-
+      判为 categorical+important：模型类别特征之一，无缺失；不直接决定样本能否进入估计，
+      故不到 required。
 
   # 注：MSABR / METROBR / SIMS_PROJECTION 是 project1（空间 DID）的口径，
   #     本项目（生存分析）不读取，已从 schema 移除，避免「声明但数据里没有」的假告警。
@@ -92,4 +123,7 @@ fields:
     level: ignore
     dtype: string
     description: 银行内网点序号
-    note: 跨年不稳定，已弃用为追踪主键
+    note: >-
+      判为 ignore：实测观测 ≥2 年网点中 52.19% 首末年变化（与 CERT 52.17% 同步，
+      因 BRNUM 是银行内序号，CERT 一变必然重编）→ 违反主键判据第 3 条「稳定性」，
+      唯一≠稳定，已弃用为追踪主键。

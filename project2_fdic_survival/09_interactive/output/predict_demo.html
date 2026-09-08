@@ -1,0 +1,153 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>网点关闭风险预测 demo</title>
+<style>
+:root{--ink:#111827;--sub:#6B7280;--line:#E5E7EB;--up:#D55E00;--down:#0072B2;--bg:#FAFAFA}
+*{box-sizing:border-box}
+body{margin:0;font-family:"Microsoft YaHei","Noto Sans CJK SC",sans-serif;color:var(--ink);
+     background:#fff;line-height:1.7}
+.wrap{max-width:1120px;margin:0 auto;padding:36px 24px 80px}
+h1{font-size:26px;margin:0 0 6px} .lede{color:var(--sub);margin:0 0 20px;font-size:14.5px}
+.grid{display:grid;grid-template-columns:340px 1fr;gap:26px;align-items:start}
+@media(max-width:900px){.grid{grid-template-columns:1fr}}
+.panel{border:1px solid var(--line);border-radius:12px;padding:18px}
+.panel h3{margin:0 0 14px;font-size:15px}
+.f{margin-bottom:14px}
+.f label{display:flex;justify-content:space-between;font-size:12.5px;color:var(--sub)}
+.f label b{color:var(--ink);font-variant-numeric:tabular-nums}
+input[type=range]{width:100%;accent-color:#0072B2}
+select{width:100%;padding:6px 8px;border:1px solid var(--line);border-radius:6px;font-size:13px}
+.big{font-size:44px;font-weight:700;letter-spacing:-1px;font-variant-numeric:tabular-nums}
+.big small{font-size:15px;font-weight:500;color:var(--sub)}
+.bar{height:12px;background:var(--bg);border-radius:999px;overflow:hidden;margin:10px 0 4px}
+.bar i{display:block;height:100%;border-radius:999px}
+.hint{font-size:12px;color:var(--sub)}
+.wf{margin-top:6px}
+.row{display:grid;grid-template-columns:190px 1fr 78px;gap:8px;align-items:center;
+     font-size:12.5px;margin:3px 0}
+.row .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.trk{position:relative;height:14px;background:var(--bg);border-radius:3px}
+.trk i{position:absolute;top:0;height:100%;border-radius:2px}
+.val{text-align:right;font-variant-numeric:tabular-nums;color:var(--sub)}
+.warn{border-left:4px solid var(--up);background:#FFF7ED;padding:12px 16px;border-radius:0 8px 8px 0;
+      margin:22px 0 0;font-size:13px}
+.note{border-left:4px solid var(--down);background:#EFF6FF;padding:12px 16px;
+      border-radius:0 8px 8px 0;margin:22px 0 0;font-size:13px}
+code{background:var(--bg);padding:1px 5px;border-radius:4px;font-size:12px}
+</style></head><body><div class="wrap">
+<h1>这个网点会先死吗？—— 自己拖一拖</h1>
+<p class="lede">离散时间 logit 主模型（测试 AUC 0.8814）。
+改动下面的输入，右侧<b>实时</b>给出该网点的年度关闭风险，以及每个特征贡献了多少。
+所有计算在浏览器里完成，不联网、不上传。</p>
+<div class="grid">
+  <div class="panel"><h3>网点特征</h3><div id="inputs"></div></div>
+  <div>
+    <div class="panel">
+      <h3>年度关闭风险</h3>
+      <div class="big"><span id="p">–</span><small>　存活概率 <span id="surv">–</span></small></div>
+      <div class="bar"><i id="bar" style="width:0%"></i></div>
+      <div class="hint" id="cmp"></div>
+    </div>
+    <div class="panel" style="margin-top:18px">
+      <h3>这个结论是怎么来的（对数几率贡献分解）</h3>
+      <div class="wf" id="wf"></div>
+      <div class="hint">线性模型的贡献分解即 SHAP 值：各项之和 + 截距 = 对数几率。
+        正向（红）推高风险，负向（蓝）压低风险。</div>
+    </div>
+  </div>
+</div>
+<div class="warn"><b>边界：这是风险预测，不是因果、也不是 ROI 工具。</b>
+  改动输入不会改变网点的真实命运——它只展示模型「看过数据后」怎么打分。
+  不承诺干预阈值，不承诺 ROI（成本参数缺失）。</div>
+<div class="note"><b>保真度自检</b>：本页复现的测试集 AUC = <code>0.8815</code>，
+  与 <code>06_train/output/metrics.json</code> 的 <code>0.8814</code>
+  相差 <code>0.0</code>（n=100,000，事件率 13.78%）。
+  模型产物未保存截距，截距由事件率校准；系数与标准化参数全部来自上游产物。</div>
+</div>
+<script>
+const SPEC = {"model": "logit_discrete_time（sklearn，主模型）", "intercept": -4.1643088214446955, "numeric": {"age": {"mean": 32.3212, "std": 35.27860896577415, "min": 0.0, "max": 232.0, "p50": 18.0, "coef": -0.0037874206766029}, "log_depsumbr": {"mean": 10.281872376645238, "std": 2.8559525860079753, "min": 0.0, "max": 19.657467698547315, "p50": 10.92448958836263, "coef": -0.1850759259479082}, "neighbor_count": {"mean": 9.8036, "std": 25.523262076780075, "min": 0.0, "max": 415.0, "p50": 5.0, "coef": -0.0591235974843635}, "lat": {"mean": 37.84449019229219, "std": 5.253910707985813, "min": -14.3200149999999, "max": 64.8584489872951, "p50": 38.969399011214, "coef": -0.0597924351237366}, "lng": {"mean": -89.86405957075658, "std": 15.577733002781999, "min": -170.718609999999, "max": 162.981, "p50": -86.8690090099671, "coef": -0.0054163234492069}, "bank_closed_rate": {"mean": 0.44905082746, "std": 0.4098333896487914, "min": 0.0, "max": 1.0, "p50": 0.280623, "coef": 2.0486871826397075}}, "categorical": {"year": {"values": ["1994", "1995", "1996", "1997", "1998", "1999", "2000", "2001", "2002", "2003", "2004", "2005", "2006", "2007", "2008", "2009", "2010", "2011", "2012", "2013", "2014", "2015", "2016", "2017", "2018", "2019", "2020", "2021", "2022", "2023", "2024", "2025"], "reference": ["1994"], "coef": {"1994": 0.0, "1995": -0.5376530373119445, "1996": 0.170130276046563, "1997": 0.5427096804600738, "1998": 0.3660341884129652, "1999": 0.7441572749623123, "2000": 0.7813637130781322, "2001": 0.74774702092067, "2002": 0.1247145085857806, "2003": 0.2588785615113805, "2004": 1.331803507590562, "2005": 1.3330915294108112, "2006": 1.211725335077925, "2007": 1.210863395366765, "2008": 1.4740815709995208, "2009": 1.8154681584165515, "2010": 2.1969518369169148, "2011": 2.0798544468784157, "2012": 1.7662424665212284, "2013": 1.835931512331123, "2014": 2.064960239824257, "2015": 1.6637400503391158, "2016": -1.224473075900705, "2017": -1.2259783242162454, "2018": -1.195043189131374, "2019": -1.2165916732792244, "2020": -1.2121003164698227, "2021": -1.1970406723670457, "2022": -1.168113704636771, "2023": -1.1734405497335, "2024": -1.17467690021204, "2025": -1.1809418791315571}}, "BKCLASS": {"values": ["N", "NM", "OI", "SA", "SB", "SL", "SM"], "reference": ["N"], "coef": {"N": 0.0, "NM": -0.2063915844799432, "OI": 0.0988862303346799, "SA": -0.1728749689086268, "SB": -0.0727126306616536, "SL": -0.0049571044316484, "SM": -0.1679906620497281}}, "fragility_tier": {"values": ["L0_单网点", "L1_多网点高集中", "L2_多网点地理分散"], "reference": ["L0_单网点", "L1_多网点高集中", "L2_多网点地理分散"], "coef": {"L0_单网点": 0.0, "L1_多网点高集中": 0.2245600888448336, "L2_多网点地理分散": 0.3144886982180719}}}, "label": {"age": ["网点年龄", "年"], "log_depsumbr": ["存款规模（对数）", "log(美元)"], "neighbor_count": ["同格网点数（竞争强度）", "个"], "lat": ["纬度", "°"], "lng": ["经度", "°"], "bank_closed_rate": ["所属银行历史关闭率", ""]}, "fidelity": {"auc_reproduced": 0.8815, "auc_reference": 0.8814, "abs_diff": 0.0, "n_test": 100000, "event_rate": 0.13782, "note": "截距由测试集事件率校准（产物未保存截距）；AUC 复现度用于证明本 demo 与主模型一致"}};
+const N = SPEC.numeric, C = SPEC.categorical, L = SPEC.label;
+const box = document.getElementById('inputs');
+const state = {};
+const fmt = (v, d=2) => Number(v).toFixed(d);
+
+function addRange(key){
+  const s = N[key], [nm, unit] = L[key] || [key, ''];
+  const step = Math.max((s.max - s.min)/200, 1e-6);
+  const w = document.createElement('div'); w.className='f';
+  w.innerHTML = `<label><span>${nm}<span class="u">${unit?'（'+unit+'）':''}</span></span>
+    <b id="v_${key}"></b></label>
+    <input type="range" id="i_${key}" min="${s.min}" max="${s.max}" step="${step}" value="${s.p50}">`;
+  box.appendChild(w);
+  state[key] = s.p50;
+  w.querySelector('input').addEventListener('input', e => {
+    state[key] = parseFloat(e.target.value); paint();
+  });
+}
+
+function addSelect(key, label){
+  const c = C[key];
+  const w = document.createElement('div'); w.className='f';
+  w.innerHTML = `<label><span>${label}</span><b id="v_${key}"></b></label>
+    <select id="i_${key}">${c.values.map(v=>`<option value="${v}">${v}</option>`).join('')}</select>`;
+  box.appendChild(w);
+  state[key] = c.values.includes('2005') ? '2005' : c.values[0];
+  w.querySelector('select').value = state[key];
+  w.querySelector('select').addEventListener('change', e => {
+    state[key] = e.target.value; paint();
+  });
+}
+
+['age','log_depsumbr','neighbor_count','bank_closed_rate','lat','lng'].forEach(addRange);
+addSelect('year', '年份'); addSelect('BKCLASS', '银行类别');
+addSelect('fragility_tier', '银行脆弱性分层');
+
+function contributions(){
+  const out = [];
+  for (const k in N){
+    const s = N[k];
+    const z = (state[k] - s.mean) / s.std;
+    out.push({name: (L[k]||[k])[0], v: s.coef * z, unit:(L[k]||[k,''])[1]});
+  }
+  for (const k in C){
+    const c = C[k];
+    out.push({name: k + ' = ' + state[k], v: (c.coef[state[k]] || 0)});
+  }
+  return out;
+}
+
+function paint(){
+  for (const k in N) document.getElementById('v_'+k).textContent = fmt(state[k], 2);
+  for (const k in C) document.getElementById('v_'+k).textContent = state[k];
+
+  const cs = contributions();
+  let logit = SPEC.intercept;
+  cs.forEach(c => logit += c.v);
+  const p = 1/(1+Math.exp(-logit));
+  document.getElementById('p').textContent = (p*100).toFixed(1) + '%';
+  document.getElementById('surv').textContent = ((1-p)*100).toFixed(1) + '%';
+  const bar = document.getElementById('bar');
+  bar.style.width = Math.min(100, p*100*3).toFixed(1) + '%';
+  bar.style.background = p > 0.1378 ? '#D55E00' : '#0072B2';
+  document.getElementById('cmp').textContent =
+    '测试集平均风险 13.78% —— 该网点为平均水平的 ' + (p/0.1378).toFixed(2) + ' 倍';
+
+  // 瀑布：从截距开始，逐项累加
+  const all = [{name:'截距（基线）', v: SPEC.intercept, base:0}];
+  let acc = SPEC.intercept;
+  cs.slice().sort((a,b)=>Math.abs(b.v)-Math.abs(a.v)).forEach(c=>{
+    all.push({name:c.name, v:c.v, base:acc}); acc += c.v;
+  });
+  const maxAbs = Math.max(...all.map(a=>Math.max(Math.abs(a.base), Math.abs(a.base+a.v))), 0.5);
+  document.getElementById('wf').innerHTML = all.map(a=>{
+    const l = Math.min(a.base, a.base+a.v), r = Math.max(a.base, a.base+a.v);
+    const left = ((l + maxAbs)/(2*maxAbs)*100).toFixed(2);
+    const wd = Math.max(((r-l)/(2*maxAbs)*100), 0.4).toFixed(2);
+    const col = a.v >= 0 ? '#D55E00' : '#0072B2';
+    return `<div class="row"><div class="nm" title="${a.name}">${a.name}</div>
+      <div class="trk"><i style="left:${left}%;width:${wd}%;background:${col};opacity:.85"></i></div>
+      <div class="val">${a.v>=0?'+':''}${fmt(a.v,3)}</div></div>`;
+  }).join('');
+}
+paint();
+</script></body></html>

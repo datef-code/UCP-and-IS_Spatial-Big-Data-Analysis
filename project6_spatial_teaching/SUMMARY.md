@@ -1,7 +1,7 @@
 # SUMMARY.md · project6_spatial_teaching
 
 > 空间结构化教学管线 · L0→L3 四阶认知阶梯（多数据集）
-> 自动生成于 2026-09-06T21:01:31；规范见 `datakit/PROJECT_STRUCTURE.md`。
+> 自动生成于 2026-09-08T13:59:36；规范见 `datakit/PROJECT_STRUCTURE.md`。
 
 ## 阶段摘要
 
@@ -14,6 +14,7 @@
 | 05_map | ✅ | cells=604173；datasets={'fdic': {'cells': 70456, 'moran_i': '0.1331'}, 'sz_bike': {'cells': 2661, 'moran_i': '0.7077'}, 'snap_brightkite': {'cells': 228476, 'moran_i': '0.0132'}, 'snap_gowalla': {'cells': 302580, 'mora… |
 | 06_visualize | ✅ | figures=13；datasets=4 |
 | 07_conclude | ✅ | datasets=4；conclusion=sz_bike 空间聚集最强（Moran's I=0.7077），snap_brightkite 最弱（0.0132）——空间权重矩阵定义对结论敏感 |
+| 08_interactive | ✅ | figures=4；datasets=4 |
 
 ## 一句话结论
 

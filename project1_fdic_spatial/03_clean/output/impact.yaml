@@ -77,8 +77,8 @@ by_field:
     dtype_after: int64
   SIMS_LATITUDE:
     filled: 0
-    clipped_to_null: 0
-    clipped: 5
+    clipped_to_null: 5
+    clipped: 0
     replaced: 0
     winsorized: 0
     dropped_rows: 0

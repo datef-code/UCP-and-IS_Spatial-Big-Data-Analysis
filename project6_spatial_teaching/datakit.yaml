@@ -28,6 +28,13 @@ extensions:
     extras: []
     blocking: false
     outputs: [conclusion.md, conclusion_report.json]
+  - stage: 08_interactive
+    kind: teaching
+    depends_on: [04_validate, 05_map]
+    requires: [L2_spatial_lag.csv, ladder_report.json]
+    extras: [geo]
+    blocking: false
+    outputs: [index.html, moran_explorer.html, ladder_compare.html, manifest.json]
 
 # ---- 全局口径 ----
 options:

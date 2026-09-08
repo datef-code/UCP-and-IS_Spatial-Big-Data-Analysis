@@ -1,5 +1,5 @@
 stage: 02_profile
-profiled_at: '2026-09-06T19:20:31'
+profiled_at: '2026-09-08T10:05:14'
 source:
   root: E:\workspace\workbuddy\project\data_use\data_raw\fdic
   group: fdic_sod_#
@@ -38,10 +38,15 @@ fields:
   role: key
   level: required
   registered: true
+  description: 跨年唯一网点号；本项目唯一追踪主键
+  level_reason: 判为 key+required：① 唯一性——非空后 UNINUMBR 唯一值 = 网点数（152,538）； ② 稳定性——跨年不重分配；③
+    业务标识——对应真实网点实体。 对照：BRNUM 观测≥2 年网点中 52.19% 首末年变化，唯一≠稳定，故弃用。 缺它则记录无法定位、无法跨年 join
+    → required，缺失即 drop_na。
   non_null: 2702716
   null_count: 120261
   null_rate: 0.042601
   unique: 152538
+  n_issues: 3
   min: 1.0
   max: 686773.0
   mean: 241893.44717387992
@@ -55,10 +60,13 @@ fields:
   role: ignore
   level: ignore
   registered: true
+  description: 银行内网点序号
+  level_reason: 跨年不稳定（观测≥2 年网点中 52.19% 首末年变化），已弃用为追踪主键
   non_null: 2822977
   null_count: 0
   null_rate: 0.0
   unique: 10437
+  n_issues: 1
   min: 0.0
   max: 10561.0
   mean: 934.0980705829343
@@ -72,10 +80,14 @@ fields:
   role: key
   level: required
   registered: true
+  description: 银行（机构）编号，用于银行层聚合
+  level_reason: 判为 key+required：与 UNINUMBR 同属「记录定位」层，银行层聚合（脆弱性、关闭率）的 唯一分组键。注意 CERT
+    会随并购改挂（52.17% 的网点首末年 CERT 变化）， 只作分组键、不作跨年追踪键。
   non_null: 2822977
   null_count: 0
   null_rate: 0.0
   unique: 15505
+  n_issues: 1
   min: 8.0
   max: 91393.0
   mean: 15331.023288181235
@@ -89,10 +101,14 @@ fields:
   role: key
   level: required
   registered: true
+  description: 数据年份
+  level_reason: 判为 key+required：面板的时间维，与 UNINUMBR 组成复合主键（唯一性断言即 UNINUMBR × YEAR）。缺它无法定位事件时间与构造
+    event-time。
   non_null: 2822977
   null_count: 0
   null_rate: 0.0
   unique: 32
+  n_issues: 0
   min: 1994.0
   max: 2025.0
   mean: 2009.4550334629012
@@ -106,10 +122,14 @@ fields:
   role: event
   level: important
   registered: true
+  description: 网点设立（出生）日期
+  level_reason: 判为 event+important：出生时间是「网点年龄」协变量与左截断判定的来源， 影响结论但不决定记录能否定位，故 important
+    而非 required；缺失按左截断处理，不填充。
   non_null: 1811989
   null_count: 1010988
   null_rate: 0.358128
   unique: 24382
+  n_issues: 1
   min: '1782-01-01 00:00:00'
   max: '2015-06-30 00:00:00'
   mean: null
@@ -123,10 +143,14 @@ fields:
   role: event
   level: important
   registered: true
+  description: 网点被并购 / 关闭（死亡）日期
+  level_reason: 判为 event+important：本课题「处理」的来源——有值才构成一起关闭事件。 缺失率全期 66.36%，但缺失本身 = 右删失（仍存活），是有意义信息，
+    因此 level 只到 important 且**明令禁止 fill**（填充会摧毁事件信息）。
   non_null: 949516
   null_count: 1873461
   null_rate: 0.663647
   unique: 5832
+  n_issues: 1
   min: '1970-01-02 00:00:00'
   max: '2015-06-30 00:00:00'
   mean: null
@@ -140,10 +164,13 @@ fields:
   role: time_varying
   level: required
   registered: true
+  description: 网点存款余额（美元）；结果变量来源
+  level_reason: 判为 time_varying+required：本课题的结果变量 Y（存款增速）唯一来源。 缺它结论完全不可得 → required；实测无负值、无缺失（负值规则作护栏）。
   non_null: 2822977
   null_count: 0
   null_rate: 0.0
   unique: 312301
+  n_issues: 1
   min: 0.0
   max: 727192402.0
   mean: 100930.74554096615
@@ -157,10 +184,14 @@ fields:
   role: spatial
   level: important
   registered: true
+  description: 网点纬度
+  level_reason: 判为 spatial+important：承担空间结构（H3 网格化、距离环、KNN 权重）。 缺它则该观测失去空间位置 → 坐标列**明令禁止
+    fill**（填充会伪造位置）， 越界值置空（to_null）而非截断。实测缺失 8.04%，早年更严重。
   non_null: 2596045
   null_count: 226932
   null_rate: 0.080387
   unique: 500715
+  n_issues: 3
   min: -35.25960006
   max: 158.227518485
   mean: 37.913290559587146
@@ -174,10 +205,13 @@ fields:
   role: spatial
   level: important
   registered: true
+  description: 网点经度
+  level_reason: 同 SIMS_LATITUDE：承担空间结构，禁止填充，越界置空。另需注意 (0,0) 空岛（全期 572 条）不被范围断言捕获。
   non_null: 2596039
   null_count: 226938
   null_rate: 0.08039
   unique: 514256
+  n_issues: 2
   min: -170.71861
   max: 174.12399994
   mean: -90.0180520933612
@@ -191,10 +225,14 @@ fields:
   role: categorical
   level: important
   registered: true
+  description: 银行类别；用于「同业」判定（处理组强度按同 BKCLASS 计数）
+  level_reason: 判为 categorical+important：本课题「同业」的定义本身由它决定（同 BKCLASS 才计入 各环 exposure
+    强度），直接决定 exposure 口径 → important。无缺失、7 个取值。
   non_null: 2822977
   null_count: 0
   null_rate: 0.0
   unique: 7
+  n_issues: 0
   min: null
   max: null
   mean: null
@@ -208,10 +246,13 @@ fields:
   role: categorical
   level: optional
   registered: true
+  description: 都会统计区（MSA）编号；与 METROBR 共同构成同城 / 同都会区对照口径
+  level_reason: 实测 1994–2025 全部 32 个年度文件（81 列）均不含 CBSA_METRO，故这是 SOD 全期唯一可用口径，非权宜替代
   non_null: 2822977
   null_count: 0
   null_rate: 0.0
   unique: 411
+  n_issues: 0
   min: null
   max: null
   mean: null
@@ -225,10 +266,13 @@ fields:
   role: categorical
   level: optional
   registered: true
+  description: 都会区标识，与 MSABR 共同构成对照口径
+  level_reason: 判为 optional：只用于辅助同城对照分组（主口径是 MSABR），缺失约 3.25% 不影响主结论，故不升到 important。
   non_null: 2731143
   null_count: 91834
   null_rate: 0.032531
   unique: 2
+  n_issues: 2
   min: 0.0
   max: 1.0
   mean: 0.7815940066118837
@@ -242,10 +286,15 @@ fields:
   role: categorical
   level: optional
   registered: true
+  description: 地理编码方式；取值词表在 1994–2025 间换过两轮，不可跨年代直接比较
+  level_reason: 精度口径（本地全量实测）：1994–2022 用 US_Rooftop / US_Streets / US_Zipcode / 0
+    / 100， 屋顶级仅 16.37%；2023–2025 改用 EXACT / StreetAddress / PointAddress / Postal，
+    EXACT 占 85.98%。早年多为插值坐标 → < 1 km 距离环有系统性失真，须做环宽敏感性。 旧口径「EXACT 占 45.45%」已作废：它把编码体系切换与样本退出时间混为一谈。
   non_null: 2691404
   null_count: 131573
   null_rate: 0.046608
   unique: 840
+  n_issues: 1
   min: null
   max: null
   mean: null
@@ -1214,7 +1263,9 @@ violations:
   - null
   - null
   - null
-  note: BRNUM 跨年重编号（并购关闭网点 72.43% 发生变化），不可作跨年键
+  note: 判为 key+required：① 唯一性——非空后 UNINUMBR 唯一值 = 网点数（152,538）； ② 稳定性——跨年不重分配；③ 业务标识——对应真实网点实体。
+    对照：BRNUM 观测≥2 年网点中 52.19% 首末年变化，唯一≠稳定，故弃用。 缺它则记录无法定位、无法跨年 join → required，缺失即
+    drop_na。
 - field: UNINUMBR
   level: required
   severity: P0
@@ -1228,7 +1279,9 @@ violations:
   - null
   - null
   - null
-  note: BRNUM 跨年重编号（并购关闭网点 72.43% 发生变化），不可作跨年键
+  note: 判为 key+required：① 唯一性——非空后 UNINUMBR 唯一值 = 网点数（152,538）； ② 稳定性——跨年不重分配；③ 业务标识——对应真实网点实体。
+    对照：BRNUM 观测≥2 年网点中 52.19% 首末年变化，唯一≠稳定，故弃用。 缺它则记录无法定位、无法跨年 join → required，缺失即
+    drop_na。
 - field: SIMS_LATITUDE
   level: important
   severity: P1
@@ -1242,7 +1295,8 @@ violations:
   - '158.227518485'
   - '138.097'
   - '158.227518485'
-  note: ''
+  note: 判为 spatial+important：承担空间结构（H3 网格化、距离环、KNN 权重）。 缺它则该观测失去空间位置 → 坐标列**明令禁止 fill**（填充会伪造位置），
+    越界值置空（to_null）而非截断。实测缺失 8.04%，早年更严重。
 schema_check:
   declared_but_missing_in_data: []
   in_data_but_unregistered: []

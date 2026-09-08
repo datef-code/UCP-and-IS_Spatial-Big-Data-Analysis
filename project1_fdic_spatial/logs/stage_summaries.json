@@ -24,7 +24,7 @@
     "violation_kinds": 3,
     "ok": true,
     "blocking": true,
-    "seconds": 24.1
+    "seconds": 41.9
   },
   "03_clean": {
     "stage": "03_clean",
@@ -34,7 +34,7 @@
     "steps": 8,
     "ok": true,
     "blocking": true,
-    "seconds": 9.0
+    "seconds": 43.7
   },
   "04_validate": {
     "stage": "04_validate",
@@ -44,7 +44,7 @@
     "recommendations": 1,
     "control_coverage": 0.983386,
     "ok": true,
-    "seconds": 7.7
+    "seconds": 8.2
   },
   "05_map": {
     "stage": "05_map",
@@ -104,5 +104,19 @@
     ],
     "ok": true,
     "seconds": 0.0
+  },
+  "09_interactive": {
+    "stage": "09_interactive",
+    "blocking": false,
+    "figures": 4,
+    "artifacts": [
+      "index.html",
+      "event_study.html",
+      "attenuation.html",
+      "spacetime.html",
+      "manifest.json"
+    ],
+    "ok": true,
+    "seconds": 35.3
   }
 }

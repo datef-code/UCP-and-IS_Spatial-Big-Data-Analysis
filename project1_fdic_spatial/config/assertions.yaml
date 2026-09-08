@@ -44,5 +44,9 @@ assertions:
   - name: coordinate_exact_ratio
     severity: P2
     kind: custom
-    expr: SIMS_PROJECTION 中 EXACT 占比 < 100%
-    message: 坐标存在插值，< 1 km 环有系统性失真，须同时产出合并环敏感性结果
+    expr: SIMS_PROJECTION 最高精度（EXACT 或 US_Rooftop）占比 < 100%
+    message: >-
+      坐标存在插值，< 1 km 环有系统性失真，须同时产出合并环敏感性结果。
+      口径修正（2026-09-08 实测）：SIMS_PROJECTION 词表 2023 年切换，
+      必须以「EXACT ∪ US_Rooftop」计最高精度，且应分年代报告
+      （2023–2025 EXACT 85.98%；1994–2022 US_Rooftop 16.37%）。

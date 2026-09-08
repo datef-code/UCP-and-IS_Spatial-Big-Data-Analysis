@@ -18,7 +18,9 @@
 - 断言来自 `config/assertions.yaml`：`not_null` / `unique` / `geo_lat` / `geo_lon` / `non_negative`
   编译成 datakit 断言；`kind: custom` 的由本阶段实现。
 - 建议规则（§3.4）：删除行比例 > 5% → P1；required 字段清洗后仍缺失 → P0；
-  坐标 EXACT < 100% → P2（必须给合并环敏感性）。
+  坐标最高精度 < 100% → P2（必须给合并环敏感性）。
+  口径修正（2026-09-08）：`SIMS_PROJECTION` 词表 2023 年切换，按「EXACT ∪ US_Rooftop」
+  计最高精度，并分年代报告（2023–2025 85.98% / 1994–2022 16.37%）。
 
 ## 输出
 

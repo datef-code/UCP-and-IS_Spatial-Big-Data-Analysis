@@ -35,6 +35,13 @@ extensions:
     extras: []
     blocking: false
     outputs: [conclusion.md, conclusion_report.json]
+  - stage: 09_interactive
+    kind: visualization
+    depends_on: [05_map, 06_train]
+    requires: [logit_coefficients.csv, test_predictions.csv, metrics.json, branch_panel.csv]
+    extras: [viz]
+    blocking: false
+    outputs: [index.html, predict_demo.html, km_roc.html, model_report.html, manifest.json]
 
 # ---- 全局口径 ----
 options:

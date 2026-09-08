@@ -94,9 +94,15 @@ def _run_assertions(cleaned: pd.DataFrame, specs: list[dict], ctx: dict) -> list
                                 "actual": ctx.get("version_lock_detail", ""),
                                 "expected": a.get("expr", ""), "message": a.get("message", "")})
             else:
-                results.append({"name": name, "severity": severity, "passed": True,
-                                "actual": "未实现求值", "expected": a.get("expr", ""),
-                                "message": "custom 断言需在阶段内实现求值"})
+                # 规范 §3.4「机器反过来校验人的口径」：未实现的 custom 断言**不得静默通过**，
+                # 否则 SUMMARY 会出现「28/28 全绿」但其实什么都没验的假绿。
+                # 改为显式 failed + implemented=false，逼迫在阶段内补上求值。
+                results.append({"name": name, "severity": severity, "passed": False,
+                                "implemented": False,
+                                "actual": "未实现求值（custom 断言需在阶段内实现）",
+                                "expected": a.get("expr", ""),
+                                "message": f"[阻断] {a.get('message', '')}；"
+                                           f"custom 断言 '{name}' 尚未在 04_validate 内实现求值"})
             continue
         check = _as_check(a)
         if check is None:

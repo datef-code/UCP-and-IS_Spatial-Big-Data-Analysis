@@ -22,6 +22,9 @@ dependencies = [
 [project.optional-dependencies]
 rdf = ["rdflib>=7.0"]
 geo = ["h3>=4.0", "matplotlib>=3.7"]
+# viz：交互展示扩展阶段（09_interactive / 08_interactive）用 plotly 出可 hover / 可播放的
+#      单文件自包含 HTML（include_plotlyjs=True，离线可开）。教学类还用到 libpysal 的权重。
+viz = ["plotly>=6.0", "imageio-ffmpeg>=0.5", "imageio>=2.30"]
 modeling = [
     "statsmodels>=0.14",
     "scikit-learn>=1.3",

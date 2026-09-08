@@ -1,5 +1,5 @@
 stage: 04_validate
-validated_at: '2026-09-06T19:26:16'
+validated_at: '2026-09-08T10:06:39'
 summary:
   total: 8
   passed: 8
@@ -65,9 +65,10 @@ checks:
   severity: P2
   kind: custom
   passed: true
-  actual: 0.45453
+  actual: 0.510508
   expected: —（信息性断言）
-  message: SIMS_PROJECTION=EXACT 占 45.45%→ <100%，<1 km 环有系统性失真，须同时产出合并环敏感性结果
+  message: 坐标最高精度占比 51.05%（全期混合口径 EXACT=45.45% / US_Rooftop=5.60%；最高精度（EXACT 或 US_Rooftop）合计
+    51.05%）→ <100%，<1 km 环有系统性失真，须同时产出合并环敏感性结果
 - name: control_coverage
   severity: P1
   kind: custom
@@ -94,5 +95,5 @@ parallel_trend_prep:
 recommendations:
 - severity: P2
   item: 坐标存在插值
-  evidence: EXACT 占 45.45%
+  evidence: EXACT 占 51.05%
   action: <1 km 环结果只作参考，主表用 5 km 中等环并始终给出合并环敏感性

@@ -6,6 +6,22 @@
 数据源：FDIC Summary of Deposits 1994–2025（32 个年度文件，81 列，约 1.58 GB，**只读**，
 实际位置 `data_raw/fdic`，由 `datakit.yaml` 的 `source_root` 引用）。
 
+## 交互展示（先打开这个）
+
+预测模型最容易被误读为因果 / ROI 工具。**亲手拖一次滑块**，比任何静态图都更能建立
+「这是打分、不是命运」的正确认知。⑨ 阶段只读上游产物，不重训模型。
+
+| 打开 | 看什么 |
+| --- | --- |
+| **`09_interactive/output/index.html`** | 入口：demo + KM/ROC + 体检报告 + 边界 + 复现 |
+| `09_interactive/output/predict_demo.html` | 拖滑块 → 实时关闭风险 + 逐特征贡献分解（纯前端，离线可算） |
+| `09_interactive/output/risk_evolution.html` | 年度关闭数演化动图（**mp4 内嵌**），标出 2009–2014 危机后整合窗口 |
+| `09_interactive/output/km_roc.html` | KM（按银行脆弱性分层，hover 看 at-risk）+ ROC |
+| `09_interactive/output/model_report.html` | 系数森林图（点 + 95% CI）+ 指标 + 残差 Moran's I |
+
+**保真度自检（硬约束）**：demo 在测试集上复算 AUC = **0.8815**，与 `metrics.json`
+的 **0.8814** 相差 0.0000；若差值 > 0.02，阶段直接抛错拒绝产出。
+
 ## 运行
 
 ```powershell

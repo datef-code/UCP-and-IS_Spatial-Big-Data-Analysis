@@ -1,0 +1,69 @@
+{
+  "generated_at": "2026-09-08T13:59:36",
+  "generator": {
+    "tool": "plotly + h3 + libpysal",
+    "script": "08_interactive/08_interactive.py",
+    "encoding": "utf-8",
+    "font": "Microsoft YaHei",
+    "self_contained": true,
+    "reproducible": true,
+    "note": "权重与空间滞后在服务端算好；三页均内联 plotly，单文件自包含、离线可开"
+  },
+  "entry": "index.html",
+  "n_figures": 2,
+  "datasets": [
+    "fdic",
+    "sz_bike",
+    "snap_brightkite",
+    "snap_gowalla"
+  ],
+  "figures": [
+    {
+      "file": "index.html",
+      "title": "L0→L3 交互教材（入口）",
+      "type": "entry",
+      "question": "学习者能不能按阶梯看懂、能跑、能改？",
+      "alt_text": "四阶阶梯卡片 + 两个交互件 + version_lock 复现表",
+      "source": "本目录两件产物 + 04_validate/output/<dataset>/version_lock.json",
+      "n": 604173,
+      "scope": "四数据集；H3 R8；W 行标准化",
+      "tool": "html"
+    },
+    {
+      "file": "moran_explorer.html",
+      "title": "换一种邻居定义，结论就变了",
+      "type": "moran_scatter_interactive",
+      "question": "权重方案怎么影响 Moran's I？",
+      "alt_text": "可切数据集与 Queen/KNN 权重，实时看散点、拟合线与 I 值",
+      "unit": "x=log1p(格值)，y=空间滞后",
+      "source": "05_map/output/<dataset>/L2_spatial_lag.csv",
+      "n": 604173,
+      "scope": "H3 R8；W 行标准化；滞后服务端算好",
+      "tool": "plotly"
+    },
+    {
+      "file": "ladder_compare.html",
+      "title": "同一套管线，结论强度差 50 倍",
+      "type": "small_multiples",
+      "question": "四个数据集的规模与空间自相关差多少？",
+      "alt_text": "三联柱状图对比格数、平均邻居数与 Moran's I",
+      "unit": "左=格数（对数），中=平均邻居，右=Moran's I",
+      "source": "05_map/output/<dataset>/ladder_report.json",
+      "n": 604173,
+      "scope": "四数据集；H3 R8",
+      "tool": "plotly"
+    },
+    {
+      "file": "ladder_evolution.html",
+      "title": "L0→L3 是一条链",
+      "type": "animation",
+      "question": "网格化、权重、滞后、距离环到底是怎么串起来的？",
+      "alt_text": "左图从格演化到邻居高亮再到距离环，右图同步长出 Moran 散点",
+      "unit": "左 x=经度 y=纬度；右 x=log1p(格值) y=空间滞后",
+      "source": "05_map/output/sz_bike/mapped.csv",
+      "n": 2661,
+      "scope": "mp4（FuncAnimation）内嵌 <video>；按深圳 bbox 裁切飞点",
+      "tool": "matplotlib + ffmpeg"
+    }
+  ]
+}

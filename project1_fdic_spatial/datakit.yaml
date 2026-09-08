@@ -35,6 +35,13 @@ extensions:
     extras: []
     blocking: false
     outputs: [technical_report.md, replication_manifest.json]
+  - stage: 09_interactive
+    kind: visualization
+    depends_on: [05_map, 06_estimate, 07_visualize]
+    requires: [estimate.json, mapped.csv, kepler/closed_events.csv]
+    extras: [viz]
+    blocking: false
+    outputs: [index.html, event_study.html, attenuation.html, spacetime.html, manifest.json]
 
 # ---- 全局口径 ----
 options:

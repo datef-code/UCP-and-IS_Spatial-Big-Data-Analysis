@@ -1,5 +1,11 @@
 # 原始数据目录（大量 CSV 文件，不入版本库）
-data_raw/
+# 注意：必须写 data_raw/* 而不是 data_raw/ —— git 不会进入已被整体排除的目录，
+#      写 data_raw/ 的话下面的 !README.md 取反无效（说明书会丢失）。
+data_raw/*
+# 例外：data_raw/README.md 是规范 §9.3 要求的「数据说明书」（来源/获取方式/授权/
+# 更新频率/逐字段口径/可信度评估），是立项可行性论证的事实来源，必须入库。
+!data_raw/README.md
+
 # 非本项目
 project7_mnist_eda/
 
@@ -15,3 +21,24 @@ gov-sdk/
 html/
 docs/
 .codebuddy
+# 打包备份与临时产物
+*.zip
+projects/
+
+# Python 运行缓存（不入库，可随时重建）
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.ipynb_checkpoints/
+projects
+
+# 不追踪的文件
+IloveYibo动画.ipynb
+
+# 产物
+*/*/*/*.csv
+*/*/*/*.parquet
+*/*/*/data
+
+

@@ -278,8 +278,14 @@
       ]
     },
     "coordinate_precision": {
-      "EXACT_pct_45.45": true,
-      "explanation": "EXACT<100% → <1 km 距离环存在系统性失真；主表用 5 km 中等环"
+      "top_precision_pct_by_era": {
+        "2023-2025_EXACT": 0.8598,
+        "1994-2022_US_Rooftop": 0.1637,
+        "1994-2022_US_Streets": 0.3157,
+        "1994-2022_US_Zipcode": 0.0497
+      },
+      "explanation": "SIMS_PROJECTION 取值词表 2023 年切换，不可跨年代直接比较；早年多为插值坐标 → <1 km 距离环存在系统性失真；主表用 5 km 中等环。旧口径『EXACT 占 45.45%』已作废（混淆编码切换与样本退出时间）",
+      "supersedes": "EXACT_pct_45.45"
     },
     "main_choice": "5 km 内关闭事件 cell 数；标准环与合并环两套口径见 06_visualize.py"
   }

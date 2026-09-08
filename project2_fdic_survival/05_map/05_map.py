@@ -31,7 +31,7 @@ ROOT = Path(__file__).resolve().parent.parent
 OUT = Path(__file__).resolve().parent / "output"
 DATA = OUT / "data"
 
-H3_RES = 7                      # H3 R7：平均边长 ≈ 1.22 km（与降级网格 0.01° ≈ 1.1 km 同尺度）
+H3_RES = 7                      # H3 R7：实测（h3 4.5.0）平均单元面积 5.161293 km²、平均边长 1.406476 km（与降级网格 0.01° ≈ 1.1 km 同尺度）
 FALLBACK_GRID = 0.01            # 降级方案：0.01° 网格（≈ 1.1 km）
 
 
@@ -84,7 +84,7 @@ def apply_mapping(dim: pd.DataFrame, first_panel_year: int, project) -> tuple[pd
     try:
         import h3  # noqa: F401
         scheme.geocode("lat", "lng", resolution=H3_RES,
-                       reason=f"H3 R{H3_RES}（平均边长 ≈ 0.46 km）作空间聚合单元")
+                       reason=f"H3 R{H3_RES}（平均单元面积 5.161293 km²，平均边长 1.406476 km）作空间聚合单元")
         geo_method = f"h3_r{H3_RES}"
     except ImportError:
         project.log("    [⑤] h3 不可用，降级到 0.01° 网格（config/mapping.yaml 声明的降级方案）")

@@ -1,5 +1,11 @@
 # config/assertions.yaml —— 校验断言（P0 阻断 / P1 / P2）
 # when: 04_validate（清洗后、进入映射前）| 05_map（映射产物）
+#
+# 求值位置（**两处，别找错**）：
+#   - when: 04_validate → 04_validate/04_validate.py 的 _run_assertions()
+#   - when: 05_map      → 05_map/05_map.py 内联（weights_row_standardized 用
+#                          spatial_ladder.row_sum_ok(W) 真实求值）
+# kind: custom 必须在本阶段内显式实现求值；未实现的一律判 failed（不再静默通过，见 §3.4）。
 version: 2
 
 assertions:

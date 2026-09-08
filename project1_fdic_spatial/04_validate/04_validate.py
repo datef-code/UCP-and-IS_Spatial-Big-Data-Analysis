@@ -84,14 +84,26 @@ def _custom_checks(branch: pd.DataFrame, long: pd.DataFrame, project) -> list[di
                    f"→ 追踪主键固化为 UNINUMBR",
     })
 
-    # --- 坐标精度：SIMS_PROJECTION = EXACT 占比 ---
-    proj = branch["projection"].dropna()
-    exact = float((proj.astype(str).str.upper() == "EXACT").mean()) if len(proj) else 0.0
+    # --- 坐标精度：SIMS_PROJECTION 分年代口径 ---
+    # 修正（2026-09-08 实测）：SIMS_PROJECTION 的取值词表在 1994–2025 间换过两轮——
+    #   1994–2022：US_Rooftop / US_Streets / US_Zipcode / 0 / 100（屋顶级 = 最高精度）
+    #   2023–2025：EXACT / StreetAddress / PointAddress / Postal（EXACT = 最高精度）
+    # 因此不能用单一「EXACT 占比」衡量全期精度：2023 年前退出的网点天然不可能为 EXACT，
+    # 旧口径「EXACT 占 45.45%」同时混淆了编码体系切换与样本退出时间，已作废。
+    proj = branch["projection"].dropna().astype(str).str.strip().str.upper()
+    if len(proj):
+        exact_share = float((proj == "EXACT").mean())
+        rooftop_share = float((proj == "US_ROOFTOP").mean())
+        top_share = float(proj.isin(["EXACT", "US_ROOFTOP"]).mean())
+        detail = (f"全期混合口径 EXACT={exact_share:.2%} / US_Rooftop={rooftop_share:.2%}；"
+                  f"最高精度（EXACT 或 US_Rooftop）合计 {top_share:.2%}")
+    else:
+        top_share, detail = 0.0, "无 SIMS_PROJECTION 取值"
     out.append({
         "name": "coordinate_exact_ratio", "severity": "P2", "kind": "custom",
-        "passed": True, "actual": round(exact, 6), "expected": "—（信息性断言）",
-        "message": f"SIMS_PROJECTION=EXACT 占 {exact:.2%}"
-                   f"{'→ <100%，<1 km 环有系统性失真，须同时产出合并环敏感性结果' if exact < 1 else ''}",
+        "passed": True, "actual": round(top_share, 6), "expected": "—（信息性断言）",
+        "message": f"坐标最高精度占比 {top_share:.2%}（{detail}）"
+                   f"→ <100%，<1 km 环有系统性失真，须同时产出合并环敏感性结果",
     })
 
     # --- 归因对照覆盖：每起关闭事件是否有同 MSABR 存活网点作对照 ---

@@ -8,6 +8,29 @@
 L3 距离环溢出**。四个数据集各自独立产出，内容全部来自本管线实际跑通的结果
 （不写没跑过的内容），所有代码块随数据集版本冻结、可按章节顺序复现。
 
+## 交互教材（先打开这个）
+
+教学产品最忌堆静态图。⑧ 阶段把本教程最重要的一句判断 ——
+**「『邻居』怎么定义，决定你能看到什么结论」** —— 做成能亲手拨的开关。
+
+| 打开 | 看什么 |
+| --- | --- |
+| **`08_interactive/output/index.html`** | L0→L3 四阶卡片 + 两件交互件 + 一键复现表 |
+| `08_interactive/output/moran_explorer.html` | 切数据集 × 权重（Queen / KNN k=4 / k=8）× 格值尺度，实时看 Moran 散点与 I |
+| `08_interactive/output/ladder_evolution.html` | **L0→L3 演化动图**（mp4 内嵌）：点 → 格 → 邻居 → 滞后 → 距离环 |
+| `08_interactive/output/ladder_compare.html` | 四数据集阶梯对比（hover 看格数 / 平均邻居 / I） |
+
+两个开关都在改变结论，这正是本课的重点：
+
+- **换权重**：同一份数据，Queen 0.1331 / KNN k=4 0.1387 / KNN k=8 0.1181（以 fdic 为例）。
+  「邻居」是人为定义，不是客观事实。
+- **换尺度**：snap_brightkite 在**原始格值**下 I≈0.013，换 log1p 后 I≈0.285
+  → **Moran's I 依赖变量尺度**，跨研究比较 I 必须同尺度、同权重、同网格。
+
+**与管线逐位对齐**：本阶段 Queen + 原始格值的 I 与 `05_map/output/<ds>/ladder_report.json`
+完全一致（0.1331 / 0.7077 / 0.0132 / 0.5090）。权重与滞后在服务端由 h3 + libpysal 算好
+（与 05_map 同一套 ladder 算法），前端只切换与重绘 —— 每个 I 都可复现。
+
 ## 运行
 
 ```powershell
@@ -30,9 +53,12 @@ python main.py --stage 02 --datasets fdic,sz_bike
 | 数据集 | 角色 | 许可状态 | 限制说明 |
 | --- | --- | --- | --- |
 | `fdic` | **主示例** | 公共领域（美国联邦政府数据），可商用 | 示例可自由分发 |
-| `sz_bike` | 辅助示例 | 研究用途 | **源标注数据源已停更**（最后数据 2021-08） |
-| `snap_brightkite` | 辅助示例 | 仅限研究用途（SNAP） | 不允许商用；**数据年代 2010–2013**（实测 2008-03 ~ 2010-10，见 version_lock） |
-| `snap_gowalla` | 辅助示例 | 仅限研究用途（SNAP） | 不允许商用；**数据年代 2010–2013**（实测 2009-02 ~ 2010-10，见 version_lock） |
+| `sz_bike` | 辅助示例 | 研究用途 | **数据源已停更**（实测最后日期 2021-08-31）；本地存档，无公开引用 |
+| `snap_brightkite` | 辅助示例 | 仅限研究用途（SNAP） | 不允许商用；**数据年代 2008-03 ~ 2010-10**（旧版误写「2010–2013」，已更正） |
+| `snap_gowalla` | 辅助示例 | 仅限研究用途（SNAP） | 不允许商用；**数据年代 2009-02 ~ 2010-10**（旧版误写「2010–2013」，已更正） |
+
+> SNAP 两数据集必须给出官方引用：Cho, Myers & Leskovec, *Friendship and Mobility*,
+> ACM SIGKDD 2011。实测规模 / 时间范围 / 口径差异详见 `data_raw/README.md`。
 
 ## 各数据集实测结果（L0→L3，2026-09-06 全流程重跑）
 
@@ -65,8 +91,8 @@ project6_spatial_teaching/
 │   └── spatial_ladder.py   #    L1→L3 空间算法（h3 + libpysal，课题专属，未沉淀内核）
 ├── 06_visualize/           # ⑥ 扩展阶段：manifest.json + figures/*.png|pdf（每数据集 3 图 + 全局 1 图）
 ├── 07_conclude/            # ⑦ 扩展阶段：conclusion.md + conclusion_report.json
-├── logs/                   # pipeline.log（每次运行的阶段摘要与时间戳）+ stage_summaries.json
-└── output_legacy_v1/       # 旧脚本（单文件 main.py 时代）的产物存档，仅比对用，可删除
+├── logs/                   # pipeline.log（*.log 被 .gitignore 忽略，跑过流水线后本地生成）+ stage_summaries.json
+└── output_legacy_v1/       # 旧脚本（单文件 main.py 时代）的产物存档，仅比对用，可删除（内含 README 说明旧→新映射）
 ```
 
 各阶段「做什么 / 输入什么 / 看哪份报告」见各阶段目录内 `README.md`。
@@ -76,10 +102,12 @@ project6_spatial_teaching/
 - `04_validate/output/<dataset>/version_lock.json`：文件指纹（MD5 仅对小文件）、行数、
   时间范围、`python/pandas/numpy/h3/libpysal/datakit` 版本——`git clone` 后按序可复现；
   重跑时与上一份比对，库版本或行数漂移会被记为断言失败。
-- **成本参数均为合成参数，非真实业务数据**：`h3_res=8`、`ring_km=[0-1,1-3,3-5,5-10]`、
-  `hot_top_n=100`、深圳单车抽样日=每月 15 日（共 20 个抽样日，全量 30 GB 不做全量载入）。
+- **成本参数均为合成参数，非真实业务数据**：`h3_res=8`（实测平均单元面积 0.737328 km²、
+  平均边长 0.531414 km，h3 4.5.0）、`ring_km=[0-1,1-3,3-5,5-10]`、
+  `hot_top_n=100`、深圳单车抽样日=每月 15 日（共 20 个抽样日；全量实测 31.49 GB /
+  24,939 个 CSV，覆盖 2020-01-01 ~ 2021-08-31，不做全量载入）。
   全部来自 `config/`（`mapping.yaml` + `schema.yaml`），改口径不改代码。
-- fdic 优先复用 `project1_fdic_spatial/output/data/branch_dim.csv`（UNINUMBR 口径），
+- fdic 优先复用 `project1_fdic_spatial/05_map/output/data/branch_dim.csv`（UNINUMBR 口径），
   缺失时从原始 CSV 轻量重建（`02_profile/loaders.py`）。
 
 ## 教学主线（⑤ 映射）

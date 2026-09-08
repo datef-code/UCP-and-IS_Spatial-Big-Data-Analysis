@@ -61,6 +61,7 @@ from .validate import (
     validate,
 )
 from .map import MappingOp, MappingScheme, MapResult, map
+from .anim import animate, video_page, ffmpeg_available
 from .report import write_json, write_jsonl, write_markdown, write_report, write_yaml, write_csv
 from .pipeline import Workflow
 from .project import Project, BUILTIN_STAGES
@@ -78,6 +79,10 @@ from .schema import (
 
 __all__ = [
     "__version__",
+    # anim（展示层：mp4 + 自包含 HTML，可交互扩展阶段复用）
+    "animate",
+    "video_page",
+    "ffmpeg_available",
     # core
     "DataKitError",
     "Dataset",

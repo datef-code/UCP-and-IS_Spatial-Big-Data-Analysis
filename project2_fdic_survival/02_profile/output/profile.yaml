@@ -1,5 +1,5 @@
 stage: 02_profile
-profiled_at: '2026-09-06T19:58:58'
+profiled_at: '2026-09-08T10:07:39'
 source:
   root: E:\workspace\workbuddy\project\data_use\data_raw\fdic
   group: fdic_sod_#
@@ -34,10 +34,15 @@ fields:
   role: key
   level: required
   registered: true
+  description: 跨年唯一网点号；本项目唯一追踪主键
+  level_reason: 判为 key+required：① 唯一性——非空后唯一值 = 网点数（152,538）；② 非空性——2011 年起零缺失； ③
+    稳定性——跨年不重分配；④ 业务标识——对应真实网点。 对照 BRNUM：观测 ≥2 年的 146,396 个网点中 52.19% 首末年变化，唯一≠稳定
+    → 弃用。 缺它则寿命追踪无从建立 → required，缺失即 drop_na。
   non_null: 2702716
   null_count: 120261
   null_rate: 0.042601
   unique: 152538
+  n_issues: 3
   min: 1.0
   max: 686773.0
   mean: 241893.44717387992
@@ -51,10 +56,14 @@ fields:
   role: ignore
   level: ignore
   registered: true
+  description: 银行内网点序号
+  level_reason: 判为 ignore：实测观测 ≥2 年网点中 52.19% 首末年变化（与 CERT 52.17% 同步， 因 BRNUM 是银行内序号，CERT
+    一变必然重编）→ 违反主键判据第 3 条「稳定性」， 唯一≠稳定，已弃用为追踪主键。
   non_null: 2822977
   null_count: 0
   null_rate: 0.0
   unique: 10437
+  n_issues: 1
   min: 0.0
   max: 10561.0
   mean: 934.0980705829343
@@ -68,10 +77,14 @@ fields:
   role: key
   level: required
   registered: true
+  description: 银行（机构）编号，用于银行层聚合；并购后网点会改挂新 CERT，本项目按首次观测归属
+  level_reason: 判为 key+required：银行层脆弱性分层（bank_fragility）的唯一分组键，缺它核心协变量不可得。 已知偏差：52.17%
+    的网点首末年 CERT 变化（并购改挂），因此只作分组键、不作跨年追踪键； 归属口径取「首次观测」（改按末次则测试 AUC 0.881 → 0.812）。
   non_null: 2822977
   null_count: 0
   null_rate: 0.0
   unique: 15505
+  n_issues: 1
   min: 8.0
   max: 91393.0
   mean: 15331.023288181235
@@ -85,10 +98,14 @@ fields:
   role: key
   level: required
   registered: true
+  description: 数据年份
+  level_reason: 判为 key+required：离散时间风险模型的「期」；与 UNINUMBR 组成复合主键 （唯一性断言即 UNINUMBR ×
+    YEAR）。缺它无法构造 duration 与风险集。
   non_null: 2822977
   null_count: 0
   null_rate: 0.0
   unique: 32
+  n_issues: 0
   min: 1994.0
   max: 2025.0
   mean: 2009.4550334629012
@@ -102,10 +119,14 @@ fields:
   role: event
   level: important
   registered: true
+  description: 网点设立（出生）日期
+  level_reason: 判为 event+important：出生时间决定「网点年龄」与左截断判定，直接影响 duration， 但不决定记录能否定位，故
+    important 而非 required。缺失 35.81% → 按左截断处理，不填充。
   non_null: 1811989
   null_count: 1010988
   null_rate: 0.358128
   unique: 24382
+  n_issues: 1
   min: '1782-01-01 00:00:00'
   max: '2015-06-30 00:00:00'
   mean: null
@@ -119,10 +140,14 @@ fields:
   role: event
   level: important
   registered: true
+  description: 网点被并购 / 关闭（死亡）日期
+  level_reason: 判为 event+important：生存分析的事件指示（有值 = 死亡，缺失 = 右删失）。 缺失率 66.36%，但缺失本身携带「仍存活」的信息
+    → **明令禁止 fill** （填充会摧毁生存信息），level 只到 important。
   non_null: 949516
   null_count: 1873461
   null_rate: 0.663647
   unique: 5832
+  n_issues: 1
   min: '1970-01-02 00:00:00'
   max: '2015-06-30 00:00:00'
   mean: null
@@ -136,10 +161,13 @@ fields:
   role: time_varying
   level: required
   registered: true
+  description: 网点存款余额（美元）；结果变量来源
+  level_reason: 判为 time_varying+required：核心协变量 log_depsumbr 的来源，缺它样本无法进入估计。 实测无缺失、无负值（负值规则作护栏）。
   non_null: 2822977
   null_count: 0
   null_rate: 0.0
   unique: 312301
+  n_issues: 1
   min: 0.0
   max: 727192402.0
   mean: 100930.74554096615
@@ -153,10 +181,15 @@ fields:
   role: spatial
   level: important
   registered: true
+  description: 网点纬度
+  level_reason: 判为 spatial+important：承担空间结构（H3 R7 网格化 → neighbor_count → 残差 Moran's
+    I）。 缺失 8.04%（97.8% 落在 1994–2010，时间结构化缺失）；坐标列**禁止 fill**， 越界值 `to_null` 而非截断（截断会伪造位置）。无坐标网点不进网格，neighbor_count
+    记 0。
   non_null: 2596045
   null_count: 226932
   null_rate: 0.080387
   unique: 500715
+  n_issues: 3
   min: -35.25960006
   max: 158.227518485
   mean: 37.913290559587146
@@ -170,10 +203,13 @@ fields:
   role: spatial
   level: important
   registered: true
+  description: 网点经度
+  level_reason: 同 SIMS_LATITUDE。另需注意：全期有 572 条落在 (0, 0) 空岛，不被范围断言捕获。
   non_null: 2596039
   null_count: 226938
   null_rate: 0.08039
   unique: 514256
+  n_issues: 2
   min: -170.71861
   max: 174.12399994
   mean: -90.0180520933612
@@ -187,10 +223,13 @@ fields:
   role: categorical
   level: important
   registered: true
+  description: 银行类别；直接进入模型的类别协变量
+  level_reason: 判为 categorical+important：模型类别特征之一，无缺失；不直接决定样本能否进入估计， 故不到 required。
   non_null: 2822977
   null_count: 0
   null_rate: 0.0
   unique: 7
+  n_issues: 0
   min: null
   max: null
   mean: null
@@ -1020,7 +1059,9 @@ violations:
   - null
   - null
   - null
-  note: BRNUM 跨年重编号（全期 50.11% 的网点 BRNUM 发生变化），不可作跨年键
+  note: 判为 key+required：① 唯一性——非空后唯一值 = 网点数（152,538）；② 非空性——2011 年起零缺失； ③ 稳定性——跨年不重分配；④
+    业务标识——对应真实网点。 对照 BRNUM：观测 ≥2 年的 146,396 个网点中 52.19% 首末年变化，唯一≠稳定 → 弃用。 缺它则寿命追踪无从建立
+    → required，缺失即 drop_na。
 - field: UNINUMBR
   level: required
   severity: P0
@@ -1034,7 +1075,9 @@ violations:
   - null
   - null
   - null
-  note: BRNUM 跨年重编号（全期 50.11% 的网点 BRNUM 发生变化），不可作跨年键
+  note: 判为 key+required：① 唯一性——非空后唯一值 = 网点数（152,538）；② 非空性——2011 年起零缺失； ③ 稳定性——跨年不重分配；④
+    业务标识——对应真实网点。 对照 BRNUM：观测 ≥2 年的 146,396 个网点中 52.19% 首末年变化，唯一≠稳定 → 弃用。 缺它则寿命追踪无从建立
+    → required，缺失即 drop_na。
 - field: SIMS_LATITUDE
   level: important
   severity: P1
@@ -1048,7 +1091,9 @@ violations:
   - '158.227518485'
   - '138.097'
   - '158.227518485'
-  note: ''
+  note: 判为 spatial+important：承担空间结构（H3 R7 网格化 → neighbor_count → 残差 Moran's I）。 缺失
+    8.04%（97.8% 落在 1994–2010，时间结构化缺失）；坐标列**禁止 fill**， 越界值 `to_null` 而非截断（截断会伪造位置）。无坐标网点不进网格，neighbor_count
+    记 0。
 schema_check:
   declared_but_missing_in_data: []
   in_data_but_unregistered: []

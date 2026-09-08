@@ -1,9 +1,10 @@
 dataset: sz_bike
-profiled_at: '2026-09-06T20:53:15'
+profiled_at: '2026-09-08T10:18:50'
 license:
   role: 辅助示例
   license: 研究用途
-  restriction: 源标注数据源已停更（最后数据 2021-08）；全量 30 GB 不做全量载入
+  restriction: 数据源已停更（实测最后日期 2021-08-31，覆盖 2020-01-01 ~ 2021-08-31 共 609 天）。 文件命名
+    bike_<YYYYMMDD>_p<NNNNN>.csv；抽样按日期筛（每月 15 日），非按文件名。 本地存档，无公开引用。
 value_semantics: 抽样日起点骑行次数（每次骑行计 1）
 fingerprint:
   source: data_raw/sz_bike/bike_*_15_p*.csv（每月 15 日抽样）
@@ -62,6 +63,8 @@ fields:
   zero_rate: 0.00045284524346264464
   level: required
   description: 纬度（清洗后统一命名，源字段 lat / SIMS_LATITUDE / START_LAT）
+  level_reason: 同 lon：承担全部空间结构，required；禁止填充，越界置空。
+  n_issues: 1
 - name: lon
   dtype: float64
   role: spatial
@@ -79,6 +82,9 @@ fields:
   zero_rate: 0.00045284524346264464
   level: required
   description: 经度（清洗后统一命名，源字段 lng / SIMS_LONGITUDE / START_LNG）
+  level_reason: 判为 spatial+required：本教程的全部内容（L0 网格化 → L1 权重 → L2 滞后 → L3 距离环） 都以坐标为起点，缺它整条主线无法启动。故
+    not_null 是 P0， 越界值 `to_null` 而非截断、且**明令禁止 fill**（填充会伪造位置）。
+  n_issues: 1
 - name: value
   dtype: int64
   role: numeric
@@ -96,6 +102,9 @@ fields:
   zero_rate: 0.0
   level: required
   description: 聚合到格的度量值（各数据集语义不同，见 per_dataset）
+  level_reason: 判为 numeric+required：格值是 L0 聚合、L2 空间滞后、L3 溢出密度的唯一输入， 缺它所有指标不可得。语义随数据集变化（0/1
+    关闭标记 vs 骑行/签到计数）， 因此统一命名但语义必须查 per_dataset——这是本项目「一套流程跑 N 个数据集」的关键约定。
+  n_issues: 0
 nulls:
 - field: lat
   null_count: 0

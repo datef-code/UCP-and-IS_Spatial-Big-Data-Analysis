@@ -37,8 +37,13 @@ ops:
 
   - op: geocode
     name: spatial_key
-    expr: "h3.latlng_to_cell(lat, lng, 8)；h3 缺失时降级 0.01° 网格"
-    reason: 空间网格（竞争强度 / 残差空间自相关的聚合单元）
+    expr: "h3.latlng_to_cell(lat, lng, 7)；h3 缺失时降级 0.01° 网格"
+    reason: >-
+      空间网格（竞争强度 / 残差空间自相关的聚合单元）。
+      口径修正（2026-09-08）：此处原写 res 8，与实现（05_map/05_map.py 的 H3_RES = 7）、
+      lineage.csv、README、SUMMARY 全部不一致，已统一为 **res 7**。
+      实测（h3 4.5.0）：R7 平均单元面积 5.161293 km²、平均边长 1.406476 km；
+      降级网格 0.01° ≈ 1.1 km，与 R7 同尺度（R8 只有 0.737 km² / 0.531 km，显然不匹配降级网格）。
 
   - op: derive
     name: neighbor_count

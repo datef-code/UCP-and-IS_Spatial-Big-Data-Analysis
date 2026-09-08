@@ -237,8 +237,11 @@ def clean(dataset: Dataset | pd.DataFrame, plan: CleanPlan) -> CleanResult:
             n = int(clipped.sum())
             if on_violation == "to_null":
                 frame[f] = s.mask(clipped)
+                # detail 里保留机器可读的 on_violation=to_null 标记：项目侧 _impact() 靠它
+                # 把「越界置空」与「截断」分开记账（规范 §2-③：截断会伪造坐标/金额，两者不能混）。
                 log.add(step, op, f, action.reason, n,
-                        f"将 {n} 个越界值置空（[{lower}, {upper}] 之外；置空而非截断，避免伪造坐标/金额）",
+                        f"on_violation=to_null：将 {n} 个越界值置空"
+                        f"（[{lower}, {upper}] 之外；置空而非截断，避免伪造坐标/金额）",
                         before=f"{n} 个越界值", after=f"越界值已置为 NaN")
             else:
                 frame[f] = s.clip(lower=lower, upper=upper)

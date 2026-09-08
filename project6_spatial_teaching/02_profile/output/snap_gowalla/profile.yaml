@@ -1,9 +1,11 @@
 dataset: snap_gowalla
-profiled_at: '2026-09-06T20:53:44'
+profiled_at: '2026-09-08T10:19:17'
 license:
   role: 辅助示例
   license: 仅限研究用途（SNAP），不允许商用
-  restriction: 数据年代 2010–2013（实测 2009-02 ~ 2010-10，见 version_lock）
+  restriction: 数据年代 **2009-02 ~ 2010-10**（实测 2009-02-04 ~ 2010-10-23；官方 Feb 2009 –
+    Oct 2010） ——旧版误写「2010–2013」，已更正。本地 6,442,892 行 vs 官方 6,442,890（+2，可忽略）。 引用：Cho,
+    Myers & Leskovec, KDD 2011。
 value_semantics: 签到次数（每次签到计 1）
 fingerprint:
   source: data_raw/snap_gowalla/loc-gowalla_totalCheckins.txt.gz
@@ -44,6 +46,8 @@ fields:
   zero_rate: 2.095332344543413e-05
   level: required
   description: 纬度（清洗后统一命名，源字段 lat / SIMS_LATITUDE / START_LAT）
+  level_reason: 同 lon：承担全部空间结构，required；禁止填充，越界置空。
+  n_issues: 2
 - name: lon
   dtype: float64
   role: spatial
@@ -61,6 +65,9 @@ fields:
   zero_rate: 2.1108533248733644e-05
   level: required
   description: 经度（清洗后统一命名，源字段 lng / SIMS_LONGITUDE / START_LNG）
+  level_reason: 判为 spatial+required：本教程的全部内容（L0 网格化 → L1 权重 → L2 滞后 → L3 距离环） 都以坐标为起点，缺它整条主线无法启动。故
+    not_null 是 P0， 越界值 `to_null` 而非截断、且**明令禁止 fill**（填充会伪造位置）。
+  n_issues: 1
 - name: value
   dtype: int64
   role: numeric
@@ -78,6 +85,9 @@ fields:
   zero_rate: 0.0
   level: required
   description: 聚合到格的度量值（各数据集语义不同，见 per_dataset）
+  level_reason: 判为 numeric+required：格值是 L0 聚合、L2 空间滞后、L3 溢出密度的唯一输入， 缺它所有指标不可得。语义随数据集变化（0/1
+    关闭标记 vs 骑行/签到计数）， 因此统一命名但语义必须查 per_dataset——这是本项目「一套流程跑 N 个数据集」的关键约定。
+  n_issues: 0
 nulls:
 - field: lat
   null_count: 0
@@ -114,6 +124,6 @@ violations:
   - '405.646925'
   - '405.658498'
   - '405.624976'
-  note: ''
+  note: 同 lon：承担全部空间结构，required；禁止填充，越界置空。
 missing_fields: []
 unregistered_fields: []

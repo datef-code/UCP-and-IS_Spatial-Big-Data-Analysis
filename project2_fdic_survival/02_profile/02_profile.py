@@ -121,17 +121,37 @@ def run(project) -> dict:
     roles = dk.schema_roles(schema)
     prof = dk.profile(long, roles=roles, outlier_method=method, outlier_threshold=threshold)
 
+    viol = dk.violations(long, schema)
+    missing = dk.missing_fields(long, schema)
+    unregistered = dk.unregistered_fields(long, schema)
+
+    # 规范 §2-② 要求字段清单含「等级 + 问题数」；§3.5 要求逐字段写清
+    # 「为什么是这个角色 / 等级」的判定依据，不能只贴枚举。
     spec_by_name = {s.name: s for s in schema}
+    _out_by_field = (prof.outliers.groupby("field").size().to_dict() if len(prof.outliers) else {})
+    _viol_by_field = (viol.groupby("field")["violations"].sum().to_dict() if len(viol) else {})
+
+    def _issues(name: str, null_count: int) -> int:
+        n = 0
+        n += 1 if null_count > 0 else 0
+        n += 1 if _out_by_field.get(name, 0) > 0 else 0
+        n += 1 if _viol_by_field.get(name, 0) > 0 else 0
+        return n
+
     fields = pd.DataFrame([{
         "field": f.name,
         "dtype": f.dtype,
         "role": f.role,
         "level": spec_by_name[f.name].level if f.name in spec_by_name else "optional",
         "registered": f.name in spec_by_name,
+        "description": (spec_by_name[f.name].description if f.name in spec_by_name else ""),
+        "level_reason": (spec_by_name[f.name].note if f.name in spec_by_name
+                         else "未登记字段：默认按 optional 处理，需人工确认等级"),
         "non_null": f.non_null,
         "null_count": f.null_count,
         "null_rate": round(f.null_rate, 6),
         "unique": f.unique,
+        "n_issues": _issues(f.name, f.null_count),
         **{k: v for k, v in f.stats.items() if k not in ("quantiles", "top")},
     } for f in prof.fields])
     level_dist = fields["level"].value_counts().to_dict()
@@ -151,9 +171,6 @@ def run(project) -> dict:
         out_sum = pd.DataFrame(columns=["field", "outliers", "lower_bound", "upper_bound", "outlier_rate"])
         out_top = pd.DataFrame(columns=["field", "index", "value", "method", "lower_bound", "upper_bound"])
 
-    viol = dk.violations(long, schema)
-    missing = dk.missing_fields(long, schema)
-    unregistered = dk.unregistered_fields(long, schema)
     findings = key_findings(long)
 
     report = {
@@ -240,13 +257,22 @@ def _to_markdown(report, fields, nulls, out_sum, viol, findings) -> str:
     for k, v in report["level_distribution"].items():
         lines.append(f"| {k} | {v} |")
 
-    lines += ["", "## 字段清单（角色 / 等级 / 缺失 / 唯一值）", "",
-              "| 字段 | 类型 | 角色 | 等级 | 非空 | 缺失率 | 唯一值 | 备注 |",
-              "| --- | --- | --- | --- | --- | --- | --- | --- |"]
+    lines += ["", "## 字段清单（角色 / 等级 / 缺失 / 唯一值 / 问题数）", "",
+              "| 字段 | 类型 | 角色 | 等级 | 非空 | 缺失率 | 唯一值 | 问题数 | 备注 |",
+              "| --- | --- | --- | --- | --- | --- | --- | --- | --- |"]
     for _, r in fields.iterrows():
         lines.append(f"| {r['field']} | {r['dtype']} | {r['role']} | {r['level']} | "
                      f"{r['non_null']:,} | {r['null_rate']:.2%} | {r['unique']:,} | "
-                     f"{'' if r['registered'] else '未登记'} |")
+                     f"{int(r['n_issues'])} | {'' if r['registered'] else '未登记'} |")
+
+    # 规范 §3.5：角色 / 等级的判定依据必须逐字段写明，不能只贴枚举
+    lines += ["", "## 字段角色 / 等级判定依据（规范 §3.5）", "",
+              "| 字段 | 角色 / 等级 | 说明 | 判定依据 |",
+              "| --- | --- | --- | --- |"]
+    for _, r in fields.iterrows():
+        reason = str(r.get("level_reason", "") or "").replace("\n", " ").replace("|", "/")
+        desc = str(r.get("description", "") or "").replace("|", "/")
+        lines.append(f"| `{r['field']}` | {r['role']} / {r['level']} | {desc} | {reason} |")
 
     lines += ["", "## 空值分析（按角色解释）", "",
               "| 字段 | 缺失数 | 缺失率 | 角色 | 语义 |", "| --- | --- | --- | --- | --- |"]

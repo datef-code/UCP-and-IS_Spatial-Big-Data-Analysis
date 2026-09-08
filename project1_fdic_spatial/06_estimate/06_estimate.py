@@ -12,7 +12,8 @@
 3) H3 R8 截面的空间计量：
        OLS → LM 检验 → SAR / SEM / SDM → 残差 Moran's I。
 4) 效应分解：direct / spillover / total（SDM）。
-5) 敏感性：标准环 vs 合并环（响应 SIMS_PROJECTION=EXACT 占比 45.45%）。
+5) 敏感性：标准环 vs 合并环（响应坐标最高精度占比 < 100%：
+   2023–2025 EXACT 85.98%，1994–2022 屋顶级 US_Rooftop 仅 16.37%）。
 
 实现关键决策：
 - **不重算空间距离**。``closure_exposure.csv`` 已经给出每起事件的 4 环同业网点数；
@@ -769,8 +770,18 @@ def sensitivity_ring(cs: pd.DataFrame) -> dict:
     out = {
         "rings_alternative": {"fine": list(RING_STANDARD), "coarse": list(RING_COARSE)},
         "coordinate_precision": {
-            "EXACT_pct_45.45": True,
-            "explanation": "EXACT<100% → <1 km 距离环存在系统性失真；主表用 5 km 中等环",
+            "top_precision_pct_by_era": {
+                "2023-2025_EXACT": 0.8598,
+                "1994-2022_US_Rooftop": 0.1637,
+                "1994-2022_US_Streets": 0.3157,
+                "1994-2022_US_Zipcode": 0.0497,
+            },
+            "explanation": (
+                "SIMS_PROJECTION 取值词表 2023 年切换（旧 US_Rooftop/US_Streets/US_Zipcode，"
+                "新 EXACT/StreetAddress/PointAddress/Postal），不可跨年代直接比较；"
+                "早年多为插值坐标 → <1 km 距离环存在系统性失真；主表用 5 km 中等环。"
+                "旧口径「EXACT 占 45.45%」已作废（混淆编码切换与样本退出时间）。"
+            ),
         },
     }
     try:

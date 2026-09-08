@@ -20,7 +20,7 @@
     "violations": 7,
     "ok": true,
     "blocking": true,
-    "seconds": 57.4
+    "seconds": 54.2
   },
   "03_clean": {
     "stage": "03_clean",
@@ -85,5 +85,20 @@
     "conclusion": "sz_bike 空间聚集最强（Moran's I=0.7077），snap_brightkite 最弱（0.0132）——空间权重矩阵定义对结论敏感",
     "ok": true,
     "seconds": 0.0
+  },
+  "08_interactive": {
+    "stage": "08_interactive",
+    "blocking": false,
+    "figures": 4,
+    "datasets": 4,
+    "artifacts": [
+      "index.html",
+      "moran_explorer.html",
+      "ladder_compare.html",
+      "ladder_evolution.html",
+      "manifest.json"
+    ],
+    "ok": true,
+    "seconds": 35.4
   }
 }

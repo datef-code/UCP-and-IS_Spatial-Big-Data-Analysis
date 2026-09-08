@@ -42,6 +42,12 @@ def _desc_map(project) -> dict:
     return {s.name: s.description for s in specs}
 
 
+def _reason_map(project) -> dict:
+    """角色 / 等级的判定依据（规范 §3.5）——写进 fields.csv 的 level_reason 列。"""
+    specs = dk.load_schema(project.config("schema"))
+    return {s.name: (s.note or s.description) for s in specs}
+
+
 def _run_one(project, ds: str, specs) -> dict:
     roles = dk.schema_roles(specs)
     method = str(project.options.get("outlier_method", "iqr"))
@@ -50,6 +56,20 @@ def _run_one(project, ds: str, specs) -> dict:
     prof = dk.profile(pts, roles=roles, outlier_method=method)
     viol = dk.violations(pts, specs)
     levels, descs = _level_map(project), _desc_map(project)
+    reasons = _reason_map(project)
+
+    # 规范 §2-② 要求「问题数」；§3.5 要求逐字段写清角色 / 等级判定依据
+    out_by_field = (prof.outliers["field"].value_counts().to_dict()
+                    if len(prof.outliers) else {})
+    viol_by_field = (viol.groupby("field")["violations"].sum().to_dict()
+                     if len(viol) else {})
+
+    def _n_issues(name: str, null_count: int) -> int:
+        n = 0
+        n += 1 if null_count and null_count > 0 else 0
+        n += 1 if out_by_field.get(name, 0) > 0 else 0
+        n += 1 if viol_by_field.get(name, 0) > 0 else 0
+        return n
 
     out_dir = project.stage_output(STAGE) / ds
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -57,6 +77,8 @@ def _run_one(project, ds: str, specs) -> dict:
         **f.to_dict(),
         "level": levels.get(f.name, "optional"),
         "description": descs.get(f.name, ""),
+        "level_reason": reasons.get(f.name, "字段未登记：默认按 optional 处理，需人工确认等级"),
+        "n_issues": _n_issues(f.name, f.null_count),
     } for f in prof.fields])
     dk.write_csv(out_dir, "fields", fields_df)
     dk.write_csv(out_dir, "nulls", prof.nulls)
@@ -124,14 +146,24 @@ def _markdown(rep: dict, fields: pd.DataFrame, viol: pd.DataFrame, outliers: pd.
         f"- 极端值 {s['outlier_count']:,}　规则违规 {rep['violation_count']}",
         f"- 等级分布：" + " / ".join(f"{k} {v}" for k, v in rep["level_distribution"].items() if v),
         "",
-        "## 字段清单（含等级）",
+        "## 字段清单（含等级 / 问题数）",
         "",
-        "| 字段 | 类型 | 角色 | 等级 | 非空 | 缺失率 | 唯一值 | 说明 |",
-        "| --- | --- | --- | --- | ---: | ---: | ---: | --- |",
+        "| 字段 | 类型 | 角色 | 等级 | 非空 | 缺失率 | 唯一值 | 问题数 | 说明 |",
+        "| --- | --- | --- | --- | ---: | ---: | ---: | ---: | --- |",
     ]
     for _, r in fields.iterrows():
         lines.append(f"| {r['name']} | {r['dtype']} | {r['role']} | {r['level']} | "
-                     f"{int(r['non_null']):,} | {r['null_rate']:.2%} | {int(r['unique']):,} | {r['description']} |")
+                     f"{int(r['non_null']):,} | {r['null_rate']:.2%} | {int(r['unique']):,} | "
+                     f"{int(r['n_issues'])} | {r['description']} |")
+
+    # 规范 §3.5：角色 / 等级的判定依据必须逐字段写明，不能只贴枚举
+    lines += ["", "## 字段角色 / 等级判定依据（规范 §3.5）", "",
+              "| 字段 | 角色 / 等级 | 说明 | 判定依据 |",
+              "| --- | --- | --- | --- |"]
+    for _, r in fields.iterrows():
+        reason = str(r.get("level_reason", "") or "").replace("\n", " ").replace("|", "/")
+        desc = str(r.get("description", "") or "").replace("|", "/")
+        lines.append(f"| `{r['name']}` | {r['role']} / {r['level']} | {desc} | {reason} |")
     lines += ["", "## 空值语义（按角色）", "",
               "| 字段 | 空值数 | 缺失率 | 角色 | 语义 |", "| --- | ---: | ---: | --- | --- |"]
     nulls = pd.DataFrame(rep.get("nulls", []))

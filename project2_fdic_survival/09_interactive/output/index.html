@@ -1,0 +1,79 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<title>FDIC 网点寿命模型 · 交互展示</title>
+<style>
+:root{--ink:#111827;--sub:#6B7280;--line:#E5E7EB;--up:#D55E00;--down:#0072B2}
+*{box-sizing:border-box}
+body{margin:0;font-family:"Microsoft YaHei","Noto Sans CJK SC",sans-serif;color:var(--ink);
+     background:#fff;line-height:1.75}
+.wrap{max-width:1040px;margin:0 auto;padding:44px 24px 90px}
+h1{font-size:29px;margin:0 0 6px} h2{font-size:20px;margin:48px 0 10px;
+  padding-top:10px;border-top:1px solid var(--line)}
+.lede{color:var(--sub);margin:10px 0 0;font-size:15.5px}
+.kicker{font-size:12px;letter-spacing:.14em;color:var(--up);font-weight:700;margin:0 0 8px}
+.card{border:1px solid var(--line);border-radius:12px;overflow:hidden;margin:16px 0 6px}
+.card iframe{width:100%;height:560px;border:0;display:block}
+.cap{font-size:12.5px;color:var(--sub);padding:8px 14px;background:#FAFAFA;
+     border-top:1px solid var(--line)}
+.warn{border-left:4px solid var(--up);background:#FFF7ED;padding:14px 18px;
+      border-radius:0 8px 8px 0;margin:18px 0;font-size:14px}
+.note{border-left:4px solid var(--down);background:#EFF6FF;padding:14px 18px;
+      border-radius:0 8px 8px 0;margin:18px 0;font-size:14px}
+.nav{display:flex;flex-wrap:wrap;gap:8px;margin:20px 0 0}
+.nav a{font-size:13px;text-decoration:none;color:var(--ink);border:1px solid var(--line);
+       border-radius:999px;padding:6px 14px}
+.nav a:hover{border-color:var(--up);color:var(--up)}
+code{background:#F3F4F6;padding:1px 5px;border-radius:4px;font-size:13px}
+ol,ul{padding-left:22px} li{margin:6px 0}
+.foot{margin-top:60px;padding-top:16px;border-top:1px solid var(--line);font-size:12px;color:var(--sub)}
+</style></head><body><div class="wrap">
+<h1>什么样的网点会先死</h1>
+<p class="lede">离散时间生存模型（logit / cloglog + SHAP + 空间残差）。
+测试集 AUC 0.881、C-index 0.810、Brier 0.161。
+核心结论：网点不是「老死」而是<b>「被关」</b>——谁家的网点、什么时候，比它自己多老更重要。</p>
+<div class="nav"><a href="#demo">① 预测 demo</a><a href="#km">② 演化动图 + KM/ROC</a>
+<a href="#report">③ 体检报告</a><a href="#limit">④ 边界</a><a href="#repro">⑤ 复现</a></div>
+
+<h2 id="demo">① 上手试试：这个网点会先死吗</h2>
+<p class="kicker">产品感的核心</p>
+<p>拖动特征滑块，右侧实时给出年度关闭风险，并分解出每个特征贡献了多少
+（线性模型的贡献分解即 SHAP 值）。比任何静态图都直观。</p>
+<div class="card"><iframe src="predict_demo.html" loading="lazy"
+  title="网点关闭风险预测 demo"></iframe>
+<div class="cap">纯前端计算，不联网不上传。保真度自检：本页复现 AUC 0.8815
+vs 产物 0.8814（差 0.0）。</div></div>
+
+<h2 id="km">② 谁先死、什么时候死（演化动图）</h2>
+<div class="card"><iframe src="risk_evolution.html" loading="lazy" title="风险演化动图"></iframe>
+<div class="cap">左：年度关闭网点数（2009–2014 危机后整合窗口标橙）；
+右：模型眼中该年网点的预测风险分布。可下载 mp4 直接放进汇报材料。</div></div>
+<p>静态的 KM 与 ROC 见下：左为按银行脆弱性分层的 Kaplan–Meier（hover 看 at-risk 数），
+右为测试集 ROC。KM 尾部（&gt; 25 年）样本变薄，不要在那里下结论。</p>
+<div class="card"><iframe src="km_roc.html" loading="lazy" title="KM 与 ROC"></iframe>
+<div class="cap">两图口径与 07_visualize 的静态图一致。</div></div>
+
+<h2 id="report">③ 模型体检报告</h2>
+<div class="card"><iframe src="model_report.html" loading="lazy" title="模型体检报告"></iframe>
+<div class="cap">左：cloglog 系数森林（点 + 95% CI）；右：性能指标与残差 Moran's I。</div></div>
+
+<h2 id="limit">④ 边界（务必阅读）</h2>
+<div class="warn"><b>风险预测，不是因果，也不是 ROI 工具。</b>
+<ul>
+<li>改动 demo 里的输入<b>不会</b>改变网点真实命运，只展示模型怎么打分。</li>
+<li>残差 Moran's I 显著为正（0.141，p=0.005）→ 本地市场因素仍未进入模型。</li>
+<li><b>AUC 仅同口径可比</b>：跨数据集、跨抽样方案比较无效（事件率低，用了分层下采样）。</li>
+<li>不承诺干预阈值与 ROI（成本参数缺失）。</li>
+<li>左截断 51.76%、右删失 47%：早年样本与尾部估计都不牢。</li>
+</ul></div>
+
+<h2 id="repro">⑤ 可复现</h2>
+<div class="note">所有数字来自上游产物，不硬编码：
+<code>06_train/output/metrics.json</code>、<code>replication_manifest.json</code>
+（版本 / 参数 / 随机种子 42 / 输入指纹）、<code>logit_coefficients.csv</code>、
+<code>cloglog_coefficients.csv</code>、<code>shap_importance.csv</code>、
+<code>05_map/output/lineage.csv</code>（字段血缘）。
+重跑：<code>python main.py --stage 09</code>。</div>
+
+<div class="foot">数据来源：FDIC Summary of Deposits 1994–2025（只读）　|
+生成脚本 <code>09_interactive/09_interactive.py</code>　|
+生成时间 2026-09-08 13:59</div>
+</div></body></html>

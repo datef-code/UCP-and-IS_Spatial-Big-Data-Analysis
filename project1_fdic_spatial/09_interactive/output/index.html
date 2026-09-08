@@ -1,0 +1,99 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<title>空间溢出证据链 · FDIC 网点关闭</title><style>
+    :root{--ink:#111827;--sub:#6B7280;--line:#E5E7EB;--accent:#D55E00;--blue:#0072B2}
+    *{box-sizing:border-box}
+    body{margin:0;font-family:"Microsoft YaHei","Noto Sans CJK SC",sans-serif;
+         color:var(--ink);background:#fff;line-height:1.75}
+    .wrap{max-width:1040px;margin:0 auto;padding:48px 24px 96px}
+    h1{font-size:30px;margin:0 0 8px;letter-spacing:-.4px}
+    h2{font-size:21px;margin:56px 0 12px;padding-top:8px;border-top:1px solid var(--line)}
+    .lede{font-size:16px;color:var(--sub);margin:12px 0 4px}
+    .kicker{font-size:12px;letter-spacing:.14em;color:var(--accent);
+            text-transform:uppercase;margin:0 0 10px;font-weight:700}
+    .card{border:1px solid var(--line);border-radius:12px;overflow:hidden;margin:18px 0 6px}
+    .card iframe{width:100%;height:560px;border:0;display:block}
+    .cap{font-size:12.5px;color:var(--sub);padding:8px 14px;background:#FAFAFA;
+         border-top:1px solid var(--line)}
+    .warn{border-left:4px solid var(--accent);background:#FFF7ED;padding:14px 18px;
+          border-radius:0 8px 8px 0;margin:18px 0}
+    .note{border-left:4px solid var(--blue);background:#EFF6FF;padding:14px 18px;
+          border-radius:0 8px 8px 0;margin:18px 0}
+    ol,ul{padding-left:22px} li{margin:6px 0}
+    code{background:#F3F4F6;padding:1px 5px;border-radius:4px;font-size:13px}
+    .nav{display:flex;flex-wrap:wrap;gap:8px;margin:20px 0 0}
+    .nav a{font-size:13px;text-decoration:none;color:var(--ink);border:1px solid var(--line);
+           border-radius:999px;padding:6px 14px}
+    .nav a:hover{border-color:var(--accent);color:var(--accent)}
+    .foot{margin-top:64px;padding-top:16px;border-top:1px solid var(--line);
+          font-size:12px;color:var(--sub)}
+</style></head><body><div class="wrap">
+<h1>空间溢出证据链 · FDIC 网点关闭</h1>
+<p class="lede">10 km 内同业被并购关闭后，被辐射的存活网点存款增速<b>连续 5 年下行</b>（τ=0 -4.4 pp → τ=4 -10.1 pp；TWFE post -5.3 pp，p&lt;0.001）。</p>
+<div class="nav"><a href="#conclusion">① 结论</a><a href="#mechanism">② 机制</a><a href="#evidence">③ 证据</a><a href="#spread">④ 空间</a><a href="#limits">⑤ 限制</a><a href="#repro">⑥ 复现</a></div>
+<section id="conclusion"><h2>① 结论</h2>
+<p class="kicker">结论</p>
+<p>被同业关闭事件辐射的存活网点，存款增速在事件后<b>逐年加深下行</b>：
+τ=0 -4.38 pp，τ=4 -10.07 pp；
+面板 TWFE 的 post 项 -5.26 pp（p&lt;0.001）。</p>
+<p>但聚合层 SLX 的 <code>W_treat</code> 为<b>正</b>，说明存款更可能是在更广地理尺度上
+<b>再配置</b>，而不是区域净增 —— 不据此报区域增长红利或 ROI。</p>
+<div class="warn"><b>守住克制：这是关联证据，不是严格因果。</b>
+事件前 τ=−2 已轻微为负（平行趋势近似但非理想），区域共同冲击可能贡献了 post 的下行。</div></section><section id="mechanism"><h2>② 机制：距离衰减</h2>
+<p class="kicker">机制</p>
+<p>核心机制是<b>距离</b>：一个网点被并购关闭后，它的客户会向周边迁移，
+而迁移半径是有限的 —— 所以效应应当随距离衰减，而不是均匀铺开。</p>
+<p>下面这张图把「强度」定义清楚：每个距离环内同 BKCLASS 的网点数。
+注意必须切到<b>密度</b>口径才看得到真实衰减 —— 计数口径会随环面积增大而虚高，
+这正是「聚合口径决定结论」的现场演示。</p>
+<div class="card"><iframe src="attenuation.html" loading="lazy"
+  title="距离衰减交互图"></iframe>
+<div class="cap">可切换「标准环 / 合并环」×「计数 / 密度」。合并环是坐标精度敏感性口径
+（早年坐标多为街道级插值，&lt;1 km 环有系统性失真）。</div></div></section><section id="evidence"><h2>③ 证据：事件研究</h2>
+<p class="kicker">证据</p>
+<p>事件研究是本项目最硬的一块证据：它同时给出<b>效应大小</b>与<b>时间形状</b>，
+并能检验平行趋势（τ&lt;0 应≈0）。</p>
+<div class="card"><iframe src="event_study.html" loading="lazy"
+  title="事件研究交互图"></iframe>
+<div class="cap">hover 看每一期的系数、95% CI 与 p 值；基线 τ=−1。误差棒未做 bootstrap，
+显著性部分来自大样本。</div></div></section><section id="spread"><h2>④ 空间：级联扩散</h2>
+<p class="kicker">空间</p>
+<p>把 27,018 起关闭事件按年铺开，会看到一个<b>级联扩散</b>而非均匀分布的过程 ——
+这正是「空间大数据」在本课题的价值：去掉空间维度，只剩同城粗对照，
+既回答不了距离衰减，也区分不了「本地被吸走」与「区域整体下行」。</p>
+<div class="card"><iframe src="spacetime.html" loading="lazy"
+  title="时空演变动画"></iframe>
+<div class="cap">自动播放的 mp4 内嵌页（可拖进度条定格任意年份、可调倍速、可下载 mp4）。
+左：亮点＝当年新增关闭、紫点＝历史累计；右：当年新增柱 + 累计曲线。</div></div></section><section id="limits"><h2>⑤ 反例与限制</h2>
+<p class="kicker">反例与限制</p>
+<ol>
+<li>事件前 τ=−2 轻微为负 → 平行趋势近似但非理想，区域共同冲击可能贡献 post 下行。</li>
+<li>存款转移 ≠ 区域净增 → 不据此报区域增长红利或 ROI。</li>
+<li>SAR 在大稀疏 KNN 上 ρ 数值不稳 → 不以 SAR 报溢出量级，仅以 SLX 的 W_treat 作代理。</li>
+<li>坐标精度分年代：2023–2025 EXACT 85.98%，1994–2022 屋顶级仅 16.37%
+→ 主表用 5 km 中等环，&lt;1 km 环只作参考。</li>
+<li><b>缺失非随机</b>：<code>UNINUMBR</code> 缺失 120,261 行（4.26%）100% 集中在 1994–2010，
+2011 年起零缺失 → 早年样本系统性不可追踪，事件研究早期年份代表性弱于近 15 年。</li>
+<li>事件研究未加 bootstrap CI；空间权重仅用 KNN(k=6)，未对比其他权重方案。</li>
+</ol>
+<div class="warn"><b>止损条件（出现下列用法即停止）</b>
+<ul>
+<li>把本结论用于<b>因果断言</b>（如「关闭导致存款流失 X%」）→ 停止，先补 IV/匹配或
+Callaway–Sant'Anna 类 staggered 估计。</li>
+<li>把点估计换算为<b>区域存款净增 / ROI / 干预阈值</b> → 停止，成本参数缺失。</li>
+<li>用 <b>SAR 的 ρ</b> 或一阶近似报溢出量级 → 停止，数值不稳。</li>
+</ul></div></section><section id="repro"><h2>⑥ 可复现</h2>
+<p class="kicker">可复现</p>
+<p>本页所有数字都来自流水线产物，不硬编码：</p>
+<ul>
+<li><code>06_estimate/output/estimate.json</code> —— 事件研究与 TWFE 系数</li>
+<li><code>06_estimate/output/replication_manifest.json</code> —— 版本 / 参数 / 随机种子 / 输入指纹</li>
+<li><code>05_map/output/mapped.csv</code> —— 各距离环 exposure 强度</li>
+<li><code>05_map/output/lineage.csv</code> —— 每个输出字段的血缘（可追溯到来源字段与表达式）</li>
+</ul>
+<div class="note">重跑：<code>python main.py</code>（单阶段 <code>python main.py --stage 09</code>）。
+静态图仍在 <code>07_visualize/output/figures/</code>，与这里口径一致。</div></section>
+<div class="foot">数据来源：FDIC Summary of Deposits 1994–2025（32 年 × 81 列，只读）　|
+生成脚本 <code>09_interactive/09_interactive.py</code>　|
+生成时间 2026-09-08 14:17　|
+本页所有数字来自上游产物，不硬编码。</div>
+</div></body></html>

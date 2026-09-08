@@ -126,7 +126,9 @@ I = 0.07033, E[I] = -3.333e-05, z_sim = 23.3, p_sim = 0.001
 ## 4. 距离带敏感性
 5 km 内关闭事件 cell 数；标准环与合并环两套口径见 06_visualize.py
 ['0_1', '1_3', '3_5', '5_10'] 主回归 = treat_strength（中等环）
-{'EXACT_pct_45.45': True, 'explanation': 'EXACT<100% → <1 km 距离环存在系统性失真；主表用 5 km 中等环'}
+坐标精度分年代：2023–2025 EXACT 85.98%；1994–2022 US_Rooftop 16.37% / US_Streets 31.57% /
+US_Zipcode 4.97%（编码词表 2023 年切换，不可跨年代直接比较）
+→ <1 km 距离环存在系统性失真；主表用 5 km 中等环。旧口径「EXACT 占 45.45%」已作废。
 衰减曲线：![attenuation](../07_visualize/output/figures/fig_attenuation_curve.png)
 
 事件强度 τ 衰减：![tau](../07_visualize/output/figures/fig_event_attenuation.png)

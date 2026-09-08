@@ -1,0 +1,64 @@
+{
+  "generated_at": "2026-09-08T14:17:11",
+  "generator": {
+    "tool": "plotly",
+    "version": "7.0.0",
+    "script": "09_interactive/09_interactive.py",
+    "encoding": "utf-8",
+    "font": "Microsoft YaHei",
+    "self_contained": true,
+    "reproducible": true,
+    "note": "plotly 内联（include_plotlyjs=True），单文件自包含，离线可开、挪动不丢"
+  },
+  "entry": "index.html",
+  "n_figures": 3,
+  "figures": [
+    {
+      "file": "index.html",
+      "title": "空间溢出证据链（叙事入口）",
+      "type": "scrollytelling",
+      "question": "证据链能不能一眼看完并能自己戳？",
+      "alt_text": "滚动叙事串起结论、机制、证据、空间与限制五段",
+      "source": "本目录 event_study.html / attenuation.html / spacetime.html",
+      "n": 27018,
+      "scope": "1994–2025；关联证据非严格因果",
+      "tool": "html"
+    },
+    {
+      "file": "event_study.html",
+      "title": "同业关闭后，存款增速逐年下行且不收敛",
+      "type": "event_study",
+      "question": "处理效应随时间怎么走？平行趋势成立吗？",
+      "alt_text": "τ=−3..4 的系数点与 95% 置信带，τ≥0 后持续下探",
+      "unit": "x=距事件年数 τ，y=存款增速差异（百分点）",
+      "source": "06_estimate/output/estimate.json",
+      "n": 955025,
+      "scope": "基线 τ=−1；within entity+year；未做 bootstrap CI",
+      "tool": "plotly"
+    },
+    {
+      "file": "attenuation.html",
+      "title": "同业暴露随距离快速衰减",
+      "type": "bar_toggle",
+      "question": "效应随距离衰减吗？换个环宽结论还稳吗？",
+      "alt_text": "可切标准环/合并环与计数/密度两组口径的对比柱图",
+      "unit": "x=距离环，y=同业网点数均值或密度（个/km²）",
+      "source": "05_map/output/mapped.csv",
+      "n": 27018,
+      "scope": "H3 R8；同 BKCLASS；密度 = 均值 ÷ 环面积",
+      "tool": "plotly"
+    },
+    {
+      "file": "spacetime.html",
+      "title": "网点关闭沿都市区级联扩散",
+      "type": "animation",
+      "question": "关闭事件在空间上怎么随时间扩散？",
+      "alt_text": "逐年累计关闭事件在美国州轮廓上的扩散动画，下方同步显示年度与累计",
+      "unit": "x=经度，y=纬度；橙点=当年新增，紫点=历史累计",
+      "source": "07_visualize/output/kepler/closed_events.csv",
+      "n": 27018,
+      "scope": "mp4（FuncAnimation）内嵌 <video>；图幅取事件经纬度 1%–99% 分位数；底图＝州轮廓",
+      "tool": "matplotlib + ffmpeg"
+    }
+  ]
+}
