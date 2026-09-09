@@ -19,6 +19,7 @@ L3 距离环溢出**。四个数据集各自独立产出，内容全部来自本
 | `08_interactive/output/moran_explorer.html` | 切数据集 × 权重（Queen / KNN k=4 / k=8）× 格值尺度，实时看 Moran 散点与 I |
 | `08_interactive/output/ladder_evolution.html` | **L0→L3 演化动图**（mp4 内嵌）：点 → 格 → 邻居 → 滞后 → 距离环 |
 | `08_interactive/output/ladder_compare.html` | 四数据集阶梯对比（hover 看格数 / 平均邻居 / I） |
+| **`08_interactive/output/ebook/index.html`** | **可翻页电子书骨架**：封面/目录/引言/L0–L3/对比/演化/结论/复现，左右箭头或 ←/→ 翻页 |
 
 两个开关都在改变结论，这正是本课的重点：
 

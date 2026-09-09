@@ -1,7 +1,7 @@
 # SUMMARY.md · project1_fdic_spatial
 
 > FDIC 网点关闭对周边同业的空间溢出（空间结构化 + DID/事件研究）
-> 自动生成于 2026-09-08T14:17:11；规范见 `datakit/PROJECT_STRUCTURE.md`。
+> 自动生成于 2026-09-09T21:28:04；规范见 `datakit/PROJECT_STRUCTURE.md`。
 
 ## 阶段摘要
 
@@ -15,7 +15,7 @@
 | 06_estimate | ✅ | twfe_post=-0.05259；twfe_post_x_strength=0.01382；twfe_p=0；event_study_tau0=-0.0438；resid_moran_p=0.001 |
 | 07_visualize | ✅ | figures=6；h3_cells=51251；closure_events=27018 |
 | 08_conclude | ✅ | conclusion=同业关闭后周边存活网点存款增速下行（τ=0 -4.38pp → τ=4 -10.1pp；TWFE post -5.26pp）；聚合层再配置而非区域净增 → 关联证据，非严格因果 |
-| 09_interactive | ✅ | figures=4 |
+| 09_interactive | ✅ | figures=5 |
 
 ## 一句话结论
 

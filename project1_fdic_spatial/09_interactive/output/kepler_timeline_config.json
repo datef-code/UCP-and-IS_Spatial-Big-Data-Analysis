@@ -1,0 +1,191 @@
+{
+  "version": "v1",
+  "config": {
+    "visState": {
+      "filters": [
+        {
+          "dataId": "closed_events",
+          "id": "event_time",
+          "name": "event_time",
+          "field": "event_time",
+          "type": "timeRange",
+          "value": [
+            772934400000,
+            1435622400000
+          ],
+          "enlarged": true,
+          "plotType": "histogram",
+          "animationWindow": "free",
+          "yAxis": null,
+          "speed": 1
+        }
+      ],
+      "layers": [
+        {
+          "id": "cell-hex-layer",
+          "type": "hexagon",
+          "config": {
+            "dataId": "h3_cells",
+            "label": "H3 R8 cells: deposit growth 2010→2014",
+            "color": [
+              0,
+              0,
+              0
+            ],
+            "columns": {
+              "lat": "lat",
+              "lng": "lng"
+            },
+            "isVisible": true,
+            "visConfig": {
+              "opacity": 0.5,
+              "worldUnitSize": 1.5,
+              "coverage": 1,
+              "elevationScale": 2,
+              "colorRange": {
+                "name": "Global Warming",
+                "type": "sequential",
+                "colors": [
+                  "#2A2A3F",
+                  "#3D3399",
+                  "#5E2EFF",
+                  "#A23EFF",
+                  "#FF3DFF",
+                  "#FF608B",
+                  "#FF8C5A",
+                  "#FFB358",
+                  "#FFD96E",
+                  "#FFEF8B"
+                ]
+              },
+              "coverageField": {
+                "name": "n_branches"
+              },
+              "elevationField": {
+                "name": "dep_growth"
+              }
+            },
+            "textLabel": []
+          },
+          "visualChannels": {
+            "colorField": {
+              "name": "dep_growth",
+              "type": "real"
+            },
+            "colorScale": "quantile",
+            "sizeField": {
+              "name": "n_branches",
+              "type": "real"
+            },
+            "sizeScale": "sqrt"
+          }
+        },
+        {
+          "id": "closed-events-layer",
+          "type": "point",
+          "config": {
+            "dataId": "closed_events",
+            "label": "Closed branch events",
+            "color": [
+              255,
+              0,
+              0
+            ],
+            "columns": {
+              "lat": "lat",
+              "lng": "lng"
+            },
+            "isVisible": true,
+            "visConfig": {
+              "radius": 3.5,
+              "fixedRadius": false,
+              "opacity": 0.85,
+              "outline": true,
+              "colorRange": {
+                "name": "ColorBrewer Set1",
+                "type": "qualitative",
+                "colors": [
+                  "#FF0000",
+                  "#FFB300",
+                  "#FFF600",
+                  "#A6FD8E",
+                  "#13D6E8"
+                ]
+              }
+            }
+          },
+          "visualChannels": {
+            "colorField": {
+              "name": "acq_year",
+              "type": "integer"
+            },
+            "colorScale": "quantile"
+          }
+        }
+      ],
+      "interactionConfig": {
+        "tooltip": {
+          "enabled": true,
+          "config": {
+            "fieldsToShow": {
+              "h3_cells": [
+                "dep_growth",
+                "treat_strength",
+                "treated"
+              ],
+              "closed_events": [
+                "acq_year",
+                "BKCLASS",
+                "same_ind_ring_0_1km",
+                "same_ind_ring_1_3km",
+                "same_ind_ring_5_10km"
+              ]
+            }
+          }
+        }
+      },
+      "layerBlending": "additive",
+      "splitMaps": [],
+      "animationConfig": {
+        "domain": [
+          772934400000,
+          1435622400000
+        ],
+        "currentTime": null,
+        "speed": 1
+      }
+    },
+    "mapStyle": {
+      "styleType": "dark-matter",
+      "topLayerGroups": {
+        "label": true,
+        "road": true,
+        "boundary": true,
+        "water": true,
+        "land": true,
+        "3d building": false
+      },
+      "visibleLayerGroups": {
+        "label": true,
+        "road": true,
+        "border": false,
+        "water": true,
+        "land": true,
+        "building": false
+      }
+    },
+    "mapState": {
+      "bearing": 0,
+      "dragRotate": false,
+      "latitude": 39.5,
+      "longitude": -98.35,
+      "pitch": 0,
+      "zoom": 3,
+      "isSplit": false
+    },
+    "uiState": {
+      "mapHeight": 720,
+      "mapWidth": 1280
+    }
+  }
+}

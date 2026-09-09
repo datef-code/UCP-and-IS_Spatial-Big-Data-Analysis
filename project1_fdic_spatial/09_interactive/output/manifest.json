@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-08T14:17:11",
+  "generated_at": "2026-09-09T21:28:04",
   "generator": {
     "tool": "plotly",
     "version": "7.0.0",
@@ -11,7 +11,7 @@
     "note": "plotly 内联（include_plotlyjs=True），单文件自包含，离线可开、挪动不丢"
   },
   "entry": "index.html",
-  "n_figures": 3,
+  "n_figures": 4,
   "figures": [
     {
       "file": "index.html",
@@ -59,6 +59,18 @@
       "n": 27018,
       "scope": "mp4（FuncAnimation）内嵌 <video>；图幅取事件经纬度 1%–99% 分位数；底图＝州轮廓",
       "tool": "matplotlib + ffmpeg"
+    },
+    {
+      "file": "kepler_timeline.html",
+      "title": "关闭事件时间轴（Kepler.gl 可播放）",
+      "type": "kepler_timeline",
+      "question": "关闭事件在时间轴上怎么逐帧扩散？能定格任意年份吗？",
+      "alt_text": "底部时间轴拖动播放，事件点按 acq_year 队列上色，H3 格高度＝存款增长",
+      "unit": "event_time = 每年 6/30 的 epoch 毫秒（与 SOD 基准日一致）",
+      "source": "07_visualize/output/kepler/{closed_events.csv, h3_cells.csv, kepler_config.json}",
+      "n": 22406,
+      "scope": "1994–2015；需联网加载 Kepler CDN",
+      "tool": "kepler.gl 3.2.0"
     }
   ]
 }

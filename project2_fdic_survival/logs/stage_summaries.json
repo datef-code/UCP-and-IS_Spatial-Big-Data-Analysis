@@ -107,17 +107,18 @@
   "09_interactive": {
     "stage": "09_interactive",
     "blocking": false,
-    "figures": 5,
+    "figures": 6,
     "auc_reproduced": 0.8815,
     "artifacts": [
       "index.html",
       "predict_demo.html",
+      "shap_force.html",
       "risk_evolution.html",
       "km_roc.html",
       "model_report.html",
       "manifest.json"
     ],
     "ok": true,
-    "seconds": 15.1
+    "seconds": 12.0
   }
 }

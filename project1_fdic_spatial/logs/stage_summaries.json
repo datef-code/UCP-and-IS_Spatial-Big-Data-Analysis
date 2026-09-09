@@ -89,7 +89,7 @@
       "kepler/kepler_map.html"
     ],
     "ok": true,
-    "seconds": 6.6
+    "seconds": 5.9
   },
   "08_conclude": {
     "stage": "08_conclude",
@@ -108,15 +108,16 @@
   "09_interactive": {
     "stage": "09_interactive",
     "blocking": false,
-    "figures": 4,
+    "figures": 5,
     "artifacts": [
       "index.html",
       "event_study.html",
       "attenuation.html",
       "spacetime.html",
+      "kepler_timeline.html",
       "manifest.json"
     ],
     "ok": true,
-    "seconds": 35.3
+    "seconds": 35.4
   }
 }

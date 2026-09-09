@@ -11,7 +11,7 @@
 
 | 数据集 | 角色 | 许可状态 | 限制说明 | 官方来源 |
 | --- | --- | --- | --- | --- |
-| `fdic` | **主示例** | 公共领域（美国联邦政府数据），可商用 | 示例可自由分发 | <https://www.fdic.gov/bank-financial-reports/summary-deposits> |
+| `fdic` | **主示例** | 公共领域（美国联邦政府数据），可商用 | 示例可自由分发 | 下载 <https://www.fdic.gov/bank-data-guide/data-downloads>（Data Downloads → Branch Office Deposits - SOD）；BankFind <https://banks.data.fdic.gov/bankfind-suite/SOD> |
 | `sz_bike` | 辅助示例 | 研究用途 | **数据源已停更**（实测最后日期 2021-08-31）；本地存档，无公开引用 | 本地存档，未见可核实的公开来源 |
 | `snap_brightkite` | 辅助示例 | 仅限研究用途（SNAP） | 不允许商用、不再分发原始文件 | <https://snap.stanford.edu/data/loc-brightkite.html> |
 | `snap_gowalla` | 辅助示例 | 仅限研究用途（SNAP） | 不允许商用、不再分发原始文件 | <https://snap.stanford.edu/data/loc-gowalla.html> |

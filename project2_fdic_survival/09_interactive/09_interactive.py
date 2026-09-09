@@ -500,7 +500,7 @@ ol,ul{{padding-left:22px}} li{{margin:6px 0}}
 测试集 AUC {t['auc']:.3f}、C-index {t['c_index']:.3f}、Brier {t['brier']:.3f}。
 核心结论：网点不是「老死」而是<b>「被关」</b>——谁家的网点、什么时候，比它自己多老更重要。</p>
 <div class="nav"><a href="#demo">① 预测 demo</a><a href="#km">② 演化动图 + KM/ROC</a>
-<a href="#report">③ 体检报告</a><a href="#limit">④ 边界</a><a href="#repro">⑤ 复现</a></div>
+<a href="#shap">③ SHAP</a><a href="#report">④ 体检报告</a><a href="#limit">⑤ 边界</a><a href="#repro">⑥ 复现</a></div>
 
 <h2 id="demo">① 上手试试：这个网点会先死吗</h2>
 <p class="kicker">产品感的核心</p>
@@ -520,11 +520,21 @@ vs 产物 {fid['auc_reference']}（差 {fid['abs_diff']}）。</div></div>
 <div class="card"><iframe src="km_roc.html" loading="lazy" title="KM 与 ROC"></iframe>
 <div class="cap">两图口径与 07_visualize 的静态图一致。</div></div>
 
-<h2 id="report">③ 模型体检报告</h2>
+<h2 id="shap">③ 单个预测为什么这样判（SHAP 交互图）</h2>
+<p class="kicker">可解释性的核心</p>
+<p>三行 force plot 各是一个代表性网点：<b>红色</b>把风险往上推、<b>蓝色</b>往下压，
+从基线（截距）一路推到最终风险。hover 看每个特征的贡献量，点击看原始特征值。
+注意「年份」在危机后（2009–2014）大幅推高——这就是本课题「什么时候比多老更重要」的可视化。</p>
+<div class="card"><iframe src="shap_force.html" loading="lazy" title="SHAP 交互图"></iframe>
+<div class="cap">线性模型的 SHAP = coef × (x−mean)/std，是<b>精确</b>分解而非近似；
+与 predict_demo 的贡献分解同一套口径，这里用 plotly 自绘三行水平条形图（红推高、蓝压低），
+按 |SHAP| 降序，hover 看每个特征的原值。</div></div>
+
+<h2 id="report">④ 模型体检报告</h2>
 <div class="card"><iframe src="model_report.html" loading="lazy" title="模型体检报告"></iframe>
 <div class="cap">左：cloglog 系数森林（点 + 95% CI）；右：性能指标与残差 Moran's I。</div></div>
 
-<h2 id="limit">④ 边界（务必阅读）</h2>
+<h2 id="limit">⑤ 边界（务必阅读）</h2>
 <div class="warn"><b>风险预测，不是因果，也不是 ROI 工具。</b>
 <ul>
 <li>改动 demo 里的输入<b>不会</b>改变网点真实命运，只展示模型怎么打分。</li>
@@ -534,7 +544,7 @@ vs 产物 {fid['auc_reference']}（差 {fid['abs_diff']}）。</div></div>
 <li>左截断 51.76%、右删失 47%：早年样本与尾部估计都不牢。</li>
 </ul></div>
 
-<h2 id="repro">⑤ 可复现</h2>
+<h2 id="repro">⑥ 可复现</h2>
 <div class="note">所有数字来自上游产物，不硬编码：
 <code>06_train/output/metrics.json</code>、<code>replication_manifest.json</code>
 （版本 / 参数 / 随机种子 42 / 输入指纹）、<code>logit_coefficients.csv</code>、
@@ -554,6 +564,119 @@ vs 产物 {fid['auc_reference']}（差 {fid['abs_diff']}）。</div></div>
 
 # --------------------------------------------------------------------------- #
 # ④ 风险演化动图（mp4 + 自包含 HTML）
+# --------------------------------------------------------------------------- #
+# ④ SHAP 交互图（plotly 自绘）
+# --------------------------------------------------------------------------- #
+def _shap_row(spec: dict, row) -> tuple[list[str], list, list[float]]:
+    """把一个测试样本拆成 9 个原始特征的名字 / 原值 / SHAP 值。
+
+    SHAP（线性模型精确值）= 数值特征 ``coef × (x−mean)/std``，
+    类别特征 = 该样本所落档位的 one-hot 系数（参照档 = 0）。
+    与 predict_demo 的「贡献分解」同一套口径，这里用 plotly 自绘三行水平条形图。
+    """
+    names, vals, svals = [], [], []
+    for c in NUMERIC:
+        s = spec["numeric"][c]
+        v = float(pd.to_numeric(row[c], errors="coerce"))
+        if np.isnan(v):
+            v = s["mean"]
+        names.append(LABEL[c][0])
+        vals.append(v)
+        svals.append(s["coef"] * (v - s["mean"]) / s["std"])
+    for c in CATEG:
+        lev = str(row[c])
+        names.append(c)
+        vals.append(lev)
+        svals.append(spec["categorical"][c]["coef"].get(lev, 0.0))
+    return names, vals, svals
+
+
+def build_shap_force(spec: dict, test: pd.DataFrame) -> Path:
+    """三个代表性网点的 SHAP 贡献图（plotly 自绘，可 hover 看每个特征的 SHAP 值与原值）。
+
+    不再使用 shap 库的 force plot：shap 用 React 18 ``createRoot`` 渲染 force plot 的
+    link 区（dependence plot 视图），在 iframe 内 React 渲染时常出现「下拉框 / 折叠按钮
+    看着在但点不动」的问题。改用 plotly 自绘，依赖更少、渲染可控、与本目录其它三件
+    产物（``predict_demo`` / ``km_roc`` / ``model_report``）交互风格一致。
+
+    SHAP 值仍按线性模型精确公式计算（与 ``predict_demo`` 同口径）：
+    * 数值特征 = ``coef × (x − mean) / std``
+    * 类别特征 = 该档位 one-hot 系数（参照档 = 0）
+    """
+    if "risk" not in test.columns:
+        raise RuntimeError("test_predictions 缺 risk 列")
+    risk = test.risk.to_numpy(float)
+    picks = [
+        (int(np.argmax(np.where(test.event == 1, risk, -1))), "高风险 · 已关闭"),
+        (int(np.argsort(np.abs(risk - np.median(risk)))[0]), "中位风险"),
+        (int(np.argmin(np.where(test.event == 0, risk, 2.0))), "低风险 · 存活"),
+    ]
+    base = spec["intercept"]
+    forces = []
+    for idx, label in picks:
+        names, vals, svals = _shap_row(spec, test.iloc[idx])
+        p = 1 / (1 + np.exp(-(base + np.sum(svals))))
+        forces.append((label, f"{p:.2%}", np.array(svals), np.array(vals), names))
+
+    n = len(forces)
+    fig = make_subplots(rows=n, cols=1,
+                        subplot_titles=[f"{lab}　→　年度关闭风险 P={p}"
+                                        for lab, p, *_ in forces],
+                        vertical_spacing=0.16)
+    POS, NEG = "#D55E00", "#0072B2"   # Okabe–Ito 色盲友好：橙红推高，蓝压低
+    for i, (label, prob, svals, vals, names) in enumerate(forces, start=1):
+        # 按 |SHAP| 降序——最大贡献在最上方，符合「先看主导因素」的阅读顺序
+        order = np.argsort(np.abs(svals))[::-1]
+        names_o = [names[j] for j in order]
+        svals_o = svals[order]
+        vals_o = [vals[j] for j in order]
+        fig.add_trace(go.Bar(
+            x=svals_o, y=names_o, orientation="h",
+            marker=dict(color=[POS if v > 0 else NEG for v in svals_o],
+                        line=dict(color="white", width=0.5)),
+            customdata=vals_o,
+            hovertemplate="特征=%{y}<br>SHAP=%{x:+.3f} logit<br>"
+                          "原值=%{customdata}<extra></extra>",
+            showlegend=False,
+        ), row=i, col=1)
+        fig.add_vline(x=0, line=dict(color="#6B7280", width=0.8), row=i, col=1)
+        fig.update_xaxes(title_text="SHAP 值（logit 贡献）",
+                         zeroline=False, gridcolor=GRID, row=i, col=1)
+        fig.update_yaxes(autorange="reversed", row=i, col=1)
+
+    fig.update_layout(
+        title=dict(text="<b>三个代表性网点：谁把它推向死亡</b><br>"
+                        "<sub>红色＝推高风险，蓝色＝压低风险；按 |SHAP| 降序，hover 看原值</sub>",
+                   x=0.01, xanchor="left", font=dict(size=16, family=FONT)),
+        font=dict(family=FONT, size=12),
+        paper_bgcolor="white", plot_bgcolor="white",
+        height=340 * n, margin=dict(l=180, r=30, t=110, b=60),
+        bargap=0.25,
+    )
+    fig.add_annotation(xref="paper", yref="paper", x=1, y=-0.08,
+                       xanchor="right", yanchor="top",
+                       text=(f"基线 logit={base:.3f}　|　"
+                             f"数据：06_train/output/{{logit_coefficients.csv, test_predictions.csv}}　|　"
+                             f"线性模型 SHAP = coef×(x−mean)/std（精确）　|　"
+                             f"生成时间 {_dt.datetime.now():%Y-%m-%d %H:%M}"),
+                       showarrow=False, font=dict(size=10, color="#6B7280", family=FONT))
+    p = OUT / "shap_force.html"
+    p.write_text(
+        fig.to_html(include_plotlyjs=True, full_html=True,
+                    config={"displaylogo": False, "responsive": True}),
+        encoding="utf-8")
+
+    examples = []
+    for label, prob, svals, vals, names in forces:
+        examples.append({"label": label, "predicted_risk": prob,
+                         "shap": dict(zip(names, [round(float(x), 6) for x in svals]))})
+    meta = {"model": "logit_discrete_time（主模型）", "base_value": base,
+            "examples": examples}
+    (OUT / "shap_force.json").write_text(
+        json.dumps(meta, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    return p
+
+
 # --------------------------------------------------------------------------- #
 CRISIS = (2009, 2014)          # 危机后整合窗口（07_visualize 的既有发现：关闭率翻倍）
 
@@ -691,6 +814,12 @@ def run(project) -> dict:
     p1 = build_demo(spec)
     p2 = fig_km_roc(panel, test, metrics)
     p3 = fig_forest(metrics, moran)
+    try:
+        p6 = build_shap_force(spec, test)
+        project.log(f"    [⑨] {p6.name}（{p6.stat().st_size/1e6:.2f} MB）")
+    except Exception as exc:
+        p6 = None
+        project.log(f"    [⑨] SHAP 交互图失败（{type(exc).__name__}: {exc}），跳过")
     if dk.ffmpeg_available():
         mp4, p5 = anim_risk_evolution(panel, test)
         project.log(f"    [⑨] {p5.name}（mp4 {mp4.stat().st_size/1e6:.1f} MB → "
@@ -699,7 +828,7 @@ def run(project) -> dict:
         p5 = None
         project.log("    [⑨] 跳过风险演化动图：缺少 ffmpeg（pip install imageio-ffmpeg）")
     p4 = build_index(spec, metrics)
-    for p in (p1, p2, p3, p4, p5):
+    for p in (p1, p2, p3, p4, p5, p6):
         if p:
             project.log(f"    [⑨] {p.name}（{p.stat().st_size/1e6:.2f} MB）")
 
@@ -711,7 +840,7 @@ def run(project) -> dict:
                       "encoding": "utf-8", "font": "Microsoft YaHei",
                       "self_contained": True, "reproducible": True},
         "entry": "index.html",
-        "n_figures": 3,
+        "n_figures": 5,
         "fidelity_check": fid,
         "figures": [
             {"file": "index.html", "title": "什么样的网点会先死（入口）",
@@ -746,15 +875,24 @@ def run(project) -> dict:
              "n": int(len(panel)),
              "scope": "mp4（FuncAnimation）内嵌 <video>；按 acq_year 统计",
              "tool": "matplotlib + ffmpeg"},
+            {"file": "shap_force.html", "title": "三个代表性网点：谁把它推向死亡",
+             "type": "shap_force", "question": "单个预测里，每个特征贡献了多少？",
+             "alt_text": "三行水平条形图，红推高蓝压低 SHAP 值，按 |SHAP| 降序，hover 看原值",
+             "unit": "x=SHAP 值（logit 贡献）；y=特征名（按 |SHAP| 降序）",
+             "source": "06_train/output/logit_coefficients.csv + test_predictions.csv",
+             "n": 3,
+             "scope": "logit 主模型；线性模型 SHAP = coef×(x−mean)/std（精确，非近似）",
+             "tool": "plotly"},
         ],
     }
     (OUT / "manifest.json").write_text(
         json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
-    return {"stage": STAGE, "blocking": False, "figures": 5,
+    return {"stage": STAGE, "blocking": False, "figures": 6,
             "auc_reproduced": fid["auc_reproduced"],
-            "artifacts": ["index.html", "predict_demo.html", "risk_evolution.html",
-                          "km_roc.html", "model_report.html", "manifest.json"]}
+            "artifacts": ["index.html", "predict_demo.html", "shap_force.html",
+                          "risk_evolution.html", "km_roc.html", "model_report.html",
+                          "manifest.json"]}
 
 
 def main() -> None:

@@ -8,12 +8,12 @@
 
 | 项 | 内容 | 核实方式 |
 | --- | --- | --- |
-| 数据集 | FDIC Summary of Deposits（SOD） | 官方页面 <https://www.fdic.gov/bank-financial-reports/summary-deposits> |
+| 数据集 | FDIC Summary of Deposits（SOD） | 下载入口 <https://www.fdic.gov/bank-data-guide/data-downloads>（Data Downloads →「Branch Office Deposits - SOD」）；BankFind Suite <https://banks.data.fdic.gov/bankfind-suite/SOD> |
 | 调查口径 | 截至每年 **6 月 30 日**的分支机构存款年度普查，覆盖所有 FDIC 投保机构（含外国银行在美分行）；仅有总行无分支的机构豁免 | 官方说明，已联网核实 |
 | 覆盖年份 | 1994–2025（32 个年度文件，`fdic_sod_<YYYY>.csv`） | 本地实测：32 文件、1,681,231,439 字节（≈1.57 GiB） |
 | 列数 | **81 列，32 年完全一致**（无列漂移） | 本地实测：逐年读表头比对 |
 | 规模 | 2,822,977 行网点-年记录（本项目只用 10 列） | 本地实测 |
-| 获取方式 | FDIC 官网年度 SOD 全量下载（已下载到本地，见上方共享路径） | — |
+| 获取方式 | FDIC「Data Downloads」页 → Branch Office Deposits - SOD（自定义 / 全国下载，回溯 1994）已下载到本地，见上方共享路径 | 新版入口；原 `bank-financial-reports/summary-deposits` 页已并入新系统 |
 | 更新频率 | 年度。基准日为每年 6 月 30 日；结果通常在**当年下半年**发布（原写「每年 6 月前后」，已更正） | 官方页面（最近更新 2026-05-29）+ 新闻稿核实 |
 | 授权 | 美国联邦政府公共数据，可商用；仅本地开发使用 | 官方说明（FDIC 为美国联邦机构，其数据属公共领域） |
 | 只读约束 | **任何脚本都不得写入本目录** | 规范 §1 |

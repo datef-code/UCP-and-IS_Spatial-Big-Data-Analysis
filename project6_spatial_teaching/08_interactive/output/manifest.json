@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-08T13:59:36",
+  "generated_at": "2026-09-09T20:57:46",
   "generator": {
     "tool": "plotly + h3 + libpysal",
     "script": "08_interactive/08_interactive.py",
@@ -64,6 +64,18 @@
       "n": 2661,
       "scope": "mp4（FuncAnimation）内嵌 <video>；按深圳 bbox 裁切飞点",
       "tool": "matplotlib + ffmpeg"
+    },
+    {
+      "file": "ebook/index.html",
+      "title": "L0→L3 电子书（可翻页）",
+      "type": "ebook",
+      "question": "内容能不能按阶梯一页页翻着读？",
+      "alt_text": "可翻页电子书：封面/目录/引言/L0-L3/对比/演化/结论/复现",
+      "unit": "左/右箭头或键盘 ←/→ 翻页；每章嵌入对应交互图",
+      "source": "本目录 moran_explorer.html / ladder_compare.html / ladder_evolution.html + version_lock",
+      "n": 4,
+      "scope": "骨架版：章节+关键结论+图已就位，正文留「待补」位",
+      "tool": "html"
     }
   ]
 }

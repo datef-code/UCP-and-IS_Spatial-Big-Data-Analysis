@@ -17,6 +17,7 @@
 | `output/index.html` | 结论、demo、体检报告能不能一站式看到？ | 入口 + 边界声明 + 复现清单 |
 | `output/predict_demo.html` | 给定特征，模型给这个网点打多少风险分？ | 拖滑块 / 选类别 → 实时概率 + 逐特征贡献分解 |
 | `output/risk_evolution.mp4/.html` | 关闭在时间上怎么分布？模型看到的风险怎么变？ | mp4 内嵌：年度关闭柱 + 风险分布同步推进 |
+| `output/shap_force.html` | 单个预测为什么这样判？ | **plotly 自绘** 三行水平条形图：红推高、蓝压低 SHAP 值，按 |SHAP| 降序，hover 看原值 |
 | `output/km_roc.html` | 谁先死、什么时候死？模型分得开吗？ | KM 按脆弱性分层（hover 看 at-risk）+ ROC |
 | `output/model_report.html` | 模型够不够用？ | 系数森林（点 + 95% CI）+ 指标 + 残差 Moran's I |
 
@@ -36,6 +37,9 @@
    两者都是本项目真实拟合的产物，页面分别标注模型名，不混用。
 5. **贡献分解为什么等于 SHAP**：线性模型的 SHAP 值就是 `coef × (标准化后的特征值)`，
    各项之和 + 截距 = 对数几率。所以这里给的分解是**精确的**，不是近似。
+   **不用 shap 库的 force plot**：shap 用 React 18 `createRoot` 渲染 force plot 的 link 区
+   （dependence plot 视图），在 iframe 内 React 渲染时常出现「下拉框/折叠按钮看着在但
+   点不动」的问题。改用 plotly 自绘，依赖更少、渲染可控、与本目录其它三件产物交互风格一致。
 6. **边界必须写在页面上**：「风险预测，不是因果、不是 ROI 工具」放在 demo 正下方，
    不藏在文档里；并列出左截断 / 右删失 / Moran's I / AUC 仅同口径可比四条限制。
 

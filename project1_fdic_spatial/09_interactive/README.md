@@ -17,8 +17,9 @@
 | `output/index.html` | 证据链能不能一眼看完？ | 叙事入口：结论 → 机制 → 证据 → 空间 → 限制 → 复现 |
 | `output/event_study.html` | 处理效应随时间怎么走？平行趋势成立吗？ | hover 看每期系数 / 95% CI / p 值 |
 | `output/attenuation.html` | 效应随距离衰减吗？换环宽结论还稳吗？ | 切换「标准环 / 合并环」×「计数 / 密度」 |
-| `output/spacetime.html` | 关闭事件在空间上怎么扩散？ | mp4 内嵌：1994–2025 逐年扩散（进度条 / 倍速 / 可下载） |
+| `output/spacetime.html` | 关闭事件在空间上怎么扩散？ | mp4 内嵌：1994–2015 逐年扩散（进度条 / 倍速 / 可下载） |
 | `output/spacetime.mp4` | 同上，单独文件 | 直接拖进 PPT / 汇报材料 |
+| `output/kepler_timeline.html` | 能不能自己拖时间轴、定格任意年份？ | Kepler.gl 时间轴：逐帧播放关闭事件扩散（需联网加载 CDN） |
 
 ## 关键口径与决策理由
 
@@ -48,14 +49,23 @@
    2016 起没有任何关闭事件——此前硬画到 2025，等于一半时长在放空气。
 8. **为什么 plotly 内联**（`include_plotlyjs=True`）：保证单文件离线可开、挪动不丢图，
    代价是每页约 4–5 MB。
-6. **守住克制**：`index.html` 顶部与「限制」段反复标注**关联证据非严格因果**，
+9. **时间轴为什么放 ⑨ 而不放 ⑦**：⑦ 是核心可视化阶段，产出固定的静态 Kepler 地图；
+   时间轴是**交互增强**（§8.8 扩展可视化），应留在扩展阶段、不能反向污染核心阶段。
+   `kepler_timeline.html` 只读 ⑦ 的 `closed_events.csv / h3_cells.csv / kepler_config.json`，
+   注入 `timeRange` 过滤 + `animationConfig` 生成，**不重算、不改写 ⑦ 的产物**。
+   它与 mp4 互补：mp4 是「自动讲一遍」，Kepler 时间轴是「自己拖进度条戳」。
+10. **时间轴起点对齐 mp4**：`SIMS_ACQUIRED_DATE` 里有 4,612 起（17%）早于 1994 的历史并购
+   （SOD 首年之前的存量），直接纳入会让时间轴前 24 年大段空白；故与 `anim_spacetime`
+   一致，只保留 `acq_year >= 1994`。
+11. **守住克制**：`index.html` 顶部与「限制」段反复标注**关联证据非严格因果**，
    并原样带上 `08_conclude` 的止损条件——这是本产品的可信度来源，不是减分项。
 
 ## 输入 / 输出
 
 - **输入（只读）**：`06_estimate/output/estimate.json`、`05_map/output/mapped.csv`、
-  `07_visualize/output/kepler/closed_events.csv`
-- **输出**：`output/{index,event_study,attenuation,spacetime}.html` + `output/manifest.json`
+  `07_visualize/output/kepler/{closed_events.csv, h3_cells.csv, kepler_config.json}`
+- **输出**：`output/{index,event_study,attenuation,spacetime,kepler_timeline}.html` +
+  `output/manifest.json` + 审计附件 `kepler_timeline_{events.csv, config.json}`
   （§8.8.5 结构：每图带 question / alt_text / source / n / scope / unit）
 
 ## 运行

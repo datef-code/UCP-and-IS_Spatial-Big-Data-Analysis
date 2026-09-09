@@ -89,16 +89,17 @@
   "08_interactive": {
     "stage": "08_interactive",
     "blocking": false,
-    "figures": 4,
+    "figures": 5,
     "datasets": 4,
     "artifacts": [
       "index.html",
       "moran_explorer.html",
       "ladder_compare.html",
       "ladder_evolution.html",
+      "ebook/index.html",
       "manifest.json"
     ],
     "ok": true,
-    "seconds": 35.4
+    "seconds": 53.3
   }
 }

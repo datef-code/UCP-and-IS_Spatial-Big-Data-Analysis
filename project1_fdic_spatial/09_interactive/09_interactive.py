@@ -4,11 +4,12 @@
 把 ⑦ 的静态图升级为**可 hover、可播放、可切换口径**的交互件，让人自己去戳数据，
 而不是只相信作者的静态图。
 
-三件产物（各一个自包含 HTML，plotly 内联，离线可开）：
+四件产物（HTML 自包含、离线可开；Kepler 一件需联网加载 CDN）：
 
-1. ``event_study.html``  —— 事件研究：τ 各期系数 + 95% CI，hover 看数值与 p 值
-2. ``attenuation.html``  —— 距离衰减：可切换「标准环 / 合并环」×「计数 / 密度」
-3. ``spacetime.html``    —— 时空演变动画：1994–2025 逐年关闭事件在全国扩散
+1. ``event_study.html``     —— 事件研究：τ 各期系数 + 95% CI，hover 看数值与 p 值
+2. ``attenuation.html``     —— 距离衰减：可切换「标准环 / 合并环」×「计数 / 密度」
+3. ``spacetime.html``       —— 时空演变动画（mp4）：1994–2015 逐年关闭事件在全国扩散
+4. ``kepler_timeline.html`` —— 带时间轴的 Kepler 地图：逐帧播放关闭事件扩散，可定格任意年份
 
 外加 ``index.html``（证据链叙事：结论 → 机制 → 证据 → 反例 → 限制）与 ``manifest.json``。
 
@@ -374,6 +375,158 @@ def anim_spacetime(events: pd.DataFrame) -> tuple[Path, Path]:
 
 
 # --------------------------------------------------------------------------- #
+# ③b 带时间轴的 Kepler.gl 地图（交互增强：把 ⑦ 的静态 Kepler 地图升级为可播放）
+# --------------------------------------------------------------------------- #
+_KEPLER_TL_HTML = """<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>FDIC Spatial: 关闭事件时间轴 · H3 R8</title>
+<script src="https://unpkg.com/kepler.gl@3.2.0/umd/keplergl.min.js"></script>
+<style>
+  body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, sans-serif; }
+  #content { display: flex; flex-direction: column; height: 100vh; }
+  #titlebar { padding: 12px 24px; background: #1a1a2e; color: white; }
+  #titlebar h1 { margin: 0 0 4px 0; font-size: 18px; }
+  #titlebar p { margin: 0; font-size: 12px; opacity: 0.85; }
+  #map { flex: 1; }
+</style>
+</head>
+<body>
+<div id="content">
+  <div id="titlebar">
+    <h1>⑨ · FDIC 网点关闭事件时间轴（Kepler.gl timeRange）</h1>
+    <p>点左下「时间播放」按钮或拖动底部时间轴，逐帧看关闭事件在全国的扩散；颜色 = acq_year 队列，H3 R8 cells 高度 = 存款增长。</p>
+  </div>
+  <div id="map"></div>
+</div>
+<div id="__ERR_PANEL__" style="display:none;position:absolute;left:24px;right:24px;top:70px;
+  background:#fff3cd;color:#856404;padding:12px 16px;border:1px solid #ffeeba;
+  border-radius:8px;font:13px/1.5 -apple-system,BlinkMacSystemFont,sans-serif;z-index:9999;
+  white-space:pre-wrap;max-height:40%;overflow:auto"></div>
+<script>
+window.addEventListener("error", function(e) {
+  var el = document.getElementById("__ERR_PANEL__");
+  if (!el) return;
+  el.style.display = "block";
+  el.textContent = "[Kepler.gl JS 错误] " + (e.message || "") +
+    (e.filename ? "  at " + e.filename + ":" + e.lineno : "");
+});
+const CSV_EVENTS = "data:text/csv;base64,__CSV_EVENTS_B64__";
+const CSV_CELLS = "data:text/csv;base64,__CSV_CELLS_B64__";
+const CONFIG = __CONFIG_JSON__;
+
+function b64ToBlob(b64) {
+  const bin = atob(b64);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return new Blob([bytes], {type: "text/csv"});
+}
+
+const container = document.getElementById("map");
+if (typeof KeplerGL === "undefined") {
+  var el = document.getElementById("__ERR_PANEL__");
+  el.style.display = "block";
+  el.textContent = "[Kepler.gl 未加载] 全局变量 KeplerGL 不存在；可能是 CDN 失败（unpkg.com / kepler.gl@3.2.0/umd/keplergl.min.js），或网络受限。请检查能否访问 https://unpkg.com/ 。";
+  throw new Error("KeplerGL undefined");
+}
+const app = new KeplerGL.default({
+  container: container,
+  mapboxAccessToken: null,
+  width: window.innerWidth,
+  height: window.innerHeight,
+});
+
+(async () => {
+  const e1 = await fetch(CSV_EVENTS);
+  const e2 = await fetch(CSV_CELLS);
+  const eventsCsv = await e1.text();
+  const cellsCsv = await e2.text();
+  const evDataset = await app.csvDataset(eventsCsv);
+  const ceDataset = await app.csvDataset(cellsCsv);
+  app.addDataToMap({
+    datasets: [
+      {info: {label: "closed_events", id: "closed_events"}, data: evDataset},
+      {info: {label: "h3_cells",      id: "h3_cells"},      data: ceDataset},
+    ],
+    config: CONFIG.config,
+  });
+})();
+</script>
+</body>
+</html>"""
+
+
+def kepler_timeline_html(kdir: Path) -> dict:
+    """把 ⑦ 的 Kepler 地图升级为**带时间轴**的可播放版本。
+
+    为什么在 ⑨ 而不在 ⑦：⑦ 是**核心可视化阶段**，产出固定的静态 Kepler 地图；
+    时间轴属于**交互增强**（规范 §8.8 的扩展可视化），应留在扩展阶段，
+    不能反向污染核心阶段（否则重跑 ⑦ 会把交互增强写进核心产物、混淆职责边界）。
+
+    本函数只读 ⑦ 产物，不重算：给 ``closed_events`` 加 ``event_time``
+    （acq_year → 每年 6/30 的 epoch 毫秒，与 SOD 基准日一致），
+    注入 Kepler 的 ``timeRange`` 过滤 + ``animationConfig``，生成自包含 HTML。
+    """
+    import base64
+
+    ev = pd.read_csv(kdir / "closed_events.csv")
+    cells_csv = (kdir / "h3_cells.csv").read_text(encoding="utf-8")
+    base_cfg = json.loads((kdir / "kepler_config.json").read_text(encoding="utf-8"))
+
+    # 时间轴：acq_year → 每年 6/30 的 epoch 毫秒（与 SOD 基准日一致）。
+    # 口径对齐 anim_spacetime（mp4）：只保留 acq_year >= 1994（SOD 覆盖期起点）。
+    # 1994 前的 4,612 起（17%）是观测期前的历史并购（SIMS_ACQUIRED_DATE 早于 SOD 首年），
+    # 播放时会造成 1970–1993 大段空白，故与 mp4 一致裁剪掉。
+    ev = ev.dropna(subset=["acq_year"]).copy()
+    ev = ev[ev["acq_year"].astype(int).between(1994, 2100)]
+    ev["acq_year"] = ev["acq_year"].astype(int)
+    ev["event_time"] = [int(_dt.datetime(int(y), 6, 30,
+                                         tzinfo=_dt.timezone.utc).timestamp() * 1000)
+                        for y in ev["acq_year"]]
+    t_min, t_max = int(ev["event_time"].min()), int(ev["event_time"].max())
+    y_min, y_max = int(ev["acq_year"].min()), int(ev["acq_year"].max())
+
+    # 深拷贝 base config 再注入（绝不反向改写 ⑦ 的 kepler_config.json）
+    cfg = json.loads(json.dumps(base_cfg))
+    vs = cfg["config"]["visState"]
+    # kepler.gl filter 的 dataId / name 都是单字符串（PropTypes.string），不是数组。
+    # 写成数组会导致 addDataToMap 内部抛异常、整张图不渲染（标题栏还在）。
+    vs["filters"] = list(vs.get("filters", [])) + [{
+        "dataId": "closed_events",
+        "id": "event_time",
+        "name": "event_time",
+        "field": "event_time",
+        "type": "timeRange",
+        "value": [t_min, t_max],
+        "enlarged": True,
+        "plotType": "histogram",
+        "animationWindow": "free",
+        "yAxis": None,
+        "speed": 1,
+    }]
+    vs["animationConfig"] = {"domain": [t_min, t_max], "currentTime": None, "speed": 1}
+
+    ev_csv = ev.to_csv(index=False)
+    ev_b64 = base64.b64encode(ev_csv.encode("utf-8")).decode("ascii")
+    cells_b64 = base64.b64encode(cells_csv.encode("utf-8")).decode("ascii")
+    cfg_json = json.dumps(cfg, ensure_ascii=False)
+
+    html = (_KEPLER_TL_HTML
+            .replace("__CSV_EVENTS_B64__", ev_b64)
+            .replace("__CSV_CELLS_B64__", cells_b64)
+            .replace("__CONFIG_JSON__", cfg_json))
+    p = OUT / "kepler_timeline.html"
+    p.write_text(html, encoding="utf-8")
+    # 审计附件：时间轴版本的数据与配置（便于人读、便于重跑）
+    (OUT / "kepler_timeline_events.csv").write_text(ev_csv, encoding="utf-8")
+    (OUT / "kepler_timeline_config.json").write_text(
+        json.dumps(cfg, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    return {"path": p, "t_min": t_min, "t_max": t_max,
+            "y_min": y_min, "y_max": y_max, "n": len(ev)}
+
+
+# --------------------------------------------------------------------------- #
 # ④ 证据链叙事（scrollytelling）
 # --------------------------------------------------------------------------- #
 _CSS = """
@@ -472,7 +625,12 @@ def build_index(est: dict) -> Path:
 <div class="card"><iframe src="spacetime.html" loading="lazy"
   title="时空演变动画"></iframe>
 <div class="cap">自动播放的 mp4 内嵌页（可拖进度条定格任意年份、可调倍速、可下载 mp4）。
-左：亮点＝当年新增关闭、紫点＝历史累计；右：当年新增柱 + 累计曲线。</div></div>""",
+左：亮点＝当年新增关闭、紫点＝历史累计；右：当年新增柱 + 累计曲线。</div></div>
+<div class="card"><iframe src="kepler_timeline.html" loading="lazy"
+  title="关闭事件时间轴（Kepler）"></iframe>
+<div class="cap">Kepler.gl 时间轴版（需联网加载 Kepler CDN）：点左下「时间播放」或拖动底部时间轴，
+逐帧看关闭事件扩散，可定格任意年份；颜色＝acq_year 队列，H3 格高度＝存款增长。
+与上面的 mp4 互补——mp4 是「自动讲一遍」，这里是「自己拖进度条戳」。</div></div>""",
 
         "limits": """
 <p class="kicker">反例与限制</p>
@@ -542,6 +700,12 @@ def run(project) -> dict:
     p4 = build_index(est)
     project.log(f"    [⑨] {p4.name}（{p4.stat().st_size/1e3:.0f} KB）")
 
+    # 带时间轴的 Kepler 地图：只读 ⑦ 的 kepler 产物，注入 timeRange 过滤
+    kdir = Path(project.stage_path("07_visualize", "kepler"))
+    tl = kepler_timeline_html(kdir)
+    project.log(f"    [⑨] {tl['path'].name}（{tl['path'].stat().st_size/1e6:.1f} MB；"
+                f"时间轴 {tl['y_min']}–{tl['y_max']}，{tl['n']:,} 事件）")
+
     manifest = {
         "generated_at": _dt.datetime.now().isoformat(timespec="seconds"),
         "generator": {
@@ -552,7 +716,7 @@ def run(project) -> dict:
             "note": "plotly 内联（include_plotlyjs=True），单文件自包含，离线可开、挪动不丢",
         },
         "entry": "index.html",
-        "n_figures": 3,
+        "n_figures": 4,
         "figures": [
             {"file": "index.html", "title": "空间溢出证据链（叙事入口）",
              "type": "scrollytelling", "question": "证据链能不能一眼看完并能自己戳？",
@@ -579,14 +743,22 @@ def run(project) -> dict:
              "source": "07_visualize/output/kepler/closed_events.csv", "n": 27018,
              "scope": "mp4（FuncAnimation）内嵌 <video>；图幅取事件经纬度 1%–99% 分位数；底图＝州轮廓",
              "tool": "matplotlib + ffmpeg"},
+            {"file": "kepler_timeline.html", "title": "关闭事件时间轴（Kepler.gl 可播放）",
+             "type": "kepler_timeline", "question": "关闭事件在时间轴上怎么逐帧扩散？能定格任意年份吗？",
+             "alt_text": "底部时间轴拖动播放，事件点按 acq_year 队列上色，H3 格高度＝存款增长",
+             "unit": "event_time = 每年 6/30 的 epoch 毫秒（与 SOD 基准日一致）",
+             "source": "07_visualize/output/kepler/{closed_events.csv, h3_cells.csv, kepler_config.json}",
+             "n": tl["n"], "scope": f"{tl['y_min']}–{tl['y_max']}；需联网加载 Kepler CDN",
+             "tool": "kepler.gl 3.2.0"},
         ],
     }
     (OUT / "manifest.json").write_text(
         json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
-    return {"stage": STAGE, "blocking": False, "figures": 4,
+    return {"stage": STAGE, "blocking": False, "figures": 5,
             "artifacts": ["index.html", "event_study.html",
-                          "attenuation.html", "spacetime.html", "manifest.json"]}
+                          "attenuation.html", "spacetime.html",
+                          "kepler_timeline.html", "manifest.json"]}
 
 
 def main() -> None:

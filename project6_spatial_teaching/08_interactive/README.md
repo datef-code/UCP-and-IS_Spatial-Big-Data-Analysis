@@ -18,6 +18,7 @@
 | `output/moran_explorer.html` | 权重方案怎么影响 Moran's I？ | 切数据集 × 权重 × 格值尺度，实时看散点 / 拟合线 / I |
 | `output/ladder_evolution.html` | 网格化、权重、滞后、距离环怎么串成一条链？ | mp4 内嵌的四段演化动图（点 → 格 → 邻居 → 滞后 → 距离环） |
 | `output/ladder_compare.html` | 四个数据集差多少？ | hover 看格数 / 平均邻居 / I |
+| `output/ebook/index.html` | 内容能不能按阶梯一页页翻着读？ | **可翻页电子书骨架**：11 页（封面/目录/引言/L0–L3/对比/演化/结论/复现），左右箭头或键盘 ←/→ 翻页，TOC 跳转，进度条；每章嵌入对应交互图 |
 
 ## 关键口径与决策理由
 

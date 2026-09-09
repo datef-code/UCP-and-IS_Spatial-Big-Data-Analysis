@@ -585,6 +585,213 @@ code{{background:#F3F4F6;padding:1px 5px;border-radius:4px;font-size:13px}}
 
 
 # --------------------------------------------------------------------------- #
+# ④ 可翻页电子书骨架
+# --------------------------------------------------------------------------- #
+def build_ebook(rows: list[dict], locks: dict) -> Path:
+    """把 L0→L3 内容整理成**可翻页的电子书骨架**（左/右翻页 + 键盘 + 目录 + 进度）。
+
+    定位：电子书是「骨架」——章节结构与关键结论已就位、交互图已嵌入，
+    每章留了「待补」标注的正文扩写位，方便后续填成完整教材。
+    纯单文件 HTML（CSS/JS 内联），图用 iframe 引用本目录其它交互件（离线可开）。
+    """
+    rows_html = "".join(
+        f"<tr><td>{r['label']}</td><td style='text-align:right'>{r['cells']:,}</td>"
+        f"<td style='text-align:right'>{r['neighbors']:.2f}</td>"
+        f"<td style='text-align:right'>{r['moran_i']:.4f}</td></tr>" for r in rows)
+    locks_html = "".join(
+        f"<tr><td><code>{ds}</code></td><td>{lk.get('frozen_at','—')}</td>"
+        f"<td>{', '.join(f'{k} {v}' for k, v in list((lk.get('library_versions') or {}).items())[:3])}</td></tr>"
+        for ds, lk in locks.items())
+
+    pages = [
+        ("cover", "封面", f"""
+        <div class="cover">
+          <div class="tag">空间大数据方法 · 教学电子书</div>
+          <h1>L0 → L3<br>四阶认知阶梯</h1>
+          <p class="lede">一套流程跑通四个数据集。<br>
+          核心命题只有一句：<b>「邻居」怎么定义，决定你能看到什么结论。</b></p>
+          <div class="ds">{' / '.join(r['label'] for r in rows)}</div>
+          <div class="lic">许可：FDIC 公共领域可商用；SNAP（Brightkite / Gowalla）仅限研究用途、不可商用；
+          深圳单车为本地存档、数据源已停更。</div>
+        </div>"""),
+        ("toc", "目录", """
+        <h2>目录</h2>
+        <ol class="toc">
+          <li data-to="intro">引言：为什么要空间维度</li>
+          <li data-to="l0">L0 · 网格化：把点装进格子</li>
+          <li data-to="l1">L1 · 权重矩阵：定义谁是邻居</li>
+          <li data-to="l2">L2 · 空间滞后：邻居均值与 Moran's I</li>
+          <li data-to="l3">L3 · 距离环：效应怎么随距离衰减</li>
+          <li data-to="compare">四数据集对比</li>
+          <li data-to="evolution">L0→L3 演化动图</li>
+          <li data-to="conclusion">结论与限制</li>
+          <li data-to="repro">可复现</li>
+        </ol>"""),
+        ("intro", "引言", """
+        <h2>引言：为什么要空间维度</h2>
+        <p class="q">如果只把数据当「一行行记录」，你会漏掉一件事：<b>它们彼此之间有位置关系。</b></p>
+        <p>深圳单车的起终点挤在同一座城市，Brightkite 的签到散落全球——同样的「计数」，
+        在不同的空间结构里，含义完全不同。本教程用一条四步流水线把「位置关系」显式地算出来。</p>
+        <div class="steps4">
+          <div><b>L0</b>网格化</div><div><b>L1</b>权重</div>
+          <div><b>L2</b>滞后</div><div><b>L3</b>距离环</div>
+        </div>
+        <p class="todo">📝 待补：展开「空间自相关的直觉」——高值为什么爱挨着高值。</p>"""),
+        ("l0", "L0 · 网格化", """
+        <h2>L0 · 把点装进 H3 六边形格</h2>
+        <p>点太密、太乱，先离散化：把每个点映射到 Uber H3 的 <b>R8 六边形</b>（平均 0.737 km²），
+        格内求和得到「格值」。这一步把「点云」变成「栅格」。</p>
+        <div class="fact"><b>关键事实</b>：四个数据集的格数从 2,661（sz_bike）到 302,580（gowalla）
+        —— 规模差异 100 倍，是后面所有结论的地基。</div>
+        <p class="todo">📝 待补：H3 为什么用六边形（而非方格）；R8 分辨率怎么选。</p>"""),
+        ("l1", "L1 · 权重矩阵", """
+        <h2>L1 · 定义「谁是邻居」</h2>
+        <p>空间权重矩阵 <code>W</code> 是空间分析里<b>最主观、最影响结论</b>的一步：
+        Queen 邻接（共享边）还是 KNN（最近 k 个）？行标准化还是二值？</p>
+        <div class="fact"><b>一句话记住</b>：「邻居」是人为定义，不是客观事实。
+        换一种定义，Moran's I 会跟着变。</div>
+        <p class="todo">📝 待补：W 的行标准化推导；孤岛格（无邻居）怎么处理。</p>"""),
+        ("l2", "L2 · 空间滞后", f"""
+        <h2>L2 · 空间滞后与 Moran's I</h2>
+        <p>空间滞后 <code>Wx</code> = 邻居的均值。把格值画在横轴、滞后画在纵轴，
+        散点拟合线的斜率就是 <b>Moran's I</b>。</p>
+        <div class="fig"><iframe src="../moran_explorer.html" loading="lazy"></iframe>
+        <div class="cap">亲手切换数据集 / 权重 / 格值尺度，看 I 怎么变（本教程最重要的一课）。</div></div>
+        <p class="todo">📝 待补：I 的显著性（置换检验）与「I 依赖变量尺度」的讨论。</p>"""),
+        ("l3", "L3 · 距离环", """
+        <h2>L3 · 邻居换成距离环</h2>
+        <p>「谁是邻居」还可以用<b>距离</b>回答：以热点格为圆心画环（0–1 / 1–3 / 3–5 / 5–10 km），
+        看效应怎么随距离衰减。</p>
+        <div class="fact"><b>关键事实</b>：计数口径会随环面积增大而虚高，
+        必须除以环面积看<b>密度</b>，才看得到真实的「随距离衰减」。</div>
+        <p class="todo">📝 待补：距离环 vs 权重的取舍；边界效应。</p>"""),
+        ("compare", "四数据集对比", f"""
+        <h2>同一套管线，四个数据集</h2>
+        <div class="fig"><iframe src="../ladder_compare.html" loading="lazy"></iframe>
+        <div class="cap">hover 看每个数据集的格数、平均邻居数与 Moran's I。</div></div>
+        <table class="data"><thead><tr><th>数据集</th><th>格数（L0）</th>
+        <th>平均邻居（L1）</th><th>Moran's I（L2）</th></tr></thead><tbody>{rows_html}</tbody></table>
+        <p>sz_bike 的 I 是 brightkite 的 50 倍——不是算法偏好，是<b>数据本身的空间结构</b>决定的。</p>"""),
+        ("evolution", "L0→L3 演化", """
+        <h2>看它们怎么串成一条链</h2>
+        <div class="fig"><iframe src="../ladder_evolution.html" loading="lazy"></iframe>
+        <div class="cap">点 → 格 → 邻居 → 滞后 → 距离环（深圳共享单车，2,661 格）。可下载 mp4 放课件。</div></div>"""),
+        ("conclusion", "结论与限制", """
+        <h2>结论与限制</h2>
+        <ul>
+          <li><b>结论 1</b>：空间权重矩阵的定义对结论敏感——跨研究比较 I 必须同尺度、同权重、同网格。</li>
+          <li><b>结论 2</b>：看到很低的 I，先问「是不是数据本来就稀」（孤岛格多），别急着说没有空间效应。</li>
+          <li><b>限制</b>：所有成本参数（R8 / 环宽 / 抽样日）都是<b>合成参数</b>，非真实业务口径。</li>
+        </ul>"""),
+        ("repro", "可复现", f"""
+        <h2>可复现（教学产品的信服度来源）</h2>
+        <p>每个数据集的 <code>version_lock.json</code> 冻结了源数据指纹、行数、库版本；
+        版本漂移会被 ④ 记为断言失败。</p>
+        <table class="data"><thead><tr><th>数据集</th><th>冻结时间</th><th>库版本</th></tr></thead>
+        <tbody>{locks_html}</tbody></table>
+        <div class="note">重跑：<code>python main.py</code>（单阶段 <code>python main.py --stage 08</code>）。
+        引用 SNAP 数据：Cho, Myers &amp; Leskovec, KDD 2011。</div>"""),
+    ]
+
+    toc_links = "".join(f'<a href="#" data-to="{pid}">{t}</a>'
+                        for pid, t, _ in pages)
+    body = "".join(f'<section class="page" id="{pid}">{html}</section>'
+                   for pid, t, html in pages)
+    total = len(pages)
+
+    html = f"""<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>空间大数据方法 · L0→L3 电子书</title>
+<style>
+:root{{--ink:#1f2937;--sub:#6b7280;--line:#e5e7eb;--up:#d55e00;--down:#0072b2;--bg:#fafafa}}
+*{{box-sizing:border-box}}
+body{{margin:0;font-family:"Microsoft YaHei","Noto Sans CJK SC",sans-serif;color:var(--ink);background:#fff}}
+.chrome{{display:flex;align-items:center;gap:14px;padding:12px 20px;border-bottom:1px solid var(--line);
+  background:#fff;position:sticky;top:0;z-index:5}}
+.chrome .brand{{font-weight:700;font-size:14px;margin-right:auto}}
+.chrome button{{border:1px solid var(--line);background:#fff;border-radius:8px;padding:7px 13px;
+  cursor:pointer;font-size:14px}}
+.chrome button:hover{{border-color:var(--up);color:var(--up)}}
+.chrome .cnt{{font-size:13px;color:var(--sub);font-variant-numeric:tabular-nums;min-width:64px;text-align:center}}
+.chrome .bar{{position:absolute;left:0;bottom:-1px;height:2px;background:var(--up);
+  width:0;transition:width .25s}}
+.book{{max-width:900px;margin:0 auto;padding:34px 24px 90px}}
+.page{{display:none;animation:fade .28s ease}}
+.page.active{{display:block}}
+@keyframes fade{{from{{opacity:0;transform:translateY(8px)}}to{{opacity:1;transform:none}}}}
+h1{{font-size:44px;line-height:1.15;margin:0 0 14px}}
+h2{{font-size:26px;margin:0 0 14px;padding-bottom:10px;border-bottom:2px solid var(--line)}}
+p{{line-height:1.8;font-size:15.5px}}
+p.q{{font-size:17px;color:var(--up);font-weight:600}}
+.lede{{font-size:16px;color:var(--sub);margin:16px 0}}
+.tag{{display:inline-block;font-size:12px;letter-spacing:.14em;color:var(--up);font-weight:700}}
+.cover{{padding:40px 0 20px}}
+.cover .ds{{margin:22px 0;font-size:14px;color:var(--sub)}}
+.cover .lic{{font-size:12px;color:var(--sub);margin-top:30px;border-top:1px solid var(--line);padding-top:14px}}
+.toc{{font-size:16px;padding-left:8px}} .toc li{{padding:10px 0;border-bottom:1px dashed var(--line);
+  list-style-position:inside;cursor:pointer}}
+.toc li:hover{{color:var(--up)}}
+.steps4{{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:18px 0}}
+.steps4 div{{border:1px solid var(--line);border-radius:10px;padding:12px;text-align:center;font-size:13px}}
+.steps4 b{{display:block;color:var(--up);font-size:16px}}
+.fact{{border-left:4px solid var(--down);background:#eff6ff;padding:12px 16px;border-radius:0 8px 8px 0;
+  margin:16px 0;font-size:14.5px}}
+.fig{{border:1px solid var(--line);border-radius:12px;overflow:hidden;margin:16px 0}}
+.fig iframe{{width:100%;height:460px;border:0;display:block}}
+.cap{{font-size:12.5px;color:var(--sub);padding:8px 14px;background:var(--bg);border-top:1px solid var(--line)}}
+table.data{{width:100%;border-collapse:collapse;font-size:14px;margin:14px 0}}
+table.data th,table.data td{{padding:8px 10px;border-bottom:1px solid var(--line);text-align:left}}
+table.data th{{color:var(--sub);font-size:12.5px;font-weight:600}}
+.todo{{font-size:13px;color:var(--sub);background:var(--bg);border:1px dashed var(--line);
+  border-radius:8px;padding:10px 14px;margin-top:20px}}
+.note{{border-left:4px solid var(--down);background:#eff6ff;padding:12px 16px;border-radius:0 8px 8px 0;
+  margin:16px 0;font-size:14px}}
+code{{background:var(--bg);padding:1px 6px;border-radius:4px;font-size:13px}}
+ul li{{margin:8px 0;line-height:1.7}}
+</style></head><body>
+<div class="chrome">
+  <span class="brand">L0→L3 · 空间大数据方法</span>
+  <div class="toc-links">{toc_links}</div>
+  <button id="prev">‹ 上一页</button>
+  <span class="cnt" id="cnt">1 / {total}</span>
+  <button id="next">下一页 ›</button>
+  <div class="bar" id="bar"></div>
+</div>
+<div class="book">{body}</div>
+<script>
+const pages = Array.from(document.querySelectorAll('.page'));
+let cur = 0;
+function go(n){{
+  n = Math.max(0, Math.min(pages.length-1, n));
+  pages[cur].classList.remove('active');
+  cur = n;
+  pages[cur].classList.add('active');
+  document.getElementById('cnt').textContent = (cur+1)+' / '+pages.length;
+  document.getElementById('bar').style.width = ((cur+1)/pages.length*100)+'%';
+  window.scrollTo({{top:0, behavior:'smooth'}});
+}}
+document.getElementById('next').onclick = () => go(cur+1);
+document.getElementById('prev').onclick = () => go(cur-1);
+document.addEventListener('keydown', e => {{
+  if (e.key==='ArrowRight'||e.key==='PageDown') go(cur+1);
+  if (e.key==='ArrowLeft'||e.key==='PageUp') go(cur-1);
+}});
+document.querySelectorAll('[data-to]').forEach(a => {{
+  a.onclick = e => {{
+    const t = document.getElementById(a.dataset.to);
+    if (t) {{ go(pages.indexOf(t)); e.preventDefault(); }}
+  }};
+}});
+go(0);
+</script></body></html>"""
+
+    p = OUT / "ebook" / "index.html"
+    p.parent.mkdir(parents=True, exist_ok=True)
+    p.write_text(html, encoding="utf-8")
+    return p
+
+
+# --------------------------------------------------------------------------- #
 def run(project) -> dict:
     project.log(f"[{STAGE}] ⑧ 交互教材（可交互 Moran 散点 + 阶梯对比 + 一键复现）")
     OUT.mkdir(parents=True, exist_ok=True)
@@ -618,6 +825,8 @@ def run(project) -> dict:
         p4, mp4 = None, None
         project.log("    [⑧] 跳过 L0→L3 演化动图：缺少 ffmpeg（pip install imageio-ffmpeg）")
     p3 = build_index(rows, locks)
+    p5 = build_ebook(rows, locks)
+    project.log(f"    [⑧] ebook/index.html（{p5.stat().st_size/1e3:.0f} KB）")
     for p in (p1, p2, p3, p4):
         if p:
             project.log(f"    [⑧] {p.name}（{p.stat().st_size/1e6:.2f} MB）")
@@ -660,14 +869,21 @@ def run(project) -> dict:
              "n": 2661,
              "scope": "mp4（FuncAnimation）内嵌 <video>；按深圳 bbox 裁切飞点",
              "tool": "matplotlib + ffmpeg"},
+            {"file": "ebook/index.html", "title": "L0→L3 电子书（可翻页）",
+             "type": "ebook", "question": "内容能不能按阶梯一页页翻着读？",
+             "alt_text": "可翻页电子书：封面/目录/引言/L0-L3/对比/演化/结论/复现",
+             "unit": "左/右箭头或键盘 ←/→ 翻页；每章嵌入对应交互图",
+             "source": "本目录 moran_explorer.html / ladder_compare.html / ladder_evolution.html + version_lock",
+             "n": len(rows), "scope": "骨架版：章节+关键结论+图已就位，正文留「待补」位",
+             "tool": "html"},
         ],
     }
     (OUT / "manifest.json").write_text(
         json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
-    return {"stage": STAGE, "blocking": False, "figures": 4, "datasets": len(DATASETS),
+    return {"stage": STAGE, "blocking": False, "figures": 5, "datasets": len(DATASETS),
             "artifacts": ["index.html", "moran_explorer.html", "ladder_compare.html",
-                          "ladder_evolution.html", "manifest.json"]}
+                          "ladder_evolution.html", "ebook/index.html", "manifest.json"]}
 
 
 def main() -> None:

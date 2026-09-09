@@ -16,6 +16,7 @@
 | **`09_interactive/output/index.html`** | 入口：demo + KM/ROC + 体检报告 + 边界 + 复现 |
 | `09_interactive/output/predict_demo.html` | 拖滑块 → 实时关闭风险 + 逐特征贡献分解（纯前端，离线可算） |
 | `09_interactive/output/risk_evolution.html` | 年度关闭数演化动图（**mp4 内嵌**），标出 2009–2014 危机后整合窗口 |
+| `09_interactive/output/shap_force.html` | 独立 SHAP 交互图：三个代表性网点的 force plot，hover 看每个特征的贡献 |
 | `09_interactive/output/km_roc.html` | KM（按银行脆弱性分层，hover 看 at-risk）+ ROC |
 | `09_interactive/output/model_report.html` | 系数森林图（点 + 95% CI）+ 指标 + 残差 Moran's I |
 

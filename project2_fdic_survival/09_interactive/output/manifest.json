@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-08T13:59:00",
+  "generated_at": "2026-09-09T21:38:41",
   "generator": {
     "tool": "plotly + vanilla JS",
     "version": "7.0.0",
@@ -10,7 +10,7 @@
     "reproducible": true
   },
   "entry": "index.html",
-  "n_figures": 3,
+  "n_figures": 5,
   "fidelity_check": {
     "auc_reproduced": 0.8815,
     "auc_reference": 0.8814,
@@ -79,6 +79,18 @@
       "n": 152538,
       "scope": "mp4（FuncAnimation）内嵌 <video>；按 acq_year 统计",
       "tool": "matplotlib + ffmpeg"
+    },
+    {
+      "file": "shap_force.html",
+      "title": "三个代表性网点：谁把它推向死亡",
+      "type": "shap_force",
+      "question": "单个预测里，每个特征贡献了多少？",
+      "alt_text": "三行水平条形图，红推高蓝压低 SHAP 值，按 |SHAP| 降序，hover 看原值",
+      "unit": "x=SHAP 值（logit 贡献）；y=特征名（按 |SHAP| 降序）",
+      "source": "06_train/output/logit_coefficients.csv + test_predictions.csv",
+      "n": 3,
+      "scope": "logit 主模型；线性模型 SHAP = coef×(x−mean)/std（精确，非近似）",
+      "tool": "plotly"
     }
   ]
 }

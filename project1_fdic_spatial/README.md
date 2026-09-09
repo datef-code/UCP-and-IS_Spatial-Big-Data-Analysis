@@ -46,9 +46,11 @@ project1_fdic_spatial/
 | 打开 | 看什么 |
 | --- | --- |
 | **`09_interactive/output/index.html`** | 证据链叙事：结论 → 机制 → 证据 → 空间 → 限制 → 复现 |
+| `07_visualize/output/kepler/kepler_map.html` | Kepler 交互地图（需联网加载 Kepler CDN） |
 | `09_interactive/output/event_study.html` | 事件研究 τ 系数 + 95% CI，hover 看数值与 p 值 |
 | `09_interactive/output/attenuation.html` | 距离衰减，可切「标准环 / 合并环」×「计数 / 密度」 |
-| `09_interactive/output/spacetime.html` | 1994–2025 关闭事件在全国的级联扩散（**mp4 内嵌**，可拖进度条 / 倍速 / 下载） |
+| `09_interactive/output/spacetime.html` | 1994–2015 关闭事件在全国的级联扩散（**mp4 内嵌**，可拖进度条 / 倍速 / 下载） |
+| `09_interactive/output/kepler_timeline.html` | Kepler 时间轴版（可逐帧播放 / 拖进度条定格任意年份；需联网加载 Kepler CDN） |
 
 全部为**单文件自包含**（plotly 内联 / mp4 以 base64 内嵌），离线可开、挪动不丢图。
 
@@ -64,7 +66,7 @@ project1_fdic_spatial/
 | ⑥ 估计 `06_estimate` | ⑤ 的 `data/`（只读） | `estimate.json`、`metrics.json`、`replication_manifest.json` | TWFE post ≈ -0.053（p<0.001）；τ=0 -4.4pp → τ=4 -10.1pp |
 | ⑦ 可视化 `07_visualize` | ⑤⑥ 输出（只读） | `manifest.json`、`figures/*.png+pdf`、`kepler/kepler_map.html` | 6 张报告图 + 自包含 Kepler 地图 |
 | ⑧ 结论 `08_conclude` | ⑥⑦ 输出（只读） | `conclusion.md`、`technical_report.md`、`short_essay.md` | 关联证据非严格因果；存款再配置而非区域净增 |
-| ⑨ 交互 `09_interactive` | ⑤⑥⑦ 输出（只读） | `index.html`、`event_study/attenuation/spacetime.html`、`manifest.json` | 静态图 → 可 hover / 可播放 / 可切口径 |
+| ⑨ 交互 `09_interactive` | ⑤⑥⑦ 输出（只读） | `index.html`、`event_study/attenuation/spacetime/kepler_timeline.html`、`manifest.json` | 静态图 → 可 hover / 可播放 / 可切口径 |
 
 各阶段的输入 / 输出 / 口径细节见对应目录下的 `README.md`。
 
