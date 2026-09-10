@@ -89,17 +89,20 @@
   "08_interactive": {
     "stage": "08_interactive",
     "blocking": false,
-    "figures": 5,
+    "figures": 9,
     "datasets": 4,
     "artifacts": [
       "index.html",
       "moran_explorer.html",
+      "weight_lab.html",
+      "ring_decay.html",
       "ladder_compare.html",
-      "ladder_evolution.html",
+      "method_atlas.html",
+      "quiz.html",
       "ebook/index.html",
       "manifest.json"
     ],
     "ok": true,
-    "seconds": 53.3
+    "seconds": 1.0
   }
 }

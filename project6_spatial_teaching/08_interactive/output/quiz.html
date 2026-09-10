@@ -1,0 +1,276 @@
+<!doctype html><html lang="zh-CN" data-theme="light"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>自测 · 12 题检验你有没有真的学会</title>
+<script>
+(function(){
+  var KEY='p6-theme';
+  try{
+    var saved=localStorage.getItem(KEY);
+    if(!saved){ saved = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark':'light'; }
+    document.documentElement.setAttribute('data-theme', saved);
+  }catch(e){}
+  window.__toggleTheme=function(){
+    var cur=document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark';
+    document.documentElement.setAttribute('data-theme',cur);
+    try{localStorage.setItem(KEY,cur);}catch(e){}
+    var b=document.getElementById('themeBtn'); if(b){b.textContent = cur==='dark'?'☀ 日间':'☾ 夜间';}
+    window.dispatchEvent(new Event('themechange'));
+  };
+  document.addEventListener('DOMContentLoaded',function(){
+    var b=document.getElementById('themeBtn');
+    if(b){ b.textContent = document.documentElement.getAttribute('data-theme')==='dark'?'☀ 日间':'☾ 夜间'; }
+  });
+})();
+
+/* Plotly 图随主题重着色：plotly 不认 CSS 变量，只能画完再 relayout。 */
+(function(){
+  function hex(v){return v;}
+  window.__applyPlotTheme=function(){
+    var dark=document.documentElement.getAttribute('data-theme')==='dark';
+    var bg=dark?'#0d1424':'#ffffff', grid=dark?'#233047':'#e2e8f0',
+        fg=dark?'#e8eefc':'#0f172a', sub=dark?'#94a3b8':'#64748b';
+    var plots=document.querySelectorAll('.js-plotly-plot');
+    for(var i=0;i<plots.length;i++){
+      var d=plots[i]; if(!d.layout) continue;
+      var up={'paper_bgcolor':bg,'plot_bgcolor':bg,'font.color':sub};
+      Object.keys(d.layout).forEach(function(k){
+        if(/^[xy]axis\d*$/.test(k)){
+          up[k+'.gridcolor']=grid; up[k+'.linecolor']=grid;
+          up[k+'.zerolinecolor']=grid; up[k+'.tickfont.color']=sub;
+          up[k+'.title.font.color']=sub;
+        }
+      });
+      if(d.layout.title) up['title.font.color']=fg;
+      if(d.layout.legend) up['legend.font.color']=sub;
+      if(d.layout.annotations) up['annotations']=(d.layout.annotations||[]).map(function(a){
+        return Object.assign({},a,{font:Object.assign({},a.font||{},{color:sub})});
+      });
+      try{ Plotly.relayout(d, up); }catch(e){}
+      if(window.Plotly && d.data){
+        for(var j=0;j<d.data.length;j++){
+          if(d.data[j] && d.data[j].text){ try{ Plotly.restyle(d,{'textfont.color':sub},[j]); }catch(e){} }
+        }
+      }
+    }
+  };
+  document.addEventListener('DOMContentLoaded',function(){ setTimeout(window.__applyPlotTheme,60); });
+  window.addEventListener('themechange',function(){ setTimeout(window.__applyPlotTheme,30); });
+})();
+</script>
+<style>
+:root{
+  --ink:#0f172a; --ink-2:#334155; --sub:#64748b; --faint:#94a3b8;
+  --line:#e2e8f0; --line-2:#cbd5e1; --bg:#ffffff; --soft:#f8fafc; --soft-2:#f1f5f9;
+  --brand:#2563eb; --brand-soft:#eff6ff;
+  --accent:#ea580c; --accent-soft:#fff7ed;
+  --ok:#059669; --ok-soft:#ecfdf5;
+  --warn:#b45309; --warn-soft:#fffbeb;
+  --purple:#7c3aed; --purple-soft:#f5f3ff;
+  --shadow:0 1px 2px rgba(15,23,42,.06), 0 8px 24px rgba(15,23,42,.06);
+  --radius:14px;
+}
+:root[data-theme="dark"]{
+  --ink:#e8eefc; --ink-2:#c3cee4; --sub:#94a3b8; --faint:#64748b;
+  --line:#233047; --line-2:#33425e; --bg:#0d1424; --soft:#131c2f; --soft-2:#18233a;
+  --brand:#60a5fa; --brand-soft:#13233d;
+  --accent:#fb923c; --accent-soft:#2a1a0e;
+  --ok:#34d399; --ok-soft:#0d2620;
+  --warn:#fbbf24; --warn-soft:#2a2110;
+  --purple:#a78bfa; --purple-soft:#1e1b34;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px rgba(0,0,0,.35);
+}
+
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;font-family:"Microsoft YaHei","Noto Sans CJK SC","PingFang SC","Hiragino Sans GB",sans-serif;color:var(--ink);background:var(--bg);
+     line-height:1.78;-webkit-font-smoothing:antialiased;
+     transition:background .25s,color .25s}
+a{color:var(--brand);text-decoration:none}
+a:hover{text-decoration:underline}
+.wrap{max-width:1180px;margin:0 auto;padding:28px 24px 80px}
+h1,h2,h3{line-height:1.3;letter-spacing:-.01em}
+h1{font-size:30px;margin:0 0 8px}
+h2{font-size:22px;margin:38px 0 12px;padding-bottom:10px;border-bottom:1px solid var(--line)}
+h3{font-size:16.5px;margin:22px 0 8px}
+p{margin:10px 0;font-size:15px;color:var(--ink-2)}
+.lede{font-size:16px;color:var(--sub);margin:8px 0 4px}
+.kicker{font-size:11.5px;letter-spacing:.16em;color:var(--accent);font-weight:800;
+        text-transform:uppercase;margin:0 0 6px}
+.muted{color:var(--sub);font-size:13px}
+code{background:var(--soft-2);padding:1.5px 6px;border-radius:5px;font-size:13px;
+     font-family:ui-monospace,Consolas,"Courier New",monospace;color:var(--ink-2)}
+hr{border:0;border-top:1px solid var(--line);margin:28px 0}
+
+/* ---- 顶栏 ---- */
+.topbar{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:14px;
+  padding:11px 22px;background:var(--bg);border-bottom:1px solid var(--line);
+  backdrop-filter:saturate(180%) blur(8px)}
+.topbar .brand{font-weight:800;font-size:14px;letter-spacing:-.01em}
+.topbar .brand span{color:var(--accent)}
+.topbar .spacer{flex:1}
+.chip{font-size:11px;padding:3px 9px;border-radius:999px;background:var(--soft-2);
+  color:var(--sub);border:1px solid var(--line)}
+.btn{border:1px solid var(--line);background:var(--bg);color:var(--ink-2);
+  border-radius:9px;padding:6px 13px;font-size:13.5px;cursor:pointer;font-family:inherit;
+  transition:.18s;white-space:nowrap}
+.btn:hover{border-color:var(--brand);color:var(--brand);transform:translateY(-1px)}
+.btn.primary{background:var(--brand);border-color:var(--brand);color:#fff}
+.btn.primary:hover{filter:brightness(1.08);color:#fff}
+.btn:disabled{opacity:.4;cursor:not-allowed;transform:none}
+
+/* ---- 卡片 / 网格 ---- */
+.grid{display:grid;gap:14px}
+.g2{grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}
+.g3{grid-template-columns:repeat(auto-fit,minmax(230px,1fr))}
+.g4{grid-template-columns:repeat(auto-fit,minmax(190px,1fr))}
+.card{border:1px solid var(--line);border-radius:var(--radius);padding:16px 18px;
+  background:var(--bg);box-shadow:var(--shadow);transition:.2s}
+.card:hover{border-color:var(--line-2);transform:translateY(-2px)}
+.card .t{font-weight:700;font-size:15px;margin:0 0 6px;display:flex;align-items:center;gap:8px}
+.card .d{font-size:13.5px;color:var(--sub);margin:0;line-height:1.7}
+.card .q{font-size:12.5px;color:var(--accent);margin:10px 0 0;font-weight:600}
+
+/* ---- 指标条 ---- */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:16px 0}
+.stat{border:1px solid var(--line);border-radius:12px;padding:12px 14px;background:var(--soft)}
+.stat .k{font-size:12px;color:var(--sub);display:block;margin-bottom:2px}
+.stat .v{font-size:23px;font-weight:750;font-variant-numeric:tabular-nums;
+  letter-spacing:-.02em;line-height:1.25}
+.stat .h{font-size:11.5px;color:var(--faint)}
+
+/* ---- 提示块 ---- */
+.note,.warn,.ok,.ask{border-radius:0 12px 12px 0;padding:13px 17px;margin:16px 0;
+  font-size:14px;border-left:4px solid}
+.note{background:var(--brand-soft);border-color:var(--brand)}
+.warn{background:var(--accent-soft);border-color:var(--accent)}
+.ok{background:var(--ok-soft);border-color:var(--ok)}
+.ask{background:var(--purple-soft);border-color:var(--purple)}
+.note b,.warn b,.ok b,.ask b{display:block;margin-bottom:4px;font-size:14px}
+.note ul,.warn ul,.ok ul,.ask ul{margin:6px 0 0;padding-left:20px}
+.note li,.warn li,.ok li,.ask li{margin:4px 0;font-size:13.5px;color:var(--ink-2)}
+
+/* ---- 图 ---- */
+.fig{border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;margin:16px 0;
+  background:var(--bg);box-shadow:var(--shadow)}
+.fig iframe{width:100%;height:520px;border:0;display:block;background:var(--bg)}
+.fig img{width:100%;display:block;background:#fff}
+.fig .cap{font-size:12.5px;color:var(--sub);padding:9px 14px;background:var(--soft);
+  border-top:1px solid var(--line)}
+
+/* ---- 表 ---- */
+table{width:100%;border-collapse:collapse;font-size:13.5px;margin:14px 0}
+th,td{padding:9px 11px;border-bottom:1px solid var(--line);text-align:left}
+th{color:var(--sub);font-weight:650;font-size:12px;letter-spacing:.03em;
+   text-transform:uppercase;background:var(--soft)}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+tbody tr:hover{background:var(--soft)}
+
+/* ---- 公式 ---- */
+.formula{background:var(--soft);border:1px solid var(--line);border-radius:12px;
+  padding:14px 18px;margin:14px 0;font-family:ui-monospace,Consolas,monospace;
+  font-size:14px;color:var(--ink);overflow-x:auto;line-height:1.9}
+.formula .lbl{display:block;font-family:"Microsoft YaHei","Noto Sans CJK SC","PingFang SC","Hiragino Sans GB",sans-serif;font-size:12px;color:var(--sub);margin-bottom:6px}
+
+/* ---- 步骤条 ---- */
+.steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin:16px 0}
+.step{border:1px solid var(--line);border-radius:12px;padding:13px 15px;background:var(--soft);
+  position:relative;overflow:hidden}
+.step:before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--accent)}
+.step b{display:block;font-size:13px;color:var(--accent);margin-bottom:4px;letter-spacing:.02em}
+.step span{font-size:13px;color:var(--sub);line-height:1.65}
+
+/* ---- 徽章 ---- */
+.badge{display:inline-block;font-size:11px;padding:2px 8px;border-radius:999px;
+  border:1px solid var(--line);color:var(--sub);background:var(--soft);margin-right:6px}
+.badge.b{color:var(--brand);border-color:var(--brand);background:var(--brand-soft)}
+.badge.o{color:var(--accent);border-color:var(--accent);background:var(--accent-soft)}
+.badge.g{color:var(--ok);border-color:var(--ok);background:var(--ok-soft)}
+.badge.p{color:var(--purple);border-color:var(--purple);background:var(--purple-soft)}
+
+.foot{margin-top:56px;padding-top:16px;border-top:1px solid var(--line);
+  font-size:12px;color:var(--faint)}
+@media (max-width:720px){
+  .wrap{padding:18px 14px 60px}
+  .fig iframe{height:420px}
+  h1{font-size:23px}
+}
+
+    .q{border:1px solid var(--line);border-radius:var(--radius);padding:15px 17px;margin:12px 0;
+      background:var(--bg);box-shadow:var(--shadow)}
+    .q .qt{font-weight:650;font-size:14.5px;margin:0 0 10px;display:flex;gap:9px}
+    .q .qn{color:var(--faint);font-variant-numeric:tabular-nums}
+    .opt{display:block;width:100%;text-align:left;border:1px solid var(--line);background:var(--soft);
+      border-radius:9px;padding:9px 13px;margin:6px 0;font-size:13.5px;cursor:pointer;
+      font-family:inherit;color:var(--ink-2);transition:.16s}
+    .opt:hover:not(:disabled){border-color:var(--brand);color:var(--brand)}
+    .opt:disabled{cursor:default}
+    .opt.right{background:var(--ok-soft);border-color:var(--ok);color:var(--ok);font-weight:600}
+    .opt.wrong{background:var(--accent-soft);border-color:var(--accent);color:var(--accent)}
+    .exp{display:none;margin-top:10px;font-size:13px;color:var(--ink-2);background:var(--soft);
+      border-left:3px solid var(--brand);padding:9px 13px;border-radius:0 8px 8px 0}
+    .exp.on{display:block}
+    </style>
+
+</head><body>
+<div class="topbar">
+  <span class="brand">空间大数据方法 <span>L0→L3</span></span>
+  <span class="chip">自测</span>
+  <span class="spacer"></span>
+  <button class="btn" id="themeBtn" onclick="__toggleTheme()">☾ 夜间</button>
+  <a class="btn" href="index.html">← 返回入口</a>
+</div>
+<div class="wrap">
+  <h1>自测 · 12 题检验你有没有真的学会</h1><p class="lede">题目与答案由上游真实数字生成 —— 重跑管线后题目会自动跟着更新。</p>
+  
+    <p>共 <b>12</b> 题。题目与正确答案<b>由上游产物里的真实数字生成</b> ——
+    重跑管线后数字变了，题也会跟着变，不会和教材脱节。</p>
+    <div class="stats">
+      <div class="stat"><span class="k">已答</span><span class="v" id="qDone">0 / 12</span></div>
+      <div class="stat"><span class="k">正确</span><span class="v" id="qRight">0</span></div>
+      <div class="stat"><span class="k">正确率</span><span class="v" id="qRate">–</span></div>
+      <div class="stat"><span class="k">评价</span><span class="v" id="qMsg" style="font-size:17px">开始吧</span></div>
+    </div>
+    <div id="qList"></div>
+    <div class="note"><b>及格线</b>：≥ 9 题算掌握（能独立复现这条管线）；
+    6–8 题建议回看 <a href="weight_lab.html">权重实验室</a> 与
+    <a href="ring_decay.html">距离环衰减</a>；≤ 5 题建议从
+    <a href="ebook/index.html">电子书引言</a> 重读一遍。</div>
+    
+  <div class="foot">生成脚本 <code>08_interactive/08_interactive.py</code>　|
+  生成时间 2026-09-10 12:35　|
+  所有数字来自上游产物 <code>05_map/output/&lt;ds&gt;/ladder_report.json</code>，不硬编码。</div>
+</div>
+<script>
+    var QS = [{"q": "哪个数据集的 Moran's I 最高？", "options": ["FDIC", "深圳单车", "Brightkite", "Gowalla"], "a": 1, "e": "深圳单车 的 I = 0.7077，是 Brightkite（0.0132）的 54 倍。"}, {"q": "哪个数据集的孤岛率最高（邻居最搭不起来）？", "options": ["FDIC", "深圳单车", "Brightkite", "Gowalla"], "a": 2, "e": "Brightkite 有 67,189 个孤岛格，占 29.4%。"}, {"q": "哪个数据集的平均邻居数最多？", "options": ["FDIC", "深圳单车", "Brightkite", "Gowalla"], "a": 1, "e": "深圳单车 平均 5.07 个邻居（六边形满配 6 个）。"}, {"q": "在「环内求和」口径下，哪个数据集的溢出是随距离单调递增的？", "options": ["FDIC", "深圳单车", "Brightkite", "Gowalla"], "a": 1, "e": "其余数据集的求和口径非单调 —— 因为环面积随距离变大、环内格数变多，求和被几何效应主导。"}, {"q": "为什么「环内求和」会随距离变大？", "options": ["因为环面积变大、环内格数变多", "因为远距离真的溢出更多", "因为热点圆心选错了", "因为 Moran's I 太高"], "a": 0, "e": "求和口径混进了「环面积」这个几何因素。要看衰减必须除以环内格数，改看密度。"}, {"q": "行标准化之后，每行权重之和等于多少？", "options": ["1（孤岛行为 0）", "邻居个数", "总格数 n", "0"], "a": 0, "e": "行标准化 w*ᵢⱼ = wᵢⱼ / Σⱼ wᵢⱼ，使 Wx 变成邻居均值，与邻居数量脱钩。"}, {"q": "H3 R8 一格大约多大？", "options": ["0.737 km²", "约 1 m²", "约 100 km²", "约 0.007 km²"], "a": 0, "e": "由 h3.average_hexagon_area(8) 算出，不是写死的常数。"}, {"q": "看到 Moran's I 很低，第一件该做的事是什么？", "options": ["先看孤岛率和数据是否本来就稀疏", "立刻换一种权重方案", "把格值取 log 再算", "直接下结论说没有空间效应"], "a": 0, "e": "I 低 ≠ 没有空间效应。Brightkite 的 I=0.013 里，有相当部分是「全球签到本来就散」造成的。"}, {"q": "能把两个研究的 Moran's I 直接拿来比大小吗？", "options": ["不能，必须同尺度、同权重、同网格", "能，I 是无量纲的", "能，只要都用六边形网格", "能，只要 n 相同"], "a": 0, "e": "I 依赖变量尺度（raw vs log1p 会差很多）、权重方案与网格分辨率。只报 I 不报口径等于没报。"}, {"q": "libpysal 的 W 为什么必须包含孤岛格？", "options": ["否则 w.n < n，滞后向量维度对不上", "否则 Moran's I 会变大", "否则行标准化做不了", "否则 H3 会报错"], "a": 0, "e": "漏掉孤岛会让 W 的维度小于格数，Wx 与 x 拼不上，后续全线出错。孤岛滞后取 0 但仍计入分母。"}, {"q": "哪个数据集的溢出密度衰减最陡（首环 ÷ 末环）？", "options": ["FDIC", "深圳单车", "Brightkite", "Gowalla"], "a": 2, "e": "Brightkite 衰减 46.0 倍。"}, {"q": "空间权重矩阵是「算」出来的还是「选」出来的？", "options": ["选的 —— 它是人为定义", "算的 —— 数据客观决定", "算的 —— 由 H3 唯一确定", "选的 —— 但选哪个都不影响结论"], "a": 0, "e": "这是本教程最想让你记住的一句：「邻居」怎么定义，决定你能看到什么结论。"}], done = {}, right = 0, list = document.getElementById('qList');
+    QS.forEach(function(q, i){
+      var d=document.createElement('div'); d.className='q';
+      var t=document.createElement('div'); t.className='qt';
+      t.innerHTML='<span class="qn">'+(i+1)+'.</span><span>'+q.q+'</span>';
+      d.appendChild(t);
+      var ex=document.createElement('div'); ex.className='exp'; ex.textContent='\u2713 '+q.e;
+      var btns=[];
+      q.options.forEach(function(o, j){
+        var b=document.createElement('button'); b.className='opt'; b.textContent=o; btns.push(b);
+        b.onclick=function(){
+          if(done[i]) return;
+          done[i]=1;
+          btns.forEach(function(x){x.disabled=true;});
+          if(j===q.a){ b.classList.add('right'); right++; }
+          else { b.classList.add('wrong'); btns[q.a].classList.add('right'); }
+          ex.classList.add('on'); sync();
+        };
+        d.appendChild(b);
+      });
+      d.appendChild(ex); list.appendChild(d);
+    });
+    function sync(){
+      var n=Object.keys(done).length, T=QS.length;
+      document.getElementById('qDone').textContent=n+' / '+T;
+      document.getElementById('qRight').textContent=right;
+      document.getElementById('qRate').textContent=n?Math.round(right/n*100)+'%':'\u2013';
+      document.getElementById('qMsg').textContent =
+        n<T ? '\u7ee7\u7eed' : (right>=9?'\u638c\u63e1 ✔':(right>=6?'\u56de\u770b L1/L3':'\u5efa\u8bae\u91cd\u8bfb'));
+    }
+    sync();
+    </script>
+</body></html>

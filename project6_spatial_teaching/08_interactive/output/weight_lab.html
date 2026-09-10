@@ -1,0 +1,286 @@
+<!doctype html><html lang="zh-CN" data-theme="light"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>权重实验室 · 「邻居」是谁定的？</title>
+<script>
+(function(){
+  var KEY='p6-theme';
+  try{
+    var saved=localStorage.getItem(KEY);
+    if(!saved){ saved = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark':'light'; }
+    document.documentElement.setAttribute('data-theme', saved);
+  }catch(e){}
+  window.__toggleTheme=function(){
+    var cur=document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark';
+    document.documentElement.setAttribute('data-theme',cur);
+    try{localStorage.setItem(KEY,cur);}catch(e){}
+    var b=document.getElementById('themeBtn'); if(b){b.textContent = cur==='dark'?'☀ 日间':'☾ 夜间';}
+    window.dispatchEvent(new Event('themechange'));
+  };
+  document.addEventListener('DOMContentLoaded',function(){
+    var b=document.getElementById('themeBtn');
+    if(b){ b.textContent = document.documentElement.getAttribute('data-theme')==='dark'?'☀ 日间':'☾ 夜间'; }
+  });
+})();
+
+/* Plotly 图随主题重着色：plotly 不认 CSS 变量，只能画完再 relayout。 */
+(function(){
+  function hex(v){return v;}
+  window.__applyPlotTheme=function(){
+    var dark=document.documentElement.getAttribute('data-theme')==='dark';
+    var bg=dark?'#0d1424':'#ffffff', grid=dark?'#233047':'#e2e8f0',
+        fg=dark?'#e8eefc':'#0f172a', sub=dark?'#94a3b8':'#64748b';
+    var plots=document.querySelectorAll('.js-plotly-plot');
+    for(var i=0;i<plots.length;i++){
+      var d=plots[i]; if(!d.layout) continue;
+      var up={'paper_bgcolor':bg,'plot_bgcolor':bg,'font.color':sub};
+      Object.keys(d.layout).forEach(function(k){
+        if(/^[xy]axis\d*$/.test(k)){
+          up[k+'.gridcolor']=grid; up[k+'.linecolor']=grid;
+          up[k+'.zerolinecolor']=grid; up[k+'.tickfont.color']=sub;
+          up[k+'.title.font.color']=sub;
+        }
+      });
+      if(d.layout.title) up['title.font.color']=fg;
+      if(d.layout.legend) up['legend.font.color']=sub;
+      if(d.layout.annotations) up['annotations']=(d.layout.annotations||[]).map(function(a){
+        return Object.assign({},a,{font:Object.assign({},a.font||{},{color:sub})});
+      });
+      try{ Plotly.relayout(d, up); }catch(e){}
+      if(window.Plotly && d.data){
+        for(var j=0;j<d.data.length;j++){
+          if(d.data[j] && d.data[j].text){ try{ Plotly.restyle(d,{'textfont.color':sub},[j]); }catch(e){} }
+        }
+      }
+    }
+  };
+  document.addEventListener('DOMContentLoaded',function(){ setTimeout(window.__applyPlotTheme,60); });
+  window.addEventListener('themechange',function(){ setTimeout(window.__applyPlotTheme,30); });
+})();
+</script>
+<style>
+:root{
+  --ink:#0f172a; --ink-2:#334155; --sub:#64748b; --faint:#94a3b8;
+  --line:#e2e8f0; --line-2:#cbd5e1; --bg:#ffffff; --soft:#f8fafc; --soft-2:#f1f5f9;
+  --brand:#2563eb; --brand-soft:#eff6ff;
+  --accent:#ea580c; --accent-soft:#fff7ed;
+  --ok:#059669; --ok-soft:#ecfdf5;
+  --warn:#b45309; --warn-soft:#fffbeb;
+  --purple:#7c3aed; --purple-soft:#f5f3ff;
+  --shadow:0 1px 2px rgba(15,23,42,.06), 0 8px 24px rgba(15,23,42,.06);
+  --radius:14px;
+}
+:root[data-theme="dark"]{
+  --ink:#e8eefc; --ink-2:#c3cee4; --sub:#94a3b8; --faint:#64748b;
+  --line:#233047; --line-2:#33425e; --bg:#0d1424; --soft:#131c2f; --soft-2:#18233a;
+  --brand:#60a5fa; --brand-soft:#13233d;
+  --accent:#fb923c; --accent-soft:#2a1a0e;
+  --ok:#34d399; --ok-soft:#0d2620;
+  --warn:#fbbf24; --warn-soft:#2a2110;
+  --purple:#a78bfa; --purple-soft:#1e1b34;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px rgba(0,0,0,.35);
+}
+
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;font-family:"Microsoft YaHei","Noto Sans CJK SC","PingFang SC","Hiragino Sans GB",sans-serif;color:var(--ink);background:var(--bg);
+     line-height:1.78;-webkit-font-smoothing:antialiased;
+     transition:background .25s,color .25s}
+a{color:var(--brand);text-decoration:none}
+a:hover{text-decoration:underline}
+.wrap{max-width:1180px;margin:0 auto;padding:28px 24px 80px}
+h1,h2,h3{line-height:1.3;letter-spacing:-.01em}
+h1{font-size:30px;margin:0 0 8px}
+h2{font-size:22px;margin:38px 0 12px;padding-bottom:10px;border-bottom:1px solid var(--line)}
+h3{font-size:16.5px;margin:22px 0 8px}
+p{margin:10px 0;font-size:15px;color:var(--ink-2)}
+.lede{font-size:16px;color:var(--sub);margin:8px 0 4px}
+.kicker{font-size:11.5px;letter-spacing:.16em;color:var(--accent);font-weight:800;
+        text-transform:uppercase;margin:0 0 6px}
+.muted{color:var(--sub);font-size:13px}
+code{background:var(--soft-2);padding:1.5px 6px;border-radius:5px;font-size:13px;
+     font-family:ui-monospace,Consolas,"Courier New",monospace;color:var(--ink-2)}
+hr{border:0;border-top:1px solid var(--line);margin:28px 0}
+
+/* ---- 顶栏 ---- */
+.topbar{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:14px;
+  padding:11px 22px;background:var(--bg);border-bottom:1px solid var(--line);
+  backdrop-filter:saturate(180%) blur(8px)}
+.topbar .brand{font-weight:800;font-size:14px;letter-spacing:-.01em}
+.topbar .brand span{color:var(--accent)}
+.topbar .spacer{flex:1}
+.chip{font-size:11px;padding:3px 9px;border-radius:999px;background:var(--soft-2);
+  color:var(--sub);border:1px solid var(--line)}
+.btn{border:1px solid var(--line);background:var(--bg);color:var(--ink-2);
+  border-radius:9px;padding:6px 13px;font-size:13.5px;cursor:pointer;font-family:inherit;
+  transition:.18s;white-space:nowrap}
+.btn:hover{border-color:var(--brand);color:var(--brand);transform:translateY(-1px)}
+.btn.primary{background:var(--brand);border-color:var(--brand);color:#fff}
+.btn.primary:hover{filter:brightness(1.08);color:#fff}
+.btn:disabled{opacity:.4;cursor:not-allowed;transform:none}
+
+/* ---- 卡片 / 网格 ---- */
+.grid{display:grid;gap:14px}
+.g2{grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}
+.g3{grid-template-columns:repeat(auto-fit,minmax(230px,1fr))}
+.g4{grid-template-columns:repeat(auto-fit,minmax(190px,1fr))}
+.card{border:1px solid var(--line);border-radius:var(--radius);padding:16px 18px;
+  background:var(--bg);box-shadow:var(--shadow);transition:.2s}
+.card:hover{border-color:var(--line-2);transform:translateY(-2px)}
+.card .t{font-weight:700;font-size:15px;margin:0 0 6px;display:flex;align-items:center;gap:8px}
+.card .d{font-size:13.5px;color:var(--sub);margin:0;line-height:1.7}
+.card .q{font-size:12.5px;color:var(--accent);margin:10px 0 0;font-weight:600}
+
+/* ---- 指标条 ---- */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:16px 0}
+.stat{border:1px solid var(--line);border-radius:12px;padding:12px 14px;background:var(--soft)}
+.stat .k{font-size:12px;color:var(--sub);display:block;margin-bottom:2px}
+.stat .v{font-size:23px;font-weight:750;font-variant-numeric:tabular-nums;
+  letter-spacing:-.02em;line-height:1.25}
+.stat .h{font-size:11.5px;color:var(--faint)}
+
+/* ---- 提示块 ---- */
+.note,.warn,.ok,.ask{border-radius:0 12px 12px 0;padding:13px 17px;margin:16px 0;
+  font-size:14px;border-left:4px solid}
+.note{background:var(--brand-soft);border-color:var(--brand)}
+.warn{background:var(--accent-soft);border-color:var(--accent)}
+.ok{background:var(--ok-soft);border-color:var(--ok)}
+.ask{background:var(--purple-soft);border-color:var(--purple)}
+.note b,.warn b,.ok b,.ask b{display:block;margin-bottom:4px;font-size:14px}
+.note ul,.warn ul,.ok ul,.ask ul{margin:6px 0 0;padding-left:20px}
+.note li,.warn li,.ok li,.ask li{margin:4px 0;font-size:13.5px;color:var(--ink-2)}
+
+/* ---- 图 ---- */
+.fig{border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;margin:16px 0;
+  background:var(--bg);box-shadow:var(--shadow)}
+.fig iframe{width:100%;height:520px;border:0;display:block;background:var(--bg)}
+.fig img{width:100%;display:block;background:#fff}
+.fig .cap{font-size:12.5px;color:var(--sub);padding:9px 14px;background:var(--soft);
+  border-top:1px solid var(--line)}
+
+/* ---- 表 ---- */
+table{width:100%;border-collapse:collapse;font-size:13.5px;margin:14px 0}
+th,td{padding:9px 11px;border-bottom:1px solid var(--line);text-align:left}
+th{color:var(--sub);font-weight:650;font-size:12px;letter-spacing:.03em;
+   text-transform:uppercase;background:var(--soft)}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+tbody tr:hover{background:var(--soft)}
+
+/* ---- 公式 ---- */
+.formula{background:var(--soft);border:1px solid var(--line);border-radius:12px;
+  padding:14px 18px;margin:14px 0;font-family:ui-monospace,Consolas,monospace;
+  font-size:14px;color:var(--ink);overflow-x:auto;line-height:1.9}
+.formula .lbl{display:block;font-family:"Microsoft YaHei","Noto Sans CJK SC","PingFang SC","Hiragino Sans GB",sans-serif;font-size:12px;color:var(--sub);margin-bottom:6px}
+
+/* ---- 步骤条 ---- */
+.steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin:16px 0}
+.step{border:1px solid var(--line);border-radius:12px;padding:13px 15px;background:var(--soft);
+  position:relative;overflow:hidden}
+.step:before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--accent)}
+.step b{display:block;font-size:13px;color:var(--accent);margin-bottom:4px;letter-spacing:.02em}
+.step span{font-size:13px;color:var(--sub);line-height:1.65}
+
+/* ---- 徽章 ---- */
+.badge{display:inline-block;font-size:11px;padding:2px 8px;border-radius:999px;
+  border:1px solid var(--line);color:var(--sub);background:var(--soft);margin-right:6px}
+.badge.b{color:var(--brand);border-color:var(--brand);background:var(--brand-soft)}
+.badge.o{color:var(--accent);border-color:var(--accent);background:var(--accent-soft)}
+.badge.g{color:var(--ok);border-color:var(--ok);background:var(--ok-soft)}
+.badge.p{color:var(--purple);border-color:var(--purple);background:var(--purple-soft)}
+
+.foot{margin-top:56px;padding-top:16px;border-top:1px solid var(--line);
+  font-size:12px;color:var(--faint)}
+@media (max-width:720px){
+  .wrap{padding:18px 14px 60px}
+  .fig iframe{height:420px}
+  h1{font-size:23px}
+}
+
+    .tabs{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0 12px}
+    .dsbtn{border:1px solid var(--line);background:var(--bg);color:var(--ink-2);border-radius:999px;
+      padding:7px 17px;font-size:13.5px;cursor:pointer;font-family:inherit;transition:.18s}
+    .dsbtn:hover{border-color:var(--brand);color:var(--brand);transform:translateY(-1px)}
+    .dsbtn.on{background:var(--brand);border-color:var(--brand);color:#fff}
+    .dspanel{display:none} .dspanel.on{display:block}
+    </style>
+<script src="assets/vendor/plotly.min.js"></script>
+</head><body>
+<div class="topbar">
+  <span class="brand">空间大数据方法 <span>L0→L3</span></span>
+  <span class="chip">L1 · 交互</span>
+  <span class="spacer"></span>
+  <button class="btn" id="themeBtn" onclick="__toggleTheme()">☾ 夜间</button>
+  <a class="btn" href="index.html">← 返回入口</a>
+</div>
+<div class="wrap">
+  <h1>权重实验室 · 「邻居」是谁定的？</h1><p class="lede">空间权重矩阵 W 是整条管线里最主观的一步。这里把它拆开：邻接怎么定、行标准化在做什么、孤岛为什么致命。</p>
+  
+    <p>空间权重矩阵 <code>W</code> 是整条管线里<b>最主观、也最影响结论</b>的一步。
+    它回答：谁算谁的邻居？答案不是数据给的，是<b>你定的</b>。</p>
+
+    <div class="tabs"><button class="dsbtn on" data-ds="fdic">FDIC</button><button class="dsbtn" data-ds="sz_bike">深圳单车</button><button class="dsbtn" data-ds="snap_brightkite">Brightkite</button><button class="dsbtn" data-ds="snap_gowalla">Gowalla</button></div>
+    
+      <div class="dspanel on" data-panel="fdic">
+        <div class="stats"><div class="stat"><span class="k">格数 n</span><span class="v">70,456</span><span class="h">L0</span></div><div class="stat"><span class="k">平均邻居</span><span class="v">1.41</span><span class="h">满配 6</span></div><div class="stat"><span class="k">孤岛格</span><span class="v">19,786</span><span class="h">占比 28.1%</span></div><div class="stat"><span class="k">Moran's I</span><span class="v">0.1331</span><span class="h">L2</span></div></div>
+        <p><b>FDIC 网点关闭</b> · 全美 · 稀疏 —— 网点散布全美，格与格之间大量空档。</p>
+        <div class="note"><b>这个数据集要看什么</b>孤岛率接近三成——I 低不一定是「没有空间效应」，可能只是邻居搭不起来。</div>
+      </div>
+      <div class="dspanel" data-panel="sz_bike">
+        <div class="stats"><div class="stat"><span class="k">格数 n</span><span class="v">2,661</span><span class="h">L0</span></div><div class="stat"><span class="k">平均邻居</span><span class="v">5.07</span><span class="h">满配 6</span></div><div class="stat"><span class="k">孤岛格</span><span class="v">121</span><span class="h">占比 4.5%</span></div><div class="stat"><span class="k">Moran's I</span><span class="v">0.7077</span><span class="h">L2</span></div></div>
+        <p><b>深圳共享单车</b> · 同城 · 极密 —— 八百多万条骑行挤在 2,661 个格里，密度极高。</p>
+        <div class="note"><b>这个数据集要看什么</b>平均邻居 5.07（六边形满配是 6），孤岛只有 4.5% —— 教科书式的强聚集。</div>
+      </div>
+      <div class="dspanel" data-panel="snap_brightkite">
+        <div class="stats"><div class="stat"><span class="k">格数 n</span><span class="v">228,476</span><span class="h">L0</span></div><div class="stat"><span class="k">平均邻居</span><span class="v">2.01</span><span class="h">满配 6</span></div><div class="stat"><span class="k">孤岛格</span><span class="v">67,189</span><span class="h">占比 29.4%</span></div><div class="stat"><span class="k">Moran's I</span><span class="v">0.0132</span><span class="h">L2</span></div></div>
+        <p><b>Brightkite 签到</b> · 全球 · 稀疏 —— 签到散落全球，22.8 万个格里 6.7 万个是孤岛。</p>
+        <div class="note"><b>这个数据集要看什么</b>孤岛率最高、I 最低（0.013）——先怀疑数据本身的稀疏度。</div>
+      </div>
+      <div class="dspanel" data-panel="snap_gowalla">
+        <div class="stats"><div class="stat"><span class="k">格数 n</span><span class="v">302,580</span><span class="h">L0</span></div><div class="stat"><span class="k">平均邻居</span><span class="v">2.40</span><span class="h">满配 6</span></div><div class="stat"><span class="k">孤岛格</span><span class="v">66,069</span><span class="h">占比 21.8%</span></div><div class="stat"><span class="k">Moran's I</span><span class="v">0.5090</span><span class="h">L2</span></div></div>
+        <p><b>Gowalla 签到</b> · 全球 · 中等 —— 同为全球签到，但比 Brightkite 更密、孤岛率更低。</p>
+        <div class="note"><b>这个数据集要看什么</b>与 Brightkite 是同类型数据，I 却差 38 倍 —— 对比这一对最能说明问题。</div>
+      </div>
+
+    <h2>本管线怎么定义邻居</h2>
+    <div class="grid g2">
+      <div class="card">
+        <div class="t">H3 一阶邻接（grid_disk k=1）</div>
+        <p class="d">六边形格共享边即邻居。规则统一，没有「对角算不算」的歧义，
+        六边形满配 <b>6</b> 个邻居。</p>
+        <div style="display:flex;justify-content:center;padding:10px 0"><svg viewBox="-198.2 -187.0 396.4 374.0" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:290px;height:auto"><polygon points="-117.78,-34.00 -88.33,-17.00 -88.33,17.00 -117.78,34.00 -147.22,17.00 -147.22,-17.00" fill="#cbd5e1" fill-opacity="0.5" stroke="#ffffff" stroke-width="2"/><polygon points="-88.33,17.00 -58.89,34.00 -58.89,68.00 -88.33,85.00 -117.78,68.00 -117.78,34.00" fill="#cbd5e1" fill-opacity="0.5" stroke="#ffffff" stroke-width="2"/><polygon points="-58.89,68.00 -29.44,85.00 -29.44,119.00 -58.89,136.00 -88.33,119.00 -88.33,85.00" fill="#cbd5e1" fill-opacity="0.5" stroke="#ffffff" stroke-width="2"/><polygon points="-88.33,-85.00 -58.89,-68.00 -58.89,-34.00 -88.33,-17.00 -117.78,-34.00 -117.78,-68.00" fill="#cbd5e1" fill-opacity="0.5" stroke="#ffffff" stroke-width="2"/><polygon points="-58.89,-34.00 -29.44,-17.00 -29.44,17.00 -58.89,34.00 -88.33,17.00 -88.33,-17.00" fill="#60a5fa" fill-opacity="1" stroke="#ffffff" stroke-width="2"/><polygon points="-29.44,17.00 0.00,34.00 0.00,68.00 -29.44,85.00 -58.89,68.00 -58.89,34.00" fill="#60a5fa" fill-opacity="1" stroke="#ffffff" stroke-width="2"/><polygon points="0.00,68.00 29.44,85.00 29.44,119.00 0.00,136.00 -29.44,119.00 -29.44,85.00" fill="#cbd5e1" fill-opacity="0.5" stroke="#ffffff" stroke-width="2"/><polygon points="-58.89,-136.00 -29.44,-119.00 -29.44,-85.00 -58.89,-68.00 -88.33,-85.00 -88.33,-119.00" fill="#cbd5e1" fill-opacity="0.5" stroke="#ffffff" stroke-width="2"/><polygon points="-29.44,-85.00 0.00,-68.00 0.00,-34.00 -29.44,-17.00 -58.89,-34.00 -58.89,-68.00" fill="#60a5fa" fill-opacity="1" stroke="#ffffff" stroke-width="2"/><polygon points="0.00,-34.00 29.44,-17.00 29.44,17.00 0.00,34.00 -29.44,17.00 -29.44,-17.00" fill="#ea580c" fill-opacity="1" stroke="#ffffff" stroke-width="2"/><polygon points="29.44,17.00 58.89,34.00 58.89,68.00 29.44,85.00 0.00,68.00 0.00,34.00" fill="#60a5fa" fill-opacity="1" stroke="#ffffff" stroke-width="2"/><polygon points="58.89,68.00 88.33,85.00 88.33,119.00 58.89,136.00 29.44,119.00 29.44,85.00" fill="#cbd5e1" fill-opacity="0.5" stroke="#ffffff" stroke-width="2"/><polygon points="0.00,-136.00 29.44,-119.00 29.44,-85.00 0.00,-68.00 -29.44,-85.00 -29.44,-119.00" fill="#cbd5e1" fill-opacity="0.5" stroke="#ffffff" stroke-width="2"/><polygon points="29.44,-85.00 58.89,-68.00 58.89,-34.00 29.44,-17.00 0.00,-34.00 0.00,-68.00" fill="#60a5fa" fill-opacity="1" stroke="#ffffff" stroke-width="2"/><polygon points="58.89,-34.00 88.33,-17.00 88.33,17.00 58.89,34.00 29.44,17.00 29.44,-17.00" fill="#60a5fa" fill-opacity="1" stroke="#ffffff" stroke-width="2"/><polygon points="88.33,17.00 117.78,34.00 117.78,68.00 88.33,85.00 58.89,68.00 58.89,34.00" fill="#cbd5e1" fill-opacity="0.5" stroke="#ffffff" stroke-width="2"/><polygon points="58.89,-136.00 88.33,-119.00 88.33,-85.00 58.89,-68.00 29.44,-85.00 29.44,-119.00" fill="#cbd5e1" fill-opacity="0.5" stroke="#ffffff" stroke-width="2"/><polygon points="88.33,-85.00 117.78,-68.00 117.78,-34.00 88.33,-17.00 58.89,-34.00 58.89,-68.00" fill="#cbd5e1" fill-opacity="0.5" stroke="#ffffff" stroke-width="2"/><polygon points="117.78,-34.00 147.22,-17.00 147.22,17.00 117.78,34.00 88.33,17.00 88.33,-17.00" fill="#cbd5e1" fill-opacity="0.5" stroke="#ffffff" stroke-width="2"/><text x="0.0" y="5.0" text-anchor="middle" font-size="13" font-weight="700" fill="#ffffff">i</text></svg></div>
+        <p class="muted" style="text-align:center">橙 = 中心格 i（6 个一阶邻居：蓝）；灰 = 二阶</p>
+      </div>
+      <div class="card">
+        <div class="t">KNN（最近 k 个）</div>
+        <p class="d">按距离取最近的 k 个格。好处是<b>保证没有孤岛</b>；
+        代价是「邻居」可能隔着半个地球 —— 全球数据上尤其危险。</p>
+        <div class="formula"><span class="lbl">KNN 为什么用 3D 直角坐标 + KD-tree</span>n×n 距离矩阵：30 万格 = 900 亿条 → <b>直接爆内存</b><br>改算 3D 弦距：|a−b| 与大圆距离<b>单调同序</b> ⇒ 最近邻排序完全一致<br>KD-tree 查询 O(n log n) —— 快几个数量级</div>
+        <div class="warn"><b>KNN 的隐藏代价</b>KNN 消灭了孤岛，也<b>消灭了「这里本来就孤立」这个信号</b>。在 Brightkite 这种全球稀疏数据上，KNN 会把大洋彼岸的签到认成邻居。</div>
+      </div>
+    </div>
+
+    <h2>行标准化：把「邻居数量」抹平</h2>
+    <div class="formula"><span class="lbl">行标准化（row-standardized）</span>w*ᵢⱼ = wᵢⱼ / Σⱼ wᵢⱼ &nbsp;&nbsp;⇒&nbsp;&nbsp; 每行权重和 = 1（孤岛行全 0）<br>好处：空间滞后 Wx 变成<b>邻居均值</b>，与「邻居有几个」脱钩，可跨格比较</div>
+    <div class="warn"><b>一个必须记住的实现坑</b><code>libpysal.weights.W</code> <b>必须覆盖全部格（含孤岛）</b>，否则 <code>w.n &lt; n</code>，滞后向量维度对不上，后面全线崩。孤岛的滞后取 0，仍计入 I 的分母（与管线一致）。</div>
+
+    <h2>邻居数 × 孤岛率 × I</h2>
+    <div style="height:440px; width:100%;">                            <div id="4fab658b-c86a-41ee-b819-0897cfd6de0c" class="plotly-graph-div" style="height:100%; width:100%;"></div>            <script>                window.PLOTLYENV=window.PLOTLYENV || {};                                if (document.getElementById("4fab658b-c86a-41ee-b819-0897cfd6de0c")) {                    Plotly.newPlot(                        "4fab658b-c86a-41ee-b819-0897cfd6de0c",                        [{"customdata":[["FDIC \u7f51\u70b9\u5173\u95ed",19786,0.28082775065288973,70456],["\u6df1\u5733\u5171\u4eab\u5355\u8f66",121,0.04547162720781661,2661],["Brightkite \u7b7e\u5230",67189,0.29407465116686216,228476],["Gowalla \u7b7e\u5230",66069,0.21835217132659132,302580]],"hovertemplate":"\u003cb\u003e%{customdata[0]}\u003c\u002fb\u003e\u003cbr\u003e\u5e73\u5747\u90bb\u5c45 %{x:.2f}\u003cbr\u003eMoran's I %{y:.4f}\u003cbr\u003e\u5b64\u5c9b %{customdata[1]:,}\uff08%{customdata[2]:.1%}\uff09\u003cbr\u003e\u683c\u6570 %{customdata[3]:,}\u003cextra\u003e\u003c\u002fextra\u003e","marker":{"color":["#0072B2","#D55E00","#009E73","#CC79A7"],"line":{"color":"#ffffff","width":2},"opacity":0.9,"size":[39.79357290933052,18,54,54]},"mode":"markers+text","text":["FDIC","\u6df1\u5733\u5355\u8f66","Brightkite","Gowalla"],"textfont":{"color":"#64748b","size":12.5},"textposition":"top center","x":[1.4129953446122403,5.06651634723788,2.014942488488944,2.4044682398043493],"y":[0.13310910409030818,0.7076865029059817,0.013182832844203757,0.5090157876067666],"type":"scatter"}],                        {"template":{"data":{"histogram2dcontour":[{"type":"histogram2dcontour","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"choropleth":[{"type":"choropleth","colorbar":{"outlinewidth":0,"ticks":""}}],"histogram2d":[{"type":"histogram2d","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"heatmap":[{"type":"heatmap","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"contourcarpet":[{"type":"contourcarpet","colorbar":{"outlinewidth":0,"ticks":""}}],"contour":[{"type":"contour","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"surface":[{"type":"surface","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"mesh3d":[{"type":"mesh3d","colorbar":{"outlinewidth":0,"ticks":""}}],"scatter":[{"fillpattern":{"fillmode":"overlay","size":10,"solidity":0.2},"type":"scatter"}],"parcoords":[{"type":"parcoords","line":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterpolargl":[{"type":"scatterpolargl","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"bar":[{"error_x":{"color":"#2a3f5f"},"error_y":{"color":"#2a3f5f"},"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"bar"}],"scattergeo":[{"type":"scattergeo","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterpolar":[{"type":"scatterpolar","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"histogram":[{"marker":{"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"histogram"}],"scattergl":[{"type":"scattergl","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatter3d":[{"type":"scatter3d","line":{"colorbar":{"outlinewidth":0,"ticks":""}},"marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattermap":[{"type":"scattermap","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterternary":[{"type":"scatterternary","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattercarpet":[{"type":"scattercarpet","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"carpet":[{"aaxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"baxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"type":"carpet"}],"table":[{"cells":{"fill":{"color":"#EBF0F8"},"line":{"color":"white"}},"header":{"fill":{"color":"#C8D4E3"},"line":{"color":"white"}},"type":"table"}],"barpolar":[{"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"barpolar"}],"pie":[{"automargin":true,"type":"pie"}]},"layout":{"autotypenumbers":"strict","colorway":["#636efa","#EF553B","#00cc96","#ab63fa","#FFA15A","#19d3f3","#FF6692","#B6E880","#FF97FF","#FECB52"],"font":{"color":"#2a3f5f"},"hovermode":"closest","hoverlabel":{"align":"left"},"paper_bgcolor":"white","plot_bgcolor":"#E5ECF6","polar":{"bgcolor":"#E5ECF6","angularaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"radialaxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"ternary":{"bgcolor":"#E5ECF6","aaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"baxis":{"gridcolor":"white","linecolor":"white","ticks":""},"caxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"coloraxis":{"colorbar":{"outlinewidth":0,"ticks":""}},"colorscale":{"sequential":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"sequentialminus":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"diverging":[[0,"#8e0152"],[0.1,"#c51b7d"],[0.2,"#de77ae"],[0.3,"#f1b6da"],[0.4,"#fde0ef"],[0.5,"#f7f7f7"],[0.6,"#e6f5d0"],[0.7,"#b8e186"],[0.8,"#7fbc41"],[0.9,"#4d9221"],[1,"#276419"]]},"xaxis":{"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","automargin":true,"zerolinewidth":2},"yaxis":{"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","automargin":true,"zerolinewidth":2},"scene":{"xaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2},"yaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2},"zaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2}},"shapedefaults":{"line":{"color":"#2a3f5f"}},"annotationdefaults":{"arrowcolor":"#2a3f5f","arrowhead":0,"arrowwidth":1},"geo":{"bgcolor":"white","landcolor":"#E5ECF6","subunitcolor":"white","showland":true,"showlakes":true,"lakecolor":"white"},"title":{"x":0.05}}},"font":{"family":"\"Microsoft YaHei\",\"Noto Sans CJK SC\",\"PingFang SC\",\"Hiragino Sans GB\",sans-serif","size":12.5,"color":"#64748b"},"margin":{"l":78,"r":30,"t":96,"b":72},"title":{"font":{"size":15,"color":"#0f172a"},"text":"\u003cb\u003e\u90bb\u5c45\u642d\u5f97\u8d77\u6765\uff0cI \u624d\u9ad8\u5f97\u8d77\u6765\u003c\u002fb\u003e\u003cbr\u003e\u003csub\u003e\u6a2a\u8f74 = L1 \u5e73\u5747\u90bb\u5c45\u6570\uff1b\u7eb5\u8f74 = L2 Moran's I\uff1b\u6c14\u6ce1\u5927\u5c0f = \u683c\u6570\u003c\u002fsub\u003e","x":0.01,"xanchor":"left"},"paper_bgcolor":"#ffffff","plot_bgcolor":"#ffffff","height":440,"hovermode":"closest","showlegend":false,"xaxis":{"title":{"text":"\u5e73\u5747\u90bb\u5c45\u6570\uff08\u516d\u8fb9\u5f62\u6ee1\u914d = 6\uff09","font":{"size":12.5,"color":"#64748b"}},"tickfont":{"size":11.5,"color":"#64748b"},"gridcolor":"#e2e8f0","zerolinecolor":"#e2e8f0","linecolor":"#e2e8f0"},"yaxis":{"title":{"text":"Moran's I","font":{"size":12.5,"color":"#64748b"}},"tickfont":{"size":11.5,"color":"#64748b"},"gridcolor":"#e2e8f0","zerolinecolor":"#e2e8f0","linecolor":"#e2e8f0"}},                        {"displaylogo": false, "responsive": true}                    )                };            </script>        </div>
+    <div style="height:320px; width:100%;">                            <div id="54c96b4d-71f0-458d-8ff7-62e40a5a0507" class="plotly-graph-div" style="height:100%; width:100%;"></div>            <script>                window.PLOTLYENV=window.PLOTLYENV || {};                                if (document.getElementById("54c96b4d-71f0-458d-8ff7-62e40a5a0507")) {                    Plotly.newPlot(                        "54c96b4d-71f0-458d-8ff7-62e40a5a0507",                        [{"hovertemplate":"\u003cb\u003e%{y}\u003c\u002fb\u003e\u003cbr\u003e\u5b64\u5c9b\u7387 %{x:.1%}\u003cextra\u003e\u003c\u002fextra\u003e","marker":{"color":["#009E73","#0072B2","#CC79A7","#D55E00"],"line":{"color":"#ffffff","width":1}},"orientation":"h","text":["29.4%\u3000(67,189 \u683c)","28.1%\u3000(19,786 \u683c)","21.8%\u3000(66,069 \u683c)","4.5%\u3000(121 \u683c)"],"textfont":{"color":"#64748b","size":12},"textposition":"outside","x":[0.29407465116686216,0.28082775065288973,0.21835217132659132,0.04547162720781661],"y":["Brightkite","FDIC","Gowalla","\u6df1\u5733\u5355\u8f66"],"type":"bar"}],                        {"template":{"data":{"histogram2dcontour":[{"type":"histogram2dcontour","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"choropleth":[{"type":"choropleth","colorbar":{"outlinewidth":0,"ticks":""}}],"histogram2d":[{"type":"histogram2d","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"heatmap":[{"type":"heatmap","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"contourcarpet":[{"type":"contourcarpet","colorbar":{"outlinewidth":0,"ticks":""}}],"contour":[{"type":"contour","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"surface":[{"type":"surface","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"mesh3d":[{"type":"mesh3d","colorbar":{"outlinewidth":0,"ticks":""}}],"scatter":[{"fillpattern":{"fillmode":"overlay","size":10,"solidity":0.2},"type":"scatter"}],"parcoords":[{"type":"parcoords","line":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterpolargl":[{"type":"scatterpolargl","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"bar":[{"error_x":{"color":"#2a3f5f"},"error_y":{"color":"#2a3f5f"},"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"bar"}],"scattergeo":[{"type":"scattergeo","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterpolar":[{"type":"scatterpolar","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"histogram":[{"marker":{"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"histogram"}],"scattergl":[{"type":"scattergl","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatter3d":[{"type":"scatter3d","line":{"colorbar":{"outlinewidth":0,"ticks":""}},"marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattermap":[{"type":"scattermap","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterternary":[{"type":"scatterternary","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattercarpet":[{"type":"scattercarpet","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"carpet":[{"aaxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"baxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"type":"carpet"}],"table":[{"cells":{"fill":{"color":"#EBF0F8"},"line":{"color":"white"}},"header":{"fill":{"color":"#C8D4E3"},"line":{"color":"white"}},"type":"table"}],"barpolar":[{"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"barpolar"}],"pie":[{"automargin":true,"type":"pie"}]},"layout":{"autotypenumbers":"strict","colorway":["#636efa","#EF553B","#00cc96","#ab63fa","#FFA15A","#19d3f3","#FF6692","#B6E880","#FF97FF","#FECB52"],"font":{"color":"#2a3f5f"},"hovermode":"closest","hoverlabel":{"align":"left"},"paper_bgcolor":"white","plot_bgcolor":"#E5ECF6","polar":{"bgcolor":"#E5ECF6","angularaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"radialaxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"ternary":{"bgcolor":"#E5ECF6","aaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"baxis":{"gridcolor":"white","linecolor":"white","ticks":""},"caxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"coloraxis":{"colorbar":{"outlinewidth":0,"ticks":""}},"colorscale":{"sequential":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"sequentialminus":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"diverging":[[0,"#8e0152"],[0.1,"#c51b7d"],[0.2,"#de77ae"],[0.3,"#f1b6da"],[0.4,"#fde0ef"],[0.5,"#f7f7f7"],[0.6,"#e6f5d0"],[0.7,"#b8e186"],[0.8,"#7fbc41"],[0.9,"#4d9221"],[1,"#276419"]]},"xaxis":{"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","automargin":true,"zerolinewidth":2},"yaxis":{"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","automargin":true,"zerolinewidth":2},"scene":{"xaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2},"yaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2},"zaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2}},"shapedefaults":{"line":{"color":"#2a3f5f"}},"annotationdefaults":{"arrowcolor":"#2a3f5f","arrowhead":0,"arrowwidth":1},"geo":{"bgcolor":"white","landcolor":"#E5ECF6","subunitcolor":"white","showland":true,"showlakes":true,"lakecolor":"white"},"title":{"x":0.05}}},"font":{"family":"\"Microsoft YaHei\",\"Noto Sans CJK SC\",\"PingFang SC\",\"Hiragino Sans GB\",sans-serif","size":12.5,"color":"#64748b"},"margin":{"l":78,"r":30,"t":96,"b":72},"title":{"font":{"size":15,"color":"#0f172a"},"text":"\u003cb\u003e\u5b64\u5c9b\u7387\uff1a\u4e00\u683c\u90bb\u5c45\u90fd\u6ca1\u6709\u7684\u6bd4\u4f8b\u003c\u002fb\u003e","x":0.01,"xanchor":"left"},"paper_bgcolor":"#ffffff","plot_bgcolor":"#ffffff","height":320,"hovermode":"closest","showlegend":false,"xaxis":{"title":{"text":"\u5b64\u5c9b\u683c\u5360\u6bd4","font":{"size":12.5,"color":"#64748b"}},"tickformat":".0%","range":[0,0.411704511633607],"tickfont":{"size":11.5,"color":"#64748b"},"gridcolor":"#e2e8f0","zerolinecolor":"#e2e8f0","linecolor":"#e2e8f0"},"yaxis":{"tickfont":{"size":11.5,"color":"#64748b"},"title":{"font":{"size":12.5,"color":"#64748b"}},"gridcolor":"#e2e8f0","zerolinecolor":"#e2e8f0","linecolor":"#e2e8f0"}},                        {"displaylogo": false, "responsive": true}                    )                };            </script>        </div>
+    <div class="note"><b>图上没说但要看出来的事</b><ul><li>平均邻居从 <b>1.41</b>（FDIC）到 <b>5.07</b>（深圳单车），差 3.6 倍；I 差 54 倍 —— <b>I 对连通性是非线性的</b>。</li><li>但连通性不是全部：Gowalla 的孤岛率（21.8%）比 Brightkite（29.4%）低，I 却高 38 倍。说明<b>值的分布形态同样重要</b>。</li></ul></div>
+    <div class="ok"><b>一句话结论</b>权重矩阵不是「算」出来的，是<b>选</b>出来的。报告任何空间结论，都必须同时报：网格（H3 R？）+ 权重方案（Queen / KNN k=?）+ 标准化方式（行 / 二值）。</div>
+    
+  <div class="foot">生成脚本 <code>08_interactive/08_interactive.py</code>　|
+  生成时间 2026-09-10 12:35　|
+  所有数字来自上游产物 <code>05_map/output/&lt;ds&gt;/ladder_report.json</code>，不硬编码。</div>
+</div>
+<script>
+    document.querySelectorAll('.dsbtn').forEach(function(b){
+      b.onclick=function(){
+        document.querySelectorAll('.dsbtn').forEach(function(x){x.classList.remove('on');});
+        document.querySelectorAll('.dspanel').forEach(function(x){x.classList.remove('on');});
+        b.classList.add('on');
+        var p=document.querySelector('.dspanel[data-panel="'+b.dataset.ds+'"]');
+        if(p) p.classList.add('on');
+      };
+    });
+    </script>
+</body></html>

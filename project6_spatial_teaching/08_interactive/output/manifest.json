@@ -1,81 +1,143 @@
 {
-  "generated_at": "2026-09-09T20:57:46",
+  "generated_at": "2026-09-10T12:35:03",
   "generator": {
     "tool": "plotly + h3 + libpysal",
     "script": "08_interactive/08_interactive.py",
+    "modules": [
+      "studio_data.py",
+      "studio_ui.py",
+      "studio_figs.py",
+      "studio_ebook.py"
+    ],
     "encoding": "utf-8",
     "font": "Microsoft YaHei",
     "self_contained": true,
     "reproducible": true,
-    "note": "权重与空间滞后在服务端算好；三页均内联 plotly，单文件自包含、离线可开"
+    "note": "数字全部来自 05_map/output/<ds>/ladder_report.json；格级 CSV 为可选增强，缺失时相关面板降级并显式披露"
   },
   "entry": "index.html",
-  "n_figures": 2,
+  "n_figures": 9,
   "datasets": [
     "fdic",
     "sz_bike",
     "snap_brightkite",
     "snap_gowalla"
   ],
+  "degraded": {
+    "moran_scatter": true,
+    "missing_csv": [
+      "fdic",
+      "sz_bike",
+      "snap_brightkite",
+      "snap_gowalla"
+    ],
+    "reason": "05_map/output/<ds>/L2_spatial_lag.csv 受 .gitignore 约束不入库"
+  },
   "figures": [
     {
       "file": "index.html",
       "title": "L0→L3 交互教材（入口）",
       "type": "entry",
       "question": "学习者能不能按阶梯看懂、能跑、能改？",
-      "alt_text": "四阶阶梯卡片 + 两个交互件 + version_lock 复现表",
-      "source": "本目录两件产物 + 04_validate/output/<dataset>/version_lock.json",
+      "alt_text": "Hero + 学习路径 + 产品矩阵 + 四数据集结构表 + version_lock 复现表",
+      "source": "本目录各产物 + 04_validate/output/<dataset>/version_lock.json",
       "n": 604173,
       "scope": "四数据集；H3 R8；W 行标准化",
       "tool": "html"
     },
     {
-      "file": "moran_explorer.html",
-      "title": "换一种邻居定义，结论就变了",
-      "type": "moran_scatter_interactive",
-      "question": "权重方案怎么影响 Moran's I？",
-      "alt_text": "可切数据集与 Queen/KNN 权重，实时看散点、拟合线与 I 值",
-      "unit": "x=log1p(格值)，y=空间滞后",
-      "source": "05_map/output/<dataset>/L2_spatial_lag.csv",
+      "file": "ebook/index.html",
+      "title": "L0→L3 可翻页教材",
+      "type": "ebook",
+      "question": "新人能不能按阶梯一页页读懂并动手？",
+      "alt_text": "15 页：封面/导读/引言/L0-L3/对比/演化/误区/结论/自测/复现/术语表；常驻目录 + 搜索 + 进度记忆 + 深色模式",
+      "unit": "←/→ 翻页，/ 搜索，Home/End 首尾；每章内嵌对应交互件",
+      "source": "05_map/output/<ds>/ladder_report.json + 本目录交互件 + 06_visualize 静态图",
       "n": 604173,
-      "scope": "H3 R8；W 行标准化；滞后服务端算好",
+      "scope": "15 页；章首「你将学到」+ 章尾「下一步」",
+      "tool": "html"
+    },
+    {
+      "file": "moran_explorer.html",
+      "title": "Moran's I 实验室",
+      "type": "moran_scatter_interactive",
+      "question": "Moran's I 怎么读、四个数据集为什么差这么多？",
+      "alt_text": "四象限解读 + I 对比条 + 公式；上游真实散点 PNG（降级）",
+      "unit": "x=格值，y=空间滞后 W·格值",
+      "source": "05_map/output/<ds>/ladder_report.json",
+      "n": 604173,
+      "scope": "H3 R8；W 行标准化",
+      "tool": "plotly",
+      "degraded": true
+    },
+    {
+      "file": "weight_lab.html",
+      "title": "权重实验室：邻居是谁定的",
+      "type": "weight_lab",
+      "question": "邻接怎么定、行标准化在做什么、孤岛有多致命？",
+      "alt_text": "数据集切换卡 + 六边形邻接 SVG + 邻居数×I 散点 + 孤岛率条",
+      "unit": "x=平均邻居数，y=Moran's I，气泡=格数",
+      "source": "05_map/output/<ds>/ladder_report.json（L1）",
+      "n": 604173,
+      "scope": "四数据集；六边形满配 6 邻居",
+      "tool": "plotly + svg"
+    },
+    {
+      "file": "ring_decay.html",
+      "title": "距离环衰减：两种口径相反结论",
+      "type": "ring_decay",
+      "question": "同一个距离环数据，为什么求和递增、密度递减？",
+      "alt_text": "四数据集四条线，updatemenus 切换求和/密度/归一化三种口径",
+      "unit": "x=环中点(km)，y=溢出值（对数轴）",
+      "source": "05_map/output/<ds>/ladder_report.json（L3）",
+      "n": 604173,
+      "scope": "Top-100 热点；环 0–1/1–3/3–5/5–10 km",
       "tool": "plotly"
     },
     {
       "file": "ladder_compare.html",
-      "title": "同一套管线，结论强度差 50 倍",
+      "title": "阶梯对比：四数据集",
       "type": "small_multiples",
-      "question": "四个数据集的规模与空间自相关差多少？",
-      "alt_text": "三联柱状图对比格数、平均邻居数与 Moran's I",
-      "unit": "左=格数（对数），中=平均邻居，右=Moran's I",
-      "source": "05_map/output/<dataset>/ladder_report.json",
+      "question": "四个数据集在 L0→L2 各层差多少？",
+      "alt_text": "8 指标下拉切换的横向条形 + 三层对数折线 + 完整数字表",
+      "source": "05_map/output/<ds>/ladder_report.json",
       "n": 604173,
       "scope": "四数据集；H3 R8",
       "tool": "plotly"
     },
     {
+      "file": "method_atlas.html",
+      "title": "方法图谱",
+      "type": "method_atlas",
+      "question": "这条管线一共用了哪些方法、各有什么坑？",
+      "alt_text": "14 张可展开方法卡：输入/输出/参数/为什么/坑/代码位置",
+      "source": "05_map/spatial_ladder.py 等（人工梳理，参数来自上游产物）",
+      "n": 14,
+      "scope": "L0/L1/L2/L3 + 贯穿方法",
+      "tool": "html"
+    },
+    {
+      "file": "quiz.html",
+      "title": "自测",
+      "type": "quiz",
+      "question": "学完了吗？",
+      "alt_text": "12 道选择题，即时判分，题目与答案由上游数字生成",
+      "source": "05_map/output/<ds>/ladder_report.json",
+      "n": 12,
+      "scope": "及格线 9 题",
+      "tool": "html"
+    },
+    {
       "file": "ladder_evolution.html",
       "title": "L0→L3 是一条链",
       "type": "animation",
-      "question": "网格化、权重、滞后、距离环到底是怎么串起来的？",
-      "alt_text": "左图从格演化到邻居高亮再到距离环，右图同步长出 Moran 散点",
-      "unit": "左 x=经度 y=纬度；右 x=log1p(格值) y=空间滞后",
+      "question": "网格化、权重、滞后、距离环到底怎么串起来的？",
+      "alt_text": "上地图从格演化到邻居高亮再到距离环，下 Moran 散点同步长出",
+      "unit": "上 x=经度 y=纬度；下 x=log1p(格值) y=空间滞后",
       "source": "05_map/output/sz_bike/mapped.csv",
       "n": 2661,
       "scope": "mp4（FuncAnimation）内嵌 <video>；按深圳 bbox 裁切飞点",
       "tool": "matplotlib + ffmpeg"
-    },
-    {
-      "file": "ebook/index.html",
-      "title": "L0→L3 电子书（可翻页）",
-      "type": "ebook",
-      "question": "内容能不能按阶梯一页页翻着读？",
-      "alt_text": "可翻页电子书：封面/目录/引言/L0-L3/对比/演化/结论/复现",
-      "unit": "左/右箭头或键盘 ←/→ 翻页；每章嵌入对应交互图",
-      "source": "本目录 moran_explorer.html / ladder_compare.html / ladder_evolution.html + version_lock",
-      "n": 4,
-      "scope": "骨架版：章节+关键结论+图已就位，正文留「待补」位",
-      "tool": "html"
     }
   ]
 }

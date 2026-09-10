@@ -1,0 +1,498 @@
+<!doctype html><html lang="zh-CN" data-theme="light"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>方法图谱 · 这条管线一共用了哪些方法</title>
+<script>
+(function(){
+  var KEY='p6-theme';
+  try{
+    var saved=localStorage.getItem(KEY);
+    if(!saved){ saved = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark':'light'; }
+    document.documentElement.setAttribute('data-theme', saved);
+  }catch(e){}
+  window.__toggleTheme=function(){
+    var cur=document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark';
+    document.documentElement.setAttribute('data-theme',cur);
+    try{localStorage.setItem(KEY,cur);}catch(e){}
+    var b=document.getElementById('themeBtn'); if(b){b.textContent = cur==='dark'?'☀ 日间':'☾ 夜间';}
+    window.dispatchEvent(new Event('themechange'));
+  };
+  document.addEventListener('DOMContentLoaded',function(){
+    var b=document.getElementById('themeBtn');
+    if(b){ b.textContent = document.documentElement.getAttribute('data-theme')==='dark'?'☀ 日间':'☾ 夜间'; }
+  });
+})();
+
+/* Plotly 图随主题重着色：plotly 不认 CSS 变量，只能画完再 relayout。 */
+(function(){
+  function hex(v){return v;}
+  window.__applyPlotTheme=function(){
+    var dark=document.documentElement.getAttribute('data-theme')==='dark';
+    var bg=dark?'#0d1424':'#ffffff', grid=dark?'#233047':'#e2e8f0',
+        fg=dark?'#e8eefc':'#0f172a', sub=dark?'#94a3b8':'#64748b';
+    var plots=document.querySelectorAll('.js-plotly-plot');
+    for(var i=0;i<plots.length;i++){
+      var d=plots[i]; if(!d.layout) continue;
+      var up={'paper_bgcolor':bg,'plot_bgcolor':bg,'font.color':sub};
+      Object.keys(d.layout).forEach(function(k){
+        if(/^[xy]axis\d*$/.test(k)){
+          up[k+'.gridcolor']=grid; up[k+'.linecolor']=grid;
+          up[k+'.zerolinecolor']=grid; up[k+'.tickfont.color']=sub;
+          up[k+'.title.font.color']=sub;
+        }
+      });
+      if(d.layout.title) up['title.font.color']=fg;
+      if(d.layout.legend) up['legend.font.color']=sub;
+      if(d.layout.annotations) up['annotations']=(d.layout.annotations||[]).map(function(a){
+        return Object.assign({},a,{font:Object.assign({},a.font||{},{color:sub})});
+      });
+      try{ Plotly.relayout(d, up); }catch(e){}
+      if(window.Plotly && d.data){
+        for(var j=0;j<d.data.length;j++){
+          if(d.data[j] && d.data[j].text){ try{ Plotly.restyle(d,{'textfont.color':sub},[j]); }catch(e){} }
+        }
+      }
+    }
+  };
+  document.addEventListener('DOMContentLoaded',function(){ setTimeout(window.__applyPlotTheme,60); });
+  window.addEventListener('themechange',function(){ setTimeout(window.__applyPlotTheme,30); });
+})();
+</script>
+<style>
+:root{
+  --ink:#0f172a; --ink-2:#334155; --sub:#64748b; --faint:#94a3b8;
+  --line:#e2e8f0; --line-2:#cbd5e1; --bg:#ffffff; --soft:#f8fafc; --soft-2:#f1f5f9;
+  --brand:#2563eb; --brand-soft:#eff6ff;
+  --accent:#ea580c; --accent-soft:#fff7ed;
+  --ok:#059669; --ok-soft:#ecfdf5;
+  --warn:#b45309; --warn-soft:#fffbeb;
+  --purple:#7c3aed; --purple-soft:#f5f3ff;
+  --shadow:0 1px 2px rgba(15,23,42,.06), 0 8px 24px rgba(15,23,42,.06);
+  --radius:14px;
+}
+:root[data-theme="dark"]{
+  --ink:#e8eefc; --ink-2:#c3cee4; --sub:#94a3b8; --faint:#64748b;
+  --line:#233047; --line-2:#33425e; --bg:#0d1424; --soft:#131c2f; --soft-2:#18233a;
+  --brand:#60a5fa; --brand-soft:#13233d;
+  --accent:#fb923c; --accent-soft:#2a1a0e;
+  --ok:#34d399; --ok-soft:#0d2620;
+  --warn:#fbbf24; --warn-soft:#2a2110;
+  --purple:#a78bfa; --purple-soft:#1e1b34;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px rgba(0,0,0,.35);
+}
+
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;font-family:"Microsoft YaHei","Noto Sans CJK SC","PingFang SC","Hiragino Sans GB",sans-serif;color:var(--ink);background:var(--bg);
+     line-height:1.78;-webkit-font-smoothing:antialiased;
+     transition:background .25s,color .25s}
+a{color:var(--brand);text-decoration:none}
+a:hover{text-decoration:underline}
+.wrap{max-width:1180px;margin:0 auto;padding:28px 24px 80px}
+h1,h2,h3{line-height:1.3;letter-spacing:-.01em}
+h1{font-size:30px;margin:0 0 8px}
+h2{font-size:22px;margin:38px 0 12px;padding-bottom:10px;border-bottom:1px solid var(--line)}
+h3{font-size:16.5px;margin:22px 0 8px}
+p{margin:10px 0;font-size:15px;color:var(--ink-2)}
+.lede{font-size:16px;color:var(--sub);margin:8px 0 4px}
+.kicker{font-size:11.5px;letter-spacing:.16em;color:var(--accent);font-weight:800;
+        text-transform:uppercase;margin:0 0 6px}
+.muted{color:var(--sub);font-size:13px}
+code{background:var(--soft-2);padding:1.5px 6px;border-radius:5px;font-size:13px;
+     font-family:ui-monospace,Consolas,"Courier New",monospace;color:var(--ink-2)}
+hr{border:0;border-top:1px solid var(--line);margin:28px 0}
+
+/* ---- 顶栏 ---- */
+.topbar{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:14px;
+  padding:11px 22px;background:var(--bg);border-bottom:1px solid var(--line);
+  backdrop-filter:saturate(180%) blur(8px)}
+.topbar .brand{font-weight:800;font-size:14px;letter-spacing:-.01em}
+.topbar .brand span{color:var(--accent)}
+.topbar .spacer{flex:1}
+.chip{font-size:11px;padding:3px 9px;border-radius:999px;background:var(--soft-2);
+  color:var(--sub);border:1px solid var(--line)}
+.btn{border:1px solid var(--line);background:var(--bg);color:var(--ink-2);
+  border-radius:9px;padding:6px 13px;font-size:13.5px;cursor:pointer;font-family:inherit;
+  transition:.18s;white-space:nowrap}
+.btn:hover{border-color:var(--brand);color:var(--brand);transform:translateY(-1px)}
+.btn.primary{background:var(--brand);border-color:var(--brand);color:#fff}
+.btn.primary:hover{filter:brightness(1.08);color:#fff}
+.btn:disabled{opacity:.4;cursor:not-allowed;transform:none}
+
+/* ---- 卡片 / 网格 ---- */
+.grid{display:grid;gap:14px}
+.g2{grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}
+.g3{grid-template-columns:repeat(auto-fit,minmax(230px,1fr))}
+.g4{grid-template-columns:repeat(auto-fit,minmax(190px,1fr))}
+.card{border:1px solid var(--line);border-radius:var(--radius);padding:16px 18px;
+  background:var(--bg);box-shadow:var(--shadow);transition:.2s}
+.card:hover{border-color:var(--line-2);transform:translateY(-2px)}
+.card .t{font-weight:700;font-size:15px;margin:0 0 6px;display:flex;align-items:center;gap:8px}
+.card .d{font-size:13.5px;color:var(--sub);margin:0;line-height:1.7}
+.card .q{font-size:12.5px;color:var(--accent);margin:10px 0 0;font-weight:600}
+
+/* ---- 指标条 ---- */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:16px 0}
+.stat{border:1px solid var(--line);border-radius:12px;padding:12px 14px;background:var(--soft)}
+.stat .k{font-size:12px;color:var(--sub);display:block;margin-bottom:2px}
+.stat .v{font-size:23px;font-weight:750;font-variant-numeric:tabular-nums;
+  letter-spacing:-.02em;line-height:1.25}
+.stat .h{font-size:11.5px;color:var(--faint)}
+
+/* ---- 提示块 ---- */
+.note,.warn,.ok,.ask{border-radius:0 12px 12px 0;padding:13px 17px;margin:16px 0;
+  font-size:14px;border-left:4px solid}
+.note{background:var(--brand-soft);border-color:var(--brand)}
+.warn{background:var(--accent-soft);border-color:var(--accent)}
+.ok{background:var(--ok-soft);border-color:var(--ok)}
+.ask{background:var(--purple-soft);border-color:var(--purple)}
+.note b,.warn b,.ok b,.ask b{display:block;margin-bottom:4px;font-size:14px}
+.note ul,.warn ul,.ok ul,.ask ul{margin:6px 0 0;padding-left:20px}
+.note li,.warn li,.ok li,.ask li{margin:4px 0;font-size:13.5px;color:var(--ink-2)}
+
+/* ---- 图 ---- */
+.fig{border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;margin:16px 0;
+  background:var(--bg);box-shadow:var(--shadow)}
+.fig iframe{width:100%;height:520px;border:0;display:block;background:var(--bg)}
+.fig img{width:100%;display:block;background:#fff}
+.fig .cap{font-size:12.5px;color:var(--sub);padding:9px 14px;background:var(--soft);
+  border-top:1px solid var(--line)}
+
+/* ---- 表 ---- */
+table{width:100%;border-collapse:collapse;font-size:13.5px;margin:14px 0}
+th,td{padding:9px 11px;border-bottom:1px solid var(--line);text-align:left}
+th{color:var(--sub);font-weight:650;font-size:12px;letter-spacing:.03em;
+   text-transform:uppercase;background:var(--soft)}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+tbody tr:hover{background:var(--soft)}
+
+/* ---- 公式 ---- */
+.formula{background:var(--soft);border:1px solid var(--line);border-radius:12px;
+  padding:14px 18px;margin:14px 0;font-family:ui-monospace,Consolas,monospace;
+  font-size:14px;color:var(--ink);overflow-x:auto;line-height:1.9}
+.formula .lbl{display:block;font-family:"Microsoft YaHei","Noto Sans CJK SC","PingFang SC","Hiragino Sans GB",sans-serif;font-size:12px;color:var(--sub);margin-bottom:6px}
+
+/* ---- 步骤条 ---- */
+.steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin:16px 0}
+.step{border:1px solid var(--line);border-radius:12px;padding:13px 15px;background:var(--soft);
+  position:relative;overflow:hidden}
+.step:before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--accent)}
+.step b{display:block;font-size:13px;color:var(--accent);margin-bottom:4px;letter-spacing:.02em}
+.step span{font-size:13px;color:var(--sub);line-height:1.65}
+
+/* ---- 徽章 ---- */
+.badge{display:inline-block;font-size:11px;padding:2px 8px;border-radius:999px;
+  border:1px solid var(--line);color:var(--sub);background:var(--soft);margin-right:6px}
+.badge.b{color:var(--brand);border-color:var(--brand);background:var(--brand-soft)}
+.badge.o{color:var(--accent);border-color:var(--accent);background:var(--accent-soft)}
+.badge.g{color:var(--ok);border-color:var(--ok);background:var(--ok-soft)}
+.badge.p{color:var(--purple);border-color:var(--purple);background:var(--purple-soft)}
+
+.foot{margin-top:56px;padding-top:16px;border-top:1px solid var(--line);
+  font-size:12px;color:var(--faint)}
+@media (max-width:720px){
+  .wrap{padding:18px 14px 60px}
+  .fig iframe{height:420px}
+  h1{font-size:23px}
+}
+
+    .tabs{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0 16px}
+    .dsbtn{border:1px solid var(--line);background:var(--bg);color:var(--ink-2);border-radius:999px;
+      padding:6px 16px;font-size:13px;cursor:pointer;font-family:inherit;transition:.18s}
+    .dsbtn:hover{border-color:var(--brand);color:var(--brand)}
+    .dsbtn.on{background:var(--brand);border-color:var(--brand);color:#fff}
+    .mgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:12px}
+    .mcard{border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;background:var(--bg)}
+    .mhead{width:100%;display:flex;align-items:center;gap:9px;padding:12px 15px;border:0;
+      background:var(--soft);cursor:pointer;font-family:inherit;text-align:left;transition:.18s}
+    .mhead:hover{background:var(--soft-2)}
+    .mname{font-weight:650;font-size:14px;color:var(--ink);flex:1}
+    .marrow{color:var(--faint);font-size:12px;transition:transform .2s}
+    .mcard.open .marrow{transform:rotate(180deg)}
+    .mbody{display:none;padding:4px 16px 16px;border-top:1px solid var(--line)}
+    .mcard.open .mbody{display:block}
+    .mone{font-size:13.5px;color:var(--sub);margin:10px 0 12px}
+    table.mini{width:100%;border-collapse:collapse;font-size:12.5px;margin:6px 0 12px}
+    table.mini th{width:80px;color:var(--sub);font-weight:650;text-align:left;padding:5px 8px;
+      border-bottom:1px solid var(--line);background:transparent;text-transform:none;font-size:12px}
+    table.mini td{padding:5px 8px;border-bottom:1px solid var(--line);color:var(--ink-2);
+      font-family:ui-monospace,Consolas,monospace;font-size:12px}
+    </style>
+
+</head><body>
+<div class="topbar">
+  <span class="brand">空间大数据方法 <span>L0→L3</span></span>
+  <span class="chip">方法 · 全景</span>
+  <span class="spacer"></span>
+  <button class="btn" id="themeBtn" onclick="__toggleTheme()">☾ 夜间</button>
+  <a class="btn" href="index.html">← 返回入口</a>
+</div>
+<div class="wrap">
+  <h1>方法图谱 · 这条管线一共用了哪些方法</h1><p class="lede">点开卡片看输入 / 输出 / 参数 / 为什么 / 坑 / 代码位置；可按 L0–L3 分层筛选。</p>
+  
+    <p>这条管线一共用了 <b>14</b> 个方法。点开任意一张卡，看它的
+    <b>输入 / 输出 / 关键参数 / 为什么这么做 / 坑 / 代码在哪</b> ——
+    带新人最省事的讲法就是「先给全景，再按需下钻」。</p>
+    <div class="tabs" id="mfilter">
+      <button class="dsbtn on" data-g="全部">全部</button><button class="dsbtn" data-g="L0">L0</button><button class="dsbtn" data-g="L1">L1</button><button class="dsbtn" data-g="L2">L2</button><button class="dsbtn" data-g="L3">L3</button><button class="dsbtn" data-g="贯穿">贯穿</button>
+    </div>
+    <div class="mgrid">
+        <div class="mcard" data-layer="L0">
+          <button class="mhead">
+            <span class="badge b">L0</span>
+            <span class="mname">H3 离散网格（geocode）</span><span class="marrow">▾</span>
+          </button>
+          <div class="mbody">
+            <p class="mone">把连续经纬度压成可数的六边形格</p>
+            <table class="mini">
+              <tr><th>输入</th><td>lat / lon（点）</td></tr>
+              <tr><th>输出</th><td>h3_cell（res=8）</td></tr>
+              <tr><th>关键参数</th><td>h3_res=8；平均 0.737 km²/格</td></tr>
+              <tr><th>代码位置</th><td><code>05_map/05_map.py · op=geocode</code></td></tr>
+            </table>
+            <div class="note"><b>为什么这么做</b>六边形邻居方向一致、没有「对角算不算」的歧义；方格永远说不清对角邻居。</div>
+            <div class="warn"><b>坑</b>分辨率决定一切：res 太大 → 一格一个点、邻居全是孤岛；res 太小 → 空间细节被抹平。改 res 必须重跑整条链。</div>
+          </div>
+        </div>
+        <div class="mcard" data-layer="L0">
+          <button class="mhead">
+            <span class="badge b">L0</span>
+            <span class="mname">格内聚合（aggregate）</span><span class="marrow">▾</span>
+          </button>
+          <div class="mbody">
+            <p class="mone">点值求和进格，点云变栅格</p>
+            <table class="mini">
+              <tr><th>输入</th><td>h3_cell + value</td></tr>
+              <tr><th>输出</th><td>格值 value</td></tr>
+              <tr><th>关键参数</th><td>聚合函数 = sum</td></tr>
+              <tr><th>代码位置</th><td><code>05_map/05_map.py · op=aggregate</code></td></tr>
+            </table>
+            <div class="note"><b>为什么这么做</b>把 800 万条记录压成几千个可运算单元，是「大数据 → 可算」的关键一步。</div>
+            <div class="warn"><b>坑</b>sum 会让大格天然占优；若业务问的是「强度」应改用 mean 或密度。口径不同，后面的 I 也不同。</div>
+          </div>
+        </div>
+        <div class="mcard" data-layer="L0">
+          <button class="mhead">
+            <span class="badge b">L0</span>
+            <span class="mname">格值集中度（ECDF）</span><span class="marrow">▾</span>
+          </button>
+          <div class="mbody">
+            <p class="mone">值有多集中？头部格占多少</p>
+            <table class="mini">
+              <tr><th>输入</th><td>格值向量</td></tr>
+              <tr><th>输出</th><td>ECDF 曲线 / 头部占比</td></tr>
+              <tr><th>关键参数</th><td>零值格已剔除</td></tr>
+              <tr><th>代码位置</th><td><code>06_visualize/06_visualize.py · 01-L0-cell-value-ecdf</code></td></tr>
+            </table>
+            <div class="note"><b>为什么这么做</b>长尾是空间数据的常态。不先看分布就直接算 I，很容易被几个极端格带偏。</div>
+            <div class="warn"><b>坑</b>直接在长尾原始数据上算 I，结果被极值主导 —— 这正是「要不要取 log1p」能成为一门课的原因。</div>
+          </div>
+        </div>
+        <div class="mcard" data-layer="L1">
+          <button class="mhead">
+            <span class="badge o">L1</span>
+            <span class="mname">空间权重矩阵 W（邻接）</span><span class="marrow">▾</span>
+          </button>
+          <div class="mbody">
+            <p class="mone">定义谁是谁的邻居</p>
+            <table class="mini">
+              <tr><th>输入</th><td>格集合</td></tr>
+              <tr><th>输出</th><td>W（n×n 稀疏）</td></tr>
+              <tr><th>关键参数</th><td>H3 grid_disk(k=1)；行标准化；实测平均邻居 1.41–5.07</td></tr>
+              <tr><th>代码位置</th><td><code>05_map/spatial_ladder.py · build_neighbors / build_weights</code></td></tr>
+            </table>
+            <div class="note"><b>为什么这么做</b>没有 W 就没有「空间」。这一步把地理关系写成可运算的矩阵。</div>
+            <div class="warn"><b>坑</b>W 必须覆盖全部格（含孤岛），否则 w.n < n 会让滞后维度对不上，后面全线崩。</div>
+          </div>
+        </div>
+        <div class="mcard" data-layer="L1">
+          <button class="mhead">
+            <span class="badge o">L1</span>
+            <span class="mname">KNN 权重（KD-tree）</span><span class="marrow">▾</span>
+          </button>
+          <div class="mbody">
+            <p class="mone">按距离取最近 k 个，保证没有孤岛</p>
+            <table class="mini">
+              <tr><th>输入</th><td>格中心 3D 直角坐标</td></tr>
+              <tr><th>输出</th><td>W（每格恰好 k 个邻居）</td></tr>
+              <tr><th>关键参数</th><td>k ∈ {4, 8}；sklearn NearestNeighbors(algorithm='kd_tree')</td></tr>
+              <tr><th>代码位置</th><td><code>08_interactive/08_interactive.py · _build_weights</code></td></tr>
+            </table>
+            <div class="note"><b>为什么这么做</b>n×n 距离矩阵在 30 万格上必爆内存；3D 弦距与大圆距离单调同序，最近邻排序一致但快几个数量级。</div>
+            <div class="warn"><b>坑</b>KNN 消灭孤岛的同时也消灭了「这里本来就孤立」的信号，全球稀疏数据上会把大洋彼岸认成邻居。</div>
+          </div>
+        </div>
+        <div class="mcard" data-layer="L1">
+          <button class="mhead">
+            <span class="badge o">L1</span>
+            <span class="mname">行标准化（row-standardized）</span><span class="marrow">▾</span>
+          </button>
+          <div class="mbody">
+            <p class="mone">把「邻居有几个」的差异抹平</p>
+            <table class="mini">
+              <tr><th>输入</th><td>W（二值）</td></tr>
+              <tr><th>输出</th><td>W（每行和为 1）</td></tr>
+              <tr><th>关键参数</th><td>transform='r'</td></tr>
+              <tr><th>代码位置</th><td><code>05_map/spatial_ladder.py · build_weights</code></td></tr>
+            </table>
+            <div class="note"><b>为什么这么做</b>标准化后 Wx 是邻居均值，与邻居数量脱钩，可跨格比较；也让 I 恰好等于散点斜率。</div>
+            <div class="warn"><b>坑</b>孤岛行无法标准化（分母为 0），滞后取 0 —— 它会稀释 I，但不该被悄悄删掉。</div>
+          </div>
+        </div>
+        <div class="mcard" data-layer="L2">
+          <button class="mhead">
+            <span class="badge g">L2</span>
+            <span class="mname">空间滞后 Wx</span><span class="marrow">▾</span>
+          </button>
+          <div class="mbody">
+            <p class="mone">每个格的邻居均值</p>
+            <table class="mini">
+              <tr><th>输入</th><td>W + 格值 x</td></tr>
+              <tr><th>输出</th><td>空间滞后向量 Wx</td></tr>
+              <tr><th>关键参数</th><td>稀疏矩阵乘法 W.sparse @ x</td></tr>
+              <tr><th>代码位置</th><td><code>05_map/spatial_ladder.py</code></td></tr>
+            </table>
+            <div class="note"><b>为什么这么做</b>把「邻居怎么样」变成一个和 x 同维度的新变量，于是可以画散点、做回归。</div>
+            <div class="warn"><b>坑</b>稀疏矩阵乘出来是 (n,1)，记得 ravel()；否则后续广播会静默出错。</div>
+          </div>
+        </div>
+        <div class="mcard" data-layer="L2">
+          <button class="mhead">
+            <span class="badge g">L2</span>
+            <span class="mname">全局 Moran's I</span><span class="marrow">▾</span>
+          </button>
+          <div class="mbody">
+            <p class="mone">一个数字概括全图聚集强度</p>
+            <table class="mini">
+              <tr><th>输入</th><td>x + W</td></tr>
+              <tr><th>输出</th><td>I ∈ [-1, 1]；本管线 0.0132 – 0.7077</td></tr>
+              <tr><th>关键参数</th><td>行标准化 ⇒ S₀ = n ⇒ I = zᵀWz / zᵀz</td></tr>
+              <tr><th>代码位置</th><td><code>05_map/spatial_ladder.py · moran_i</code></td></tr>
+            </table>
+            <div class="note"><b>为什么这么做</b>最常用的空间自相关指标，也是被误读最多的：它依赖尺度与权重，不是绝对真理。</div>
+            <div class="warn"><b>坑</b>跨研究比较 I 必须同尺度、同权重、同网格；只报 I 不报口径等于没报。</div>
+          </div>
+        </div>
+        <div class="mcard" data-layer="L2">
+          <button class="mhead">
+            <span class="badge g">L2</span>
+            <span class="mname">Moran 散点四象限</span><span class="marrow">▾</span>
+          </button>
+          <div class="mbody">
+            <p class="mone">把全局 I 拆回每个格的贡献</p>
+            <table class="mini">
+              <tr><th>输入</th><td>x + Wx（均中心化）</td></tr>
+              <tr><th>输出</th><td>HH / LL / HL / LH 象限</td></tr>
+              <tr><th>关键参数</th><td>两轴均减去各自均值</td></tr>
+              <tr><th>代码位置</th><td><code>06_visualize/06_visualize.py · 02-L2-moran-scatter</code></td></tr>
+            </table>
+            <div class="note"><b>为什么这么做</b>全局 I 只是一个平均；散点能看出「是热点成片，还是少数极端格撑起来的」。</div>
+            <div class="warn"><b>坑</b>点很多时（30 万格）必须分箱或抽样，否则浏览器卡死，视觉上也全是糊的。</div>
+          </div>
+        </div>
+        <div class="mcard" data-layer="L3">
+          <button class="mhead">
+            <span class="badge p">L3</span>
+            <span class="mname">Haversine 距离</span><span class="marrow">▾</span>
+          </button>
+          <div class="mbody">
+            <p class="mone">球面上的两点距离</p>
+            <table class="mini">
+              <tr><th>输入</th><td>两点经纬度</td></tr>
+              <tr><th>输出</th><td>距离（km）</td></tr>
+              <tr><th>关键参数</th><td>R = 6371.0088 km</td></tr>
+              <tr><th>代码位置</th><td><code>05_map/spatial_ladder.py · haversine_km</code></td></tr>
+            </table>
+            <div class="note"><b>为什么这么做</b>经纬度不是平面坐标，高纬度地区 1° 经度对应的公里数会缩水，用欧氏距离会系统性偏差。</div>
+            <div class="warn"><b>坑</b>忘了 np.radians() 是最经典的错误；跨 180° 经线要单独处理。</div>
+          </div>
+        </div>
+        <div class="mcard" data-layer="L3">
+          <button class="mhead">
+            <span class="badge p">L3</span>
+            <span class="mname">距离环聚合（求和 vs 密度）</span><span class="marrow">▾</span>
+          </button>
+          <div class="mbody">
+            <p class="mone">效应随距离怎么衰减</p>
+            <table class="mini">
+              <tr><th>输入</th><td>热点圆心 + 环定义</td></tr>
+              <tr><th>输出</th><td>每环的求和 / 格数 / 密度</td></tr>
+              <tr><th>关键参数</th><td>Top-100 热点；环 0–1 / 1–3 / 3–5 / 5–10 km</td></tr>
+              <tr><th>代码位置</th><td><code>05_map/spatial_ladder.py · ring_spillover</code></td></tr>
+            </table>
+            <div class="note"><b>为什么这么做</b>把「邻居」从拓扑定义换成距离定义，回答更贴近业务的问题（多远还在影响）。</div>
+            <div class="warn"><b>坑</b>环面积随距离增大 → 求和必然变大 → 得出「越远影响越大」的假结论。必须除格数看密度。</div>
+          </div>
+        </div>
+        <div class="mcard" data-layer="贯穿">
+          <button class="mhead">
+            <span class="badge ">贯穿</span>
+            <span class="mname">可复现（version_lock）</span><span class="marrow">▾</span>
+          </button>
+          <div class="mbody">
+            <p class="mone">冻结源数据指纹、行数、库版本</p>
+            <table class="mini">
+              <tr><th>输入</th><td>源数据 + 运行环境</td></tr>
+              <tr><th>输出</th><td>version_lock.json</td></tr>
+              <tr><th>关键参数</th><td>含 cost_params（h3_res / hot_top_n / rings_km / sz_sample_day）</td></tr>
+              <tr><th>代码位置</th><td><code>04_validate/output/&lt;ds&gt;/version_lock.json</code></td></tr>
+            </table>
+            <div class="note"><b>为什么这么做</b>教学产品的信服度来自「你能重跑出同样的数」；版本漂移会被 ④ 阶段记为断言失败。</div>
+            <div class="warn"><b>坑</b>只写「用了 pandas」不够，必须写版本号；成本参数（合成参数）也要一并冻结并标注。</div>
+          </div>
+        </div>
+        <div class="mcard" data-layer="贯穿">
+          <button class="mhead">
+            <span class="badge ">贯穿</span>
+            <span class="mname">IQR 离群检测</span><span class="marrow">▾</span>
+          </button>
+          <div class="mbody">
+            <p class="mone">先看清数据里有什么怪东西</p>
+            <table class="mini">
+              <tr><th>输入</th><td>数值字段</td></tr>
+              <tr><th>输出</th><td>离群计数 / 建议</td></tr>
+              <tr><th>关键参数</th><td>outlier_method=iqr；outlier_row_cap=20000</td></tr>
+              <tr><th>代码位置</th><td><code>02_profile / 03_clean</code></td></tr>
+            </table>
+            <div class="note"><b>为什么这么做</b>飞点会直接变成飞格，进而污染权重与 I。清洗与映射之间必须有这一步。</div>
+            <div class="warn"><b>坑</b>合法范围内的飞点（如深圳数据集里的 lat=47.66 / lon=132.54）IQR 抓不到 —— 需要业务范围规则，而不只是几何范围。</div>
+          </div>
+        </div>
+        <div class="mcard" data-layer="贯穿">
+          <button class="mhead">
+            <span class="badge ">贯穿</span>
+            <span class="mname">断言式校验</span><span class="marrow">▾</span>
+          </button>
+          <div class="mbody">
+            <p class="mone">把口径写成会失败的断言</p>
+            <table class="mini">
+              <tr><th>输入</th><td>各阶段产物</td></tr>
+              <tr><th>输出</th><td>validation.yaml（P0/P1/P2）</td></tr>
+              <tr><th>关键参数</th><td>行标准化断言「每行和为 1」；孤岛单独计数</td></tr>
+              <tr><th>代码位置</th><td><code>04_validate/04_validate.py</code></td></tr>
+            </table>
+            <div class="note"><b>为什么这么做</b>口径只有写成断言才会被遵守；写在文档里没人看。</div>
+            <div class="warn"><b>坑</b>断言太松等于没有：只查经纬度范围 [-90,90] 过不了业务合理性这一关。</div>
+          </div>
+        </div></div>
+    <div class="ok"><b>方法之间的依赖关系</b>L0 出格 → L1 出 W → L2 出 Wx 与 I → L3 换成距离定义。<b>上游换一个参数，下游全部要重跑</b> —— 这就是为什么可复现要冻结 <code>h3_res</code>，而不只是冻结数据。</div>
+    
+  <div class="foot">生成脚本 <code>08_interactive/08_interactive.py</code>　|
+  生成时间 2026-09-10 12:35　|
+  所有数字来自上游产物 <code>05_map/output/&lt;ds&gt;/ladder_report.json</code>，不硬编码。</div>
+</div>
+<script>
+    document.querySelectorAll('.mhead').forEach(function(h){
+      h.onclick=function(){ h.parentElement.classList.toggle('open'); };
+    });
+    document.querySelectorAll('#mfilter .dsbtn').forEach(function(b){
+      b.onclick=function(){
+        document.querySelectorAll('#mfilter .dsbtn').forEach(function(x){x.classList.remove('on');});
+        b.classList.add('on');
+        var g=b.dataset.g;
+        document.querySelectorAll('.mcard').forEach(function(c){
+          c.style.display = (g==='全部' || c.dataset.layer===g) ? '' : 'none';
+        });
+      };
+    });
+    </script>
+</body></html>

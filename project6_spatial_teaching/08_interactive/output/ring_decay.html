@@ -1,0 +1,252 @@
+<!doctype html><html lang="zh-CN" data-theme="light"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>距离环衰减 · 同一个数据，两种口径相反结论</title>
+<script>
+(function(){
+  var KEY='p6-theme';
+  try{
+    var saved=localStorage.getItem(KEY);
+    if(!saved){ saved = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark':'light'; }
+    document.documentElement.setAttribute('data-theme', saved);
+  }catch(e){}
+  window.__toggleTheme=function(){
+    var cur=document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark';
+    document.documentElement.setAttribute('data-theme',cur);
+    try{localStorage.setItem(KEY,cur);}catch(e){}
+    var b=document.getElementById('themeBtn'); if(b){b.textContent = cur==='dark'?'☀ 日间':'☾ 夜间';}
+    window.dispatchEvent(new Event('themechange'));
+  };
+  document.addEventListener('DOMContentLoaded',function(){
+    var b=document.getElementById('themeBtn');
+    if(b){ b.textContent = document.documentElement.getAttribute('data-theme')==='dark'?'☀ 日间':'☾ 夜间'; }
+  });
+})();
+
+/* Plotly 图随主题重着色：plotly 不认 CSS 变量，只能画完再 relayout。 */
+(function(){
+  function hex(v){return v;}
+  window.__applyPlotTheme=function(){
+    var dark=document.documentElement.getAttribute('data-theme')==='dark';
+    var bg=dark?'#0d1424':'#ffffff', grid=dark?'#233047':'#e2e8f0',
+        fg=dark?'#e8eefc':'#0f172a', sub=dark?'#94a3b8':'#64748b';
+    var plots=document.querySelectorAll('.js-plotly-plot');
+    for(var i=0;i<plots.length;i++){
+      var d=plots[i]; if(!d.layout) continue;
+      var up={'paper_bgcolor':bg,'plot_bgcolor':bg,'font.color':sub};
+      Object.keys(d.layout).forEach(function(k){
+        if(/^[xy]axis\d*$/.test(k)){
+          up[k+'.gridcolor']=grid; up[k+'.linecolor']=grid;
+          up[k+'.zerolinecolor']=grid; up[k+'.tickfont.color']=sub;
+          up[k+'.title.font.color']=sub;
+        }
+      });
+      if(d.layout.title) up['title.font.color']=fg;
+      if(d.layout.legend) up['legend.font.color']=sub;
+      if(d.layout.annotations) up['annotations']=(d.layout.annotations||[]).map(function(a){
+        return Object.assign({},a,{font:Object.assign({},a.font||{},{color:sub})});
+      });
+      try{ Plotly.relayout(d, up); }catch(e){}
+      if(window.Plotly && d.data){
+        for(var j=0;j<d.data.length;j++){
+          if(d.data[j] && d.data[j].text){ try{ Plotly.restyle(d,{'textfont.color':sub},[j]); }catch(e){} }
+        }
+      }
+    }
+  };
+  document.addEventListener('DOMContentLoaded',function(){ setTimeout(window.__applyPlotTheme,60); });
+  window.addEventListener('themechange',function(){ setTimeout(window.__applyPlotTheme,30); });
+})();
+</script>
+<style>
+:root{
+  --ink:#0f172a; --ink-2:#334155; --sub:#64748b; --faint:#94a3b8;
+  --line:#e2e8f0; --line-2:#cbd5e1; --bg:#ffffff; --soft:#f8fafc; --soft-2:#f1f5f9;
+  --brand:#2563eb; --brand-soft:#eff6ff;
+  --accent:#ea580c; --accent-soft:#fff7ed;
+  --ok:#059669; --ok-soft:#ecfdf5;
+  --warn:#b45309; --warn-soft:#fffbeb;
+  --purple:#7c3aed; --purple-soft:#f5f3ff;
+  --shadow:0 1px 2px rgba(15,23,42,.06), 0 8px 24px rgba(15,23,42,.06);
+  --radius:14px;
+}
+:root[data-theme="dark"]{
+  --ink:#e8eefc; --ink-2:#c3cee4; --sub:#94a3b8; --faint:#64748b;
+  --line:#233047; --line-2:#33425e; --bg:#0d1424; --soft:#131c2f; --soft-2:#18233a;
+  --brand:#60a5fa; --brand-soft:#13233d;
+  --accent:#fb923c; --accent-soft:#2a1a0e;
+  --ok:#34d399; --ok-soft:#0d2620;
+  --warn:#fbbf24; --warn-soft:#2a2110;
+  --purple:#a78bfa; --purple-soft:#1e1b34;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px rgba(0,0,0,.35);
+}
+
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;font-family:"Microsoft YaHei","Noto Sans CJK SC","PingFang SC","Hiragino Sans GB",sans-serif;color:var(--ink);background:var(--bg);
+     line-height:1.78;-webkit-font-smoothing:antialiased;
+     transition:background .25s,color .25s}
+a{color:var(--brand);text-decoration:none}
+a:hover{text-decoration:underline}
+.wrap{max-width:1180px;margin:0 auto;padding:28px 24px 80px}
+h1,h2,h3{line-height:1.3;letter-spacing:-.01em}
+h1{font-size:30px;margin:0 0 8px}
+h2{font-size:22px;margin:38px 0 12px;padding-bottom:10px;border-bottom:1px solid var(--line)}
+h3{font-size:16.5px;margin:22px 0 8px}
+p{margin:10px 0;font-size:15px;color:var(--ink-2)}
+.lede{font-size:16px;color:var(--sub);margin:8px 0 4px}
+.kicker{font-size:11.5px;letter-spacing:.16em;color:var(--accent);font-weight:800;
+        text-transform:uppercase;margin:0 0 6px}
+.muted{color:var(--sub);font-size:13px}
+code{background:var(--soft-2);padding:1.5px 6px;border-radius:5px;font-size:13px;
+     font-family:ui-monospace,Consolas,"Courier New",monospace;color:var(--ink-2)}
+hr{border:0;border-top:1px solid var(--line);margin:28px 0}
+
+/* ---- 顶栏 ---- */
+.topbar{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:14px;
+  padding:11px 22px;background:var(--bg);border-bottom:1px solid var(--line);
+  backdrop-filter:saturate(180%) blur(8px)}
+.topbar .brand{font-weight:800;font-size:14px;letter-spacing:-.01em}
+.topbar .brand span{color:var(--accent)}
+.topbar .spacer{flex:1}
+.chip{font-size:11px;padding:3px 9px;border-radius:999px;background:var(--soft-2);
+  color:var(--sub);border:1px solid var(--line)}
+.btn{border:1px solid var(--line);background:var(--bg);color:var(--ink-2);
+  border-radius:9px;padding:6px 13px;font-size:13.5px;cursor:pointer;font-family:inherit;
+  transition:.18s;white-space:nowrap}
+.btn:hover{border-color:var(--brand);color:var(--brand);transform:translateY(-1px)}
+.btn.primary{background:var(--brand);border-color:var(--brand);color:#fff}
+.btn.primary:hover{filter:brightness(1.08);color:#fff}
+.btn:disabled{opacity:.4;cursor:not-allowed;transform:none}
+
+/* ---- 卡片 / 网格 ---- */
+.grid{display:grid;gap:14px}
+.g2{grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}
+.g3{grid-template-columns:repeat(auto-fit,minmax(230px,1fr))}
+.g4{grid-template-columns:repeat(auto-fit,minmax(190px,1fr))}
+.card{border:1px solid var(--line);border-radius:var(--radius);padding:16px 18px;
+  background:var(--bg);box-shadow:var(--shadow);transition:.2s}
+.card:hover{border-color:var(--line-2);transform:translateY(-2px)}
+.card .t{font-weight:700;font-size:15px;margin:0 0 6px;display:flex;align-items:center;gap:8px}
+.card .d{font-size:13.5px;color:var(--sub);margin:0;line-height:1.7}
+.card .q{font-size:12.5px;color:var(--accent);margin:10px 0 0;font-weight:600}
+
+/* ---- 指标条 ---- */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:16px 0}
+.stat{border:1px solid var(--line);border-radius:12px;padding:12px 14px;background:var(--soft)}
+.stat .k{font-size:12px;color:var(--sub);display:block;margin-bottom:2px}
+.stat .v{font-size:23px;font-weight:750;font-variant-numeric:tabular-nums;
+  letter-spacing:-.02em;line-height:1.25}
+.stat .h{font-size:11.5px;color:var(--faint)}
+
+/* ---- 提示块 ---- */
+.note,.warn,.ok,.ask{border-radius:0 12px 12px 0;padding:13px 17px;margin:16px 0;
+  font-size:14px;border-left:4px solid}
+.note{background:var(--brand-soft);border-color:var(--brand)}
+.warn{background:var(--accent-soft);border-color:var(--accent)}
+.ok{background:var(--ok-soft);border-color:var(--ok)}
+.ask{background:var(--purple-soft);border-color:var(--purple)}
+.note b,.warn b,.ok b,.ask b{display:block;margin-bottom:4px;font-size:14px}
+.note ul,.warn ul,.ok ul,.ask ul{margin:6px 0 0;padding-left:20px}
+.note li,.warn li,.ok li,.ask li{margin:4px 0;font-size:13.5px;color:var(--ink-2)}
+
+/* ---- 图 ---- */
+.fig{border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;margin:16px 0;
+  background:var(--bg);box-shadow:var(--shadow)}
+.fig iframe{width:100%;height:520px;border:0;display:block;background:var(--bg)}
+.fig img{width:100%;display:block;background:#fff}
+.fig .cap{font-size:12.5px;color:var(--sub);padding:9px 14px;background:var(--soft);
+  border-top:1px solid var(--line)}
+
+/* ---- 表 ---- */
+table{width:100%;border-collapse:collapse;font-size:13.5px;margin:14px 0}
+th,td{padding:9px 11px;border-bottom:1px solid var(--line);text-align:left}
+th{color:var(--sub);font-weight:650;font-size:12px;letter-spacing:.03em;
+   text-transform:uppercase;background:var(--soft)}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+tbody tr:hover{background:var(--soft)}
+
+/* ---- 公式 ---- */
+.formula{background:var(--soft);border:1px solid var(--line);border-radius:12px;
+  padding:14px 18px;margin:14px 0;font-family:ui-monospace,Consolas,monospace;
+  font-size:14px;color:var(--ink);overflow-x:auto;line-height:1.9}
+.formula .lbl{display:block;font-family:"Microsoft YaHei","Noto Sans CJK SC","PingFang SC","Hiragino Sans GB",sans-serif;font-size:12px;color:var(--sub);margin-bottom:6px}
+
+/* ---- 步骤条 ---- */
+.steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin:16px 0}
+.step{border:1px solid var(--line);border-radius:12px;padding:13px 15px;background:var(--soft);
+  position:relative;overflow:hidden}
+.step:before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--accent)}
+.step b{display:block;font-size:13px;color:var(--accent);margin-bottom:4px;letter-spacing:.02em}
+.step span{font-size:13px;color:var(--sub);line-height:1.65}
+
+/* ---- 徽章 ---- */
+.badge{display:inline-block;font-size:11px;padding:2px 8px;border-radius:999px;
+  border:1px solid var(--line);color:var(--sub);background:var(--soft);margin-right:6px}
+.badge.b{color:var(--brand);border-color:var(--brand);background:var(--brand-soft)}
+.badge.o{color:var(--accent);border-color:var(--accent);background:var(--accent-soft)}
+.badge.g{color:var(--ok);border-color:var(--ok);background:var(--ok-soft)}
+.badge.p{color:var(--purple);border-color:var(--purple);background:var(--purple-soft)}
+
+.foot{margin-top:56px;padding-top:16px;border-top:1px solid var(--line);
+  font-size:12px;color:var(--faint)}
+@media (max-width:720px){
+  .wrap{padding:18px 14px 60px}
+  .fig iframe{height:420px}
+  h1{font-size:23px}
+}
+</style>
+<script src="assets/vendor/plotly.min.js"></script>
+</head><body>
+<div class="topbar">
+  <span class="brand">空间大数据方法 <span>L0→L3</span></span>
+  <span class="chip">L3 · 交互</span>
+  <span class="spacer"></span>
+  <button class="btn" id="themeBtn" onclick="__toggleTheme()">☾ 夜间</button>
+  <a class="btn" href="index.html">← 返回入口</a>
+</div>
+<div class="wrap">
+  <h1>距离环衰减 · 同一个数据，两种口径相反结论</h1><p class="lede">L3：以格值 Top-100 热点为圆心画环。切到「环内求和」看虚假递增，切到「溢出密度」看真实衰减。</p>
+  
+    <p>L3 问的是「效应随距离怎么衰减」。听起来简单，但<b>口径选错会得到完全相反的结论</b>。</p>
+    <div class="warn"><b>本课最容易踩的坑</b>环越远，<b>环面积越大 → 环内格数越多 → 求和必然变大</b>。所以「环内求和」<b>不是</b>衰减指标；必须除以环内格数，看<b>密度</b>。</div>
+
+    <div style="height:520px; width:100%;">                            <div id="b48f2b22-f726-4605-9265-61faf87e48b6" class="plotly-graph-div" style="height:100%; width:100%;"></div>            <script>                window.PLOTLYENV=window.PLOTLYENV || {};                                if (document.getElementById("b48f2b22-f726-4605-9265-61faf87e48b6")) {                    Plotly.newPlot(                        "b48f2b22-f726-4605-9265-61faf87e48b6",                        [{"hovertemplate":"\u003cb\u003eFDIC\u003c\u002fb\u003e\u003cbr\u003e%{x} km \u73af\u003cbr\u003e%{y:,.4g}\u003cextra\u003e\u003c\u002fextra\u003e","line":{"color":"#0072B2","shape":"spline","smoothing":0.6,"width":2.8},"marker":{"color":"#0072B2","line":{"color":"#fff","width":1.5},"size":9},"mode":"lines+markers+text","name":"FDIC","text":["8","2","2","2"],"textfont":{"color":"#64748b","size":10.5},"textposition":"top center","x":[0.5,2.0,4.0,7.5],"y":[7.617238095238094,2.127605048771719,1.7181010165440551,1.6415240880388995],"type":"scatter"},{"hovertemplate":"\u003cb\u003e\u6df1\u5733\u5355\u8f66\u003c\u002fb\u003e\u003cbr\u003e%{x} km \u73af\u003cbr\u003e%{y:,.4g}\u003cextra\u003e\u003c\u002fextra\u003e","line":{"color":"#D55E00","shape":"spline","smoothing":0.6,"width":2.8},"marker":{"color":"#D55E00","line":{"color":"#fff","width":1.5},"size":9},"mode":"lines+markers+text","name":"\u6df1\u5733\u5355\u8f66","text":["24,612","15,870","10,056","6,867"],"textfont":{"color":"#64748b","size":10.5},"textposition":"top center","x":[0.5,2.0,4.0,7.5],"y":[24612.434761904762,15870.472887629845,10056.02433652752,6866.730795993034],"type":"scatter"},{"hovertemplate":"\u003cb\u003eBrightkite\u003c\u002fb\u003e\u003cbr\u003e%{x} km \u73af\u003cbr\u003e%{y:,.4g}\u003cextra\u003e\u003c\u002fextra\u003e","line":{"color":"#009E73","shape":"spline","smoothing":0.6,"width":2.8},"marker":{"color":"#009E73","line":{"color":"#fff","width":1.5},"size":9},"mode":"lines+markers+text","name":"Brightkite","text":["3,006","342","148","65"],"textfont":{"color":"#64748b","size":10.5},"textposition":"top center","x":[0.5,2.0,4.0,7.5],"y":[3006.3924285714284,341.92463211144405,147.87157284375158,65.31963056103085],"type":"scatter"},{"hovertemplate":"\u003cb\u003eGowalla\u003c\u002fb\u003e\u003cbr\u003e%{x} km \u73af\u003cbr\u003e%{y:,.4g}\u003cextra\u003e\u003c\u002fextra\u003e","line":{"color":"#CC79A7","shape":"spline","smoothing":0.6,"width":2.8},"marker":{"color":"#CC79A7","line":{"color":"#fff","width":1.5},"size":9},"mode":"lines+markers+text","name":"Gowalla","text":["4,024","1,460","458","124"],"textfont":{"color":"#64748b","size":10.5},"textposition":"top center","x":[0.5,2.0,4.0,7.5],"y":[4023.5096904761904,1459.5723929374997,457.5540670712734,123.52327173845288],"type":"scatter"}],                        {"template":{"data":{"histogram2dcontour":[{"type":"histogram2dcontour","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"choropleth":[{"type":"choropleth","colorbar":{"outlinewidth":0,"ticks":""}}],"histogram2d":[{"type":"histogram2d","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"heatmap":[{"type":"heatmap","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"contourcarpet":[{"type":"contourcarpet","colorbar":{"outlinewidth":0,"ticks":""}}],"contour":[{"type":"contour","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"surface":[{"type":"surface","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"mesh3d":[{"type":"mesh3d","colorbar":{"outlinewidth":0,"ticks":""}}],"scatter":[{"fillpattern":{"fillmode":"overlay","size":10,"solidity":0.2},"type":"scatter"}],"parcoords":[{"type":"parcoords","line":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterpolargl":[{"type":"scatterpolargl","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"bar":[{"error_x":{"color":"#2a3f5f"},"error_y":{"color":"#2a3f5f"},"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"bar"}],"scattergeo":[{"type":"scattergeo","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterpolar":[{"type":"scatterpolar","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"histogram":[{"marker":{"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"histogram"}],"scattergl":[{"type":"scattergl","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatter3d":[{"type":"scatter3d","line":{"colorbar":{"outlinewidth":0,"ticks":""}},"marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattermap":[{"type":"scattermap","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterternary":[{"type":"scatterternary","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattercarpet":[{"type":"scattercarpet","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"carpet":[{"aaxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"baxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"type":"carpet"}],"table":[{"cells":{"fill":{"color":"#EBF0F8"},"line":{"color":"white"}},"header":{"fill":{"color":"#C8D4E3"},"line":{"color":"white"}},"type":"table"}],"barpolar":[{"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"barpolar"}],"pie":[{"automargin":true,"type":"pie"}]},"layout":{"autotypenumbers":"strict","colorway":["#636efa","#EF553B","#00cc96","#ab63fa","#FFA15A","#19d3f3","#FF6692","#B6E880","#FF97FF","#FECB52"],"font":{"color":"#2a3f5f"},"hovermode":"closest","hoverlabel":{"align":"left"},"paper_bgcolor":"white","plot_bgcolor":"#E5ECF6","polar":{"bgcolor":"#E5ECF6","angularaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"radialaxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"ternary":{"bgcolor":"#E5ECF6","aaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"baxis":{"gridcolor":"white","linecolor":"white","ticks":""},"caxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"coloraxis":{"colorbar":{"outlinewidth":0,"ticks":""}},"colorscale":{"sequential":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"sequentialminus":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"diverging":[[0,"#8e0152"],[0.1,"#c51b7d"],[0.2,"#de77ae"],[0.3,"#f1b6da"],[0.4,"#fde0ef"],[0.5,"#f7f7f7"],[0.6,"#e6f5d0"],[0.7,"#b8e186"],[0.8,"#7fbc41"],[0.9,"#4d9221"],[1,"#276419"]]},"xaxis":{"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","automargin":true,"zerolinewidth":2},"yaxis":{"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","automargin":true,"zerolinewidth":2},"scene":{"xaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2},"yaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2},"zaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2}},"shapedefaults":{"line":{"color":"#2a3f5f"}},"annotationdefaults":{"arrowcolor":"#2a3f5f","arrowhead":0,"arrowwidth":1},"geo":{"bgcolor":"white","landcolor":"#E5ECF6","subunitcolor":"white","showland":true,"showlakes":true,"lakecolor":"white"},"title":{"x":0.05}}},"font":{"family":"\"Microsoft YaHei\",\"Noto Sans CJK SC\",\"PingFang SC\",\"Hiragino Sans GB\",sans-serif","size":12.5,"color":"#64748b"},"margin":{"l":78,"r":30,"t":96,"b":72},"title":{"font":{"size":15,"color":"#0f172a"},"text":"\u003cb\u003e\u540c\u4e00\u4e2a\u6570\u636e\uff0c\u4e24\u79cd\u53e3\u5f84\u7ed9\u51fa\u76f8\u53cd\u7ed3\u8bba\u003c\u002fb\u003e\u003cbr\u003e\u003csub\u003e\u5706\u5fc3 = \u683c\u503c Top-100 \u70ed\u70b9\u683c\uff1bx = \u73af\u4e2d\u70b9\uff08km\uff09\uff1b\u7eb5\u8f74\u5bf9\u6570\u003c\u002fsub\u003e","x":0.01,"xanchor":"left"},"legend":{"font":{"size":12},"orientation":"h","y":-0.15,"x":0},"paper_bgcolor":"#ffffff","plot_bgcolor":"#ffffff","height":520,"hovermode":"closest","showlegend":true,"updatemenus":[{"active":0,"bgcolor":"#f8fafc","bordercolor":"#e2e8f0","buttons":[{"args":[{"y":[[7.617238095238094,2.127605048771719,1.7181010165440551,1.6415240880388995],[24612.434761904762,15870.472887629845,10056.02433652752,6866.730795993034],[3006.3924285714284,341.92463211144405,147.87157284375158,65.31963056103085],[4023.5096904761904,1459.5723929374997,457.5540670712734,123.52327173845288]],"text":[["8","2","2","2"],["24,612","15,870","10,056","6,867"],["3,006","342","148","65"],["4,024","1,460","458","124"]]},{"yaxis.title.text":"\u6ea2\u51fa\u5bc6\u5ea6 = \u73af\u5185\u6c42\u548c \u00f7 \u73af\u5185\u683c\u6570"}],"label":"\u6ea2\u51fa\u5bc6\u5ea6\uff08\u63a8\u8350\uff09","method":"update"},{"args":[{"y":[[42.26,31.57,42.45,128.52],[171725.05,441272.86,604740.18,1421334.86],[12442.34,9361.73,8625.29,14592.37],[27872.73,52203.25,29896.4,30652.12]],"text":[["42","32","42","129"],["171,725","441,273","604,740","1,421,335"],["12,442","9,362","8,625","14,592"],["27,873","52,203","29,896","30,652"]]},{"yaxis.title.text":"\u73af\u5185\u683c\u503c\u6c42\u548c"}],"label":"\u73af\u5185\u6c42\u548c","method":"update"},{"args":[{"y":[[1.0,0.27931449984500134,0.22555432757420613,0.215501218094403],[1.0,0.6448152342975119,0.4085749513937678,0.2789943726583845],[1.0,0.11373253500173267,0.049185718883019175,0.021726914271158308],[1.0,0.36276099853626953,0.11372013547135783,0.030700378833643037]],"text":[["1.000","0.279","0.226","0.216"],["1.000","0.645","0.409","0.279"],["1.000","0.114","0.049","0.022"],["1.000","0.363","0.114","0.031"]]},{"yaxis.title.text":"\u76f8\u5bf9\u9996\u73af\u7684\u500d\u6570"}],"label":"\u5bc6\u5ea6\u5f52\u4e00\u5230\u9996\u73af","method":"update"}],"direction":"right","font":{"size":12},"type":"buttons","x":0.01,"xanchor":"left","y":1.14,"yanchor":"top"}],"xaxis":{"title":{"text":"\u8ddd\u70ed\u70b9\u5706\u5fc3\uff08\u73af\u4e2d\u70b9\uff0ckm\uff09","font":{"size":12.5,"color":"#64748b"}},"tickvals":[0.5,2.0,4.0,7.5],"ticktext":["0\u20131 km","1\u20133 km","3\u20135 km","5\u201310 km"],"tickfont":{"size":11.5,"color":"#64748b"},"gridcolor":"#e2e8f0","zerolinecolor":"#e2e8f0","linecolor":"#e2e8f0"},"yaxis":{"title":{"text":"\u6ea2\u51fa\u5bc6\u5ea6 = \u73af\u5185\u6c42\u548c \u00f7 \u73af\u5185\u683c\u6570","font":{"size":12.5,"color":"#64748b"}},"type":"log","tickfont":{"size":11.5,"color":"#64748b"},"gridcolor":"#e2e8f0","zerolinecolor":"#e2e8f0","linecolor":"#e2e8f0"}},                        {"displaylogo": false, "responsive": true}                    )                };            </script>        </div>
+    <p class="muted">点上方三个按钮切换口径；纵轴为对数刻度（四个数据集量级差 3 个数量级，
+    线性轴会把小值压成一条线）。</p>
+
+    <h2>两种口径的完整数字</h2>
+    <table><thead><tr><th class="">数据集</th><th class="num">0–1 km<br>求和</th><th class="num">1–3 km<br>求和</th><th class="num">3–5 km<br>求和</th><th class="num">5–10 km<br>求和</th><th class="num">0–1 km<br>密度</th><th class="num">1–3 km<br>密度</th><th class="num">3–5 km<br>密度</th><th class="num">5–10 km<br>密度</th></tr></thead><tbody><tr><td class="">FDIC</td><td class="num">42</td><td class="num">32</td><td class="num">42</td><td class="num">129</td><td class="num">8</td><td class="num">2</td><td class="num">2</td><td class="num">2</td></tr><tr><td class="">深圳单车</td><td class="num">171725</td><td class="num">441273</td><td class="num">604740</td><td class="num">1421335</td><td class="num">24612</td><td class="num">15870</td><td class="num">10056</td><td class="num">6867</td></tr><tr><td class="">Brightkite</td><td class="num">12442</td><td class="num">9362</td><td class="num">8625</td><td class="num">14592</td><td class="num">3006</td><td class="num">342</td><td class="num">148</td><td class="num">65</td></tr><tr><td class="">Gowalla</td><td class="num">27873</td><td class="num">52203</td><td class="num">29896</td><td class="num">30652</td><td class="num">4024</td><td class="num">1460</td><td class="num">458</td><td class="num">124</td></tr></tbody></table>
+    <div class="note"><b>照着数字念一遍</b><ul><li><b>求和口径</b>：只有 <b>深圳单车</b> 是随距离单调递增的，其余数据集非单调（近环格少、远环格多，纯几何效应）。</li><li><b>密度口径</b>：四个数据集<b>全部单调递减</b> —— 这才是真正的距离衰减。</li><li>同样叫「溢出」，换个口径能得出「越远越多」和「越远越少」两个相反结论。</li></ul></div>
+
+    <h2>衰减速度也各不相同</h2>
+    <div class="grid g4">
+    <div class="card">
+        <div class="t" style="color:#0072B2">FDIC</div>
+        <p class="d">首环 → 末环密度衰减
+          <b>4.6×</b><br>
+          <span class="muted">8 → 2</span>
+        </p></div><div class="card">
+        <div class="t" style="color:#D55E00">深圳单车</div>
+        <p class="d">首环 → 末环密度衰减
+          <b>3.6×</b><br>
+          <span class="muted">24612 → 6867</span>
+        </p></div><div class="card">
+        <div class="t" style="color:#009E73">Brightkite</div>
+        <p class="d">首环 → 末环密度衰减
+          <b>46.0×</b><br>
+          <span class="muted">3006 → 65</span>
+        </p></div><div class="card">
+        <div class="t" style="color:#CC79A7">Gowalla</div>
+        <p class="d">首环 → 末环密度衰减
+          <b>32.6×</b><br>
+          <span class="muted">4024 → 124</span>
+        </p></div>
+    </div>
+    <div class="ok"><b>一句话结论</b>聚合口径不是技术细节，它<b>直接决定结论方向</b>。任何「随距离变化」的表，都必须写清分子分母分别是什么。</div>
+    
+  <div class="foot">生成脚本 <code>08_interactive/08_interactive.py</code>　|
+  生成时间 2026-09-10 12:35　|
+  所有数字来自上游产物 <code>05_map/output/&lt;ds&gt;/ladder_report.json</code>，不硬编码。</div>
+</div>
+<script></script>
+</body></html>
