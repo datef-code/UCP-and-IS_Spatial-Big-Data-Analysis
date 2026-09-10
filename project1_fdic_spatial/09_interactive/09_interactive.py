@@ -4,7 +4,9 @@
 把 ⑦ 的静态图升级为**可 hover、可播放、可切换口径**的交互件，让人自己去戳数据，
 而不是只相信作者的静态图。
 
-四件产物（HTML 自包含、离线可开；Kepler 一件需联网加载 CDN）：
+四件产物（HTML 自包含、离线可开；Kepler 一件需先加载 UMD 依赖——
+本地 `assets/kepler/` 优先（离线），否则 unpkg → jsdelivr → npmirror 依次回退；
+加载失败时页面给出降级提示并指向 `spacetime.html`，不会再抛 "KeplerGL undefined"）：
 
 1. ``event_study.html``     —— 事件研究：τ 各期系数 + 95% CI，hover 看数值与 p 值
 2. ``attenuation.html``     —— 距离衰减：可切换「标准环 / 合并环」×「计数 / 密度」
@@ -377,19 +379,57 @@ def anim_spacetime(events: pd.DataFrame) -> tuple[Path, Path]:
 # --------------------------------------------------------------------------- #
 # ③b 带时间轴的 Kepler.gl 地图（交互增强：把 ⑦ 的静态 Kepler 地图升级为可播放）
 # --------------------------------------------------------------------------- #
+# 依赖清单：**本地优先 → CDN 多镜像回退**。
+# 为什么必须显式声明这 5 个前置依赖：kepler.gl 3.x 的 UMD 包把它们列为 externals
+# （``define("KeplerGl", ["react","react-dom","redux","react-redux","styled-components"])``），
+# 只挂 keplergl 一个 <script> 会在加载时就抛 ``Cannot find module 'react'``。
+# 为什么锁 React 18.3.1：**React ≥19 不再提供 UMD 构建**，必须用 18.x 的 umd/ 目录。
+# 本地目录 ``assets/kepler/`` 是离线逃生舱：把 6 个文件放进去即可完全断网打开
+# （取包命令见 09_interactive/README.md「离线依赖」）。
+_KEPLER_DEPS_JS = """[
+  {label: "react",              local: "assets/kepler/react.production.min.js",
+   ok: () => !!window.React,
+   urls: ["https://unpkg.com/react@18.3.1/umd/react.production.min.js",
+          "https://cdn.jsdelivr.net/npm/react@18.3.1/umd/react.production.min.js",
+          "https://registry.npmmirror.com/react/18.3.1/files/umd/react.production.min.js"]},
+  {label: "react-dom",          local: "assets/kepler/react-dom.production.min.js",
+   ok: () => !!window.ReactDOM,
+   urls: ["https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js",
+          "https://cdn.jsdelivr.net/npm/react-dom@18.3.1/umd/react-dom.production.min.js",
+          "https://registry.npmmirror.com/react-dom/18.3.1/files/umd/react-dom.production.min.js"]},
+  {label: "redux",              local: "assets/kepler/redux.min.js",
+   ok: () => !!window.Redux,
+   urls: ["https://unpkg.com/redux@4.2.1/dist/redux.min.js",
+          "https://cdn.jsdelivr.net/npm/redux@4.2.1/dist/redux.min.js",
+          "https://registry.npmmirror.com/redux/4.2.1/files/dist/redux.min.js"]},
+  {label: "react-redux",        local: "assets/kepler/react-redux.min.js",
+   ok: () => !!window.ReactRedux,
+   urls: ["https://unpkg.com/react-redux@8.1.3/dist/react-redux.min.js",
+          "https://cdn.jsdelivr.net/npm/react-redux@8.1.3/dist/react-redux.min.js",
+          "https://registry.npmmirror.com/react-redux/8.1.3/files/dist/react-redux.min.js"]},
+  {label: "styled-components",  local: "assets/kepler/styled-components.min.js",
+   ok: () => !!window.styled,
+   urls: ["https://unpkg.com/styled-components@6.1.8/dist/styled-components.min.js",
+          "https://cdn.jsdelivr.net/npm/styled-components@6.1.8/dist/styled-components.min.js",
+          "https://registry.npmmirror.com/styled-components/6.1.8/files/dist/styled-components.min.js"]},
+  {label: "kepler.gl",          local: "assets/kepler/keplergl.min.js",
+   ok: () => !!(window.KeplerGl || window.KeplerGL),
+   urls: ["https://unpkg.com/kepler.gl@3.2.0/umd/keplergl.min.js",
+          "https://cdn.jsdelivr.net/npm/kepler.gl@3.2.0/umd/keplergl.min.js"]}
+]"""
+
 _KEPLER_TL_HTML = """<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
 <title>FDIC Spatial: 关闭事件时间轴 · H3 R8</title>
-<script src="https://unpkg.com/kepler.gl@3.2.0/umd/keplergl.min.js"></script>
 <style>
   body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, sans-serif; }
   #content { display: flex; flex-direction: column; height: 100vh; }
   #titlebar { padding: 12px 24px; background: #1a1a2e; color: white; }
   #titlebar h1 { margin: 0 0 4px 0; font-size: 18px; }
   #titlebar p { margin: 0; font-size: 12px; opacity: 0.85; }
-  #map { flex: 1; }
+  #app { flex: 1; position: relative; }
 </style>
 </head>
 <body>
@@ -398,59 +438,153 @@ _KEPLER_TL_HTML = """<!DOCTYPE html>
     <h1>⑨ · FDIC 网点关闭事件时间轴（Kepler.gl timeRange）</h1>
     <p>点左下「时间播放」按钮或拖动底部时间轴，逐帧看关闭事件在全国的扩散；颜色 = acq_year 队列，H3 R8 cells 高度 = 存款增长。</p>
   </div>
-  <div id="map"></div>
+  <div id="app"></div>
 </div>
 <div id="__ERR_PANEL__" style="display:none;position:absolute;left:24px;right:24px;top:70px;
   background:#fff3cd;color:#856404;padding:12px 16px;border:1px solid #ffeeba;
-  border-radius:8px;font:13px/1.5 -apple-system,BlinkMacSystemFont,sans-serif;z-index:9999;
-  white-space:pre-wrap;max-height:40%;overflow:auto"></div>
+  border-radius:8px;font:13px/1.6 -apple-system,BlinkMacSystemFont,sans-serif;z-index:9999;
+  white-space:pre-wrap;max-height:60%;overflow:auto"></div>
 <script>
-window.addEventListener("error", function(e) {
-  var el = document.getElementById("__ERR_PANEL__");
-  if (!el) return;
-  el.style.display = "block";
-  el.textContent = "[Kepler.gl JS 错误] " + (e.message || "") +
-    (e.filename ? "  at " + e.filename + ":" + e.lineno : "");
-});
-const CSV_EVENTS = "data:text/csv;base64,__CSV_EVENTS_B64__";
-const CSV_CELLS = "data:text/csv;base64,__CSV_CELLS_B64__";
+// Mapbox token：留空串即用 kepler 默认的 MapLibre/Carto 底图（无需 token）。
+// 想用 Mapbox 官方底图，在 URL 后加 ?mapbox=你的token
+const MAPBOX_TOKEN = new URLSearchParams(location.search).get("mapbox") || "";
+const CSV_EVENTS = "__CSV_EVENTS_B64__";
+const CSV_CELLS  = "__CSV_CELLS_B64__";
 const CONFIG = __CONFIG_JSON__;
+const DEPS = __KEPLER_DEPS_JS__;
 
-function b64ToBlob(b64) {
+const panel = document.getElementById("__ERR_PANEL__");
+let shown = false;
+function warn(html) {
+  if (shown) return;
+  shown = true;
+  panel.style.display = "block";
+  panel.innerHTML = html;
+}
+const OFFLINE_HINT =
+  "<b>Kepler.gl 依赖未能加载</b>（离线，或 CDN 不可达）。<br>" +
+  "两条出路：<br>" +
+  "① 把 6 个依赖放进本文件旁的 <code>assets/kepler/</code>（取包命令见 " +
+  "<code>09_interactive/README.md</code>「离线依赖」），刷新即可断网打开；<br>" +
+  "② 先看 <a href='spacetime.html' target='_blank'>spacetime.html</a>" +
+  "——同一批关闭事件的扩散动画（mp4 内嵌，<b>完全离线</b>可看）。";
+
+function loadScript(src) {
+  return new Promise((res, rej) => {
+    const s = document.createElement("script");
+    s.src = src;
+    s.onload = () => res(src);
+    s.onerror = () => rej(new Error(src));
+    document.head.appendChild(s);
+  });
+}
+// 默认走 CDN（本地目录不存在时会在控制台留下一串 404，看着像出错）；
+// 只有显式 ?local=1 或浏览器报告离线时，才优先读本地 assets/kepler/。
+const PREFER_LOCAL = new URLSearchParams(location.search).get("local") === "1"
+  || navigator.onLine === false;
+
+async function loadDep(dep) {
+  const sources = PREFER_LOCAL ? [dep.local].concat(dep.urls) : dep.urls.concat([dep.local]);
+  for (const src of sources) {
+    try {
+      await loadScript(src);
+      if (dep.ok()) return src;     // 加载成功但没挂上全局变量 → 换下一个源
+    } catch (e) { /* 换下一个源 */ }
+  }
+  throw new Error(dep.label);
+}
+
+// 为什么不用 fetch("data:text/csv;base64,...")：file:// 下 data: URL 的 fetch 会被浏览器拦，
+// 直接 atob 解码即可，顺带省掉一次 Blob 往返。
+function b64ToStr(b64) {
   const bin = atob(b64);
   const bytes = new Uint8Array(bin.length);
   for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-  return new Blob([bytes], {type: "text/csv"});
+  return new TextDecoder("utf-8").decode(bytes);
 }
 
-const container = document.getElementById("map");
-if (typeof KeplerGL === "undefined") {
-  var el = document.getElementById("__ERR_PANEL__");
-  el.style.display = "block";
-  el.textContent = "[Kepler.gl 未加载] 全局变量 KeplerGL 不存在；可能是 CDN 失败（unpkg.com / kepler.gl@3.2.0/umd/keplergl.min.js），或网络受限。请检查能否访问 https://unpkg.com/ 。";
-  throw new Error("KeplerGL undefined");
+// kepler.gl 还没挂载就 dispatch，ADD_DATA_TO_MAP 会被静默丢弃（实测：渲染后立刻灌数据
+// → datasets=0；等容器挂载后再灌 → datasets=2）。所以这里显式等挂载，而不是碰运气。
+async function waitMounted(containerId, timeout) {
+  const t0 = Date.now();
+  while (Date.now() - t0 < (timeout || 30000)) {
+    const box = document.getElementById(containerId);
+    if (box && box.querySelector("[class*=kepler-gl]")) return true;
+    await new Promise(r => setTimeout(r, 200));
+  }
+  return false;
 }
-const app = new KeplerGL.default({
-  container: container,
-  mapboxAccessToken: null,
-  width: window.innerWidth,
-  height: window.innerHeight,
-});
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+function boot() {
+  // 注意全局名是 **KeplerGl**（UMD 里写的是 g["KeplerGl"] = f(...)），不是 KeplerGL
+  const K = window.KeplerGl || window.KeplerGL;
+  // 官方 UMD 用法是「store + Provider + 命名导出 KeplerGl.KeplerGl」：
+  // default 导出在 3.x 是 React.memo 对象，**不能 new**（会抛 Ctor is not a constructor）。
+  if (!K || !K.KeplerGl || !K.keplerGlReducer) {
+    warn("<b>Kepler.gl 已加载但导出不符合预期</b>（缺少 KeplerGl / keplerGlReducer）。" + OFFLINE_HINT);
+    return;
+  }
+  const store = Redux.createStore(
+    Redux.combineReducers({keplerGl: K.keplerGlReducer}),
+    {},
+    Redux.compose(Redux.applyMiddleware(...(K.enhanceReduxMiddleware
+      ? K.enhanceReduxMiddleware([]) : [])))
+  );
+
+  const App = function () {
+    const [dim, setDim] = React.useState({w: window.innerWidth, h: window.innerHeight});
+    React.useEffect(() => {
+      const on = () => setDim({w: window.innerWidth, h: window.innerHeight});
+      window.addEventListener("resize", on);
+      return () => window.removeEventListener("resize", on);
+    }, []);
+    // 没有 token 就**不传**这个 prop —— 传空串会触发 kepler 的 "Mapbox Token not valid" 警告，
+    // 不传则由 kepler 走默认底图（无 token 时底图为空白，但 deck.gl 图层照常渲染）。
+    const kgProps = {
+      id: "map",
+      width: dim.w,
+      height: dim.h - document.getElementById("titlebar").offsetHeight
+    };
+    if (MAPBOX_TOKEN) kgProps.mapboxApiAccessToken = MAPBOX_TOKEN;
+    return React.createElement(
+      "div",
+      {style: {position: "absolute", left: 0, top: 0, width: "100%", height: "100%"}},
+      React.createElement(K.KeplerGl, kgProps)
+    );
+  };
+
+  ReactDOM.createRoot(document.getElementById("app")).render(
+    React.createElement(ReactRedux.Provider, {store: store}, React.createElement(App))
+  );
+
+  // 数据走 store.dispatch(addDataToMap(...))，不是实例方法
+  // （kepler.gl 3.x UMD 没有 app.csvDataset 这个 API）。
+  (async () => {
+    await waitMounted("app");
+    await sleep(800);                     // 再给一帧做内部初始化
+    const evDataset = await K.processCsvData(b64ToStr(CSV_EVENTS));
+    const ceDataset = await K.processCsvData(b64ToStr(CSV_CELLS));
+    store.dispatch(K.addDataToMap({
+      datasets: [
+        {info: {label: "closed_events", id: "closed_events"}, data: evDataset},
+        {info: {label: "h3_cells",      id: "h3_cells"},      data: ceDataset},
+      ],
+      config: CONFIG.config,
+    }));
+  })().catch(e => warn("<b>数据装载失败</b>：" + (e && e.message ? e.message : e)));
+}
 
 (async () => {
-  const e1 = await fetch(CSV_EVENTS);
-  const e2 = await fetch(CSV_CELLS);
-  const eventsCsv = await e1.text();
-  const cellsCsv = await e2.text();
-  const evDataset = await app.csvDataset(eventsCsv);
-  const ceDataset = await app.csvDataset(cellsCsv);
-  app.addDataToMap({
-    datasets: [
-      {info: {label: "closed_events", id: "closed_events"}, data: evDataset},
-      {info: {label: "h3_cells",      id: "h3_cells"},      data: ceDataset},
-    ],
-    config: CONFIG.config,
-  });
+  for (const dep of DEPS) {
+    try {
+      await loadDep(dep);
+    } catch (e) {
+      warn("<b>依赖加载失败：" + e.message + "</b><br>" + OFFLINE_HINT);
+      return;
+    }
+  }
+  boot();
 })();
 </script>
 </body>
@@ -467,6 +601,14 @@ def kepler_timeline_html(kdir: Path) -> dict:
     本函数只读 ⑦ 产物，不重算：给 ``closed_events`` 加 ``event_time``
     （acq_year → 每年 6/30 的 epoch 毫秒，与 SOD 基准日一致），
     注入 Kepler 的 ``timeRange`` 过滤 + ``animationConfig``，生成自包含 HTML。
+
+    **Kepler UMD 的正确加载方式**（曾在此踩坑，见 README「排障」）：
+    UMD 包挂的全局名是 ``KeplerGl``（不是 ``KeplerGL``）；它把 react / react-dom /
+    redux / react-redux / styled-components 五个包列为 externals，必须先挂上这五个
+    全局才能加载；3.x 的 ``default`` 导出是 ``React.memo`` 对象，**不能** ``new``，
+    要用官方的「createStore + Provider + ``KeplerGl.KeplerGl``」模式，
+    数据用 ``store.dispatch(KeplerGl.addDataToMap(...))`` 灌入（UMD 没有
+    ``app.csvDataset()``）。React 锁 18.3.1 —— 19 起不再提供 UMD 构建。
     """
     import base64
 
@@ -515,6 +657,7 @@ def kepler_timeline_html(kdir: Path) -> dict:
     html = (_KEPLER_TL_HTML
             .replace("__CSV_EVENTS_B64__", ev_b64)
             .replace("__CSV_CELLS_B64__", cells_b64)
+            .replace("__KEPLER_DEPS_JS__", _KEPLER_DEPS_JS)
             .replace("__CONFIG_JSON__", cfg_json))
     p = OUT / "kepler_timeline.html"
     p.write_text(html, encoding="utf-8")
@@ -628,7 +771,8 @@ def build_index(est: dict) -> Path:
 左：亮点＝当年新增关闭、紫点＝历史累计；右：当年新增柱 + 累计曲线。</div></div>
 <div class="card"><iframe src="kepler_timeline.html" loading="lazy"
   title="关闭事件时间轴（Kepler）"></iframe>
-<div class="cap">Kepler.gl 时间轴版（需联网加载 Kepler CDN）：点左下「时间播放」或拖动底部时间轴，
+<div class="cap">Kepler.gl 时间轴版（依赖优先读本地 <code>assets/kepler/</code>，
+其次 unpkg / jsdelivr 镜像；<b>离线打不开时会自动提示</b>）：点左下「时间播放」或拖动底部时间轴，
 逐帧看关闭事件扩散，可定格任意年份；颜色＝acq_year 队列，H3 格高度＝存款增长。
 与上面的 mp4 互补——mp4 是「自动讲一遍」，这里是「自己拖进度条戳」。</div></div>""",
 
@@ -748,7 +892,8 @@ def run(project) -> dict:
              "alt_text": "底部时间轴拖动播放，事件点按 acq_year 队列上色，H3 格高度＝存款增长",
              "unit": "event_time = 每年 6/30 的 epoch 毫秒（与 SOD 基准日一致）",
              "source": "07_visualize/output/kepler/{closed_events.csv, h3_cells.csv, kepler_config.json}",
-             "n": tl["n"], "scope": f"{tl['y_min']}–{tl['y_max']}；需联网加载 Kepler CDN",
+             "n": tl["n"], "scope": f"{tl['y_min']}–{tl['y_max']}；"
+             "依赖 assets/kepler/ 本地优先，回退 unpkg/jsdelivr；离线时降级提示",
              "tool": "kepler.gl 3.2.0"},
         ],
     }

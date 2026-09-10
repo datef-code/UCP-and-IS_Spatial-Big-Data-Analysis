@@ -60,6 +60,42 @@
 11. **守住克制**：`index.html` 顶部与「限制」段反复标注**关联证据非严格因果**，
    并原样带上 `08_conclude` 的止损条件——这是本产品的可信度来源，不是减分项。
 
+## 依赖与离线：Kepler UMD 的正确加载方式（踩坑记录）
+
+`kepler_timeline.html` 是四件产物里唯一依赖外部 JS 的一件。曾在 Kepler.gl 3.x 的 UMD 包上
+连踩五个坑，逐个实证（无头浏览器实测）后定稿如下：
+
+| 坑 | 现象 | 现在的做法 |
+| --- | --- | --- |
+| **UMD 挂的全局名是 `KeplerGl`，不是 `KeplerGL`** | `typeof KeplerGL === "undefined"` **恒为真**，页面必报 "KeplerGL undefined" | `window.KeplerGl \|\| window.KeplerGL` 兜底 |
+| UMD 把 react / react-dom / redux / react-redux / styled-components 列为 **externals** | 只挂 keplergl 一个 `<script>` → 加载即 `Cannot find module 'react'` | 按序先挂这 5 个全局，再挂 keplergl |
+| 3.x 的 `default` 导出是 `React.memo` 对象（不是构造函数） | `new KeplerGL.default(...)` → `Ctor is not a constructor` | 官方 UMD 模式：`Redux.createStore` + `ReactRedux.Provider` + `KeplerGl.KeplerGl` |
+| UMD **没有** `app.csvDataset()` 这个 API | `app.csvDataset is not a function` | `KeplerGl.processCsvData()` 解析 → `store.dispatch(KeplerGl.addDataToMap(...))` |
+| **未挂载就 dispatch** | `ADD_DATA_TO_MAP` 被**静默丢弃**（datasets=0、无任何报错） | 显式等容器挂载（`[class*=kepler-gl]` 出现）后再灌数据 |
+
+**为什么锁 React 18.3.1**：React ≥19 不再提供 UMD 构建，只能用 18.x 的 `umd/` 目录；
+redux 取 4.2.1、react-redux 取 8.1.3（5.x / 9.x 同样没有 UMD 构建）；
+styled-components 取 6.1.8（与 kepler.gl 3.2.0 的 peerDependency 一致）。
+
+**离线**：默认 CDN（unpkg → jsdelivr → npmmirror 依次回退）。想完全断网打开，把 6 个依赖
+放进 `09_interactive/assets/kepler/`（文件名见 `09_interactive.py` 的 `_KEPLER_DEPS_JS`）：
+
+```powershell
+cd project1_fdic_spatial
+mkdir -p 09_interactive/assets/kepler
+$b = "https://unpkg.com"; $d = "09_interactive/assets/kepler"
+curl -L -o "$d/react.production.min.js"     "$b/react@18.3.1/umd/react.production.min.js"
+curl -L -o "$d/react-dom.production.min.js" "$b/react-dom@18.3.1/umd/react-dom.production.min.js"
+curl -L -o "$d/redux.min.js"                "$b/redux@4.2.1/dist/redux.min.js"
+curl -L -o "$d/react-redux.min.js"          "$b/react-redux@8.1.3/dist/react-redux.min.js"
+curl -L -o "$d/styled-components.min.js"    "$b/styled-components@6.1.8/dist/styled-components.min.js"
+curl -L -o "$d/keplergl.min.js"             "$b/kepler.gl@3.2.0/umd/keplergl.min.js"   # 约 15 MB
+```
+
+放好后加 `?local=1` 强制优先读本地（浏览器报告离线时也会自动优先本地）。
+**没有 Mapbox token 时底图为空白，但 Hexagon / Point 图层照常渲染**；要用官方底图就
+`kepler_timeline.html?mapbox=你的token`。
+
 ## 输入 / 输出
 
 - **输入（只读）**：`06_estimate/output/estimate.json`、`05_map/output/mapped.csv`、
