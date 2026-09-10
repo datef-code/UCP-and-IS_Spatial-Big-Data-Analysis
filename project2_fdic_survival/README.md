@@ -11,17 +11,25 @@
 预测模型最容易被误读为因果 / ROI 工具。**亲手拖一次滑块**，比任何静态图都更能建立
 「这是打分、不是命运」的正确认知。⑨ 阶段只读上游产物，不重训模型。
 
+入口是**决策驾驶舱**（KPI + 王牌 demo + 结论主图 + 产品矩阵 + 边界 + 复现）：
+
 | 打开 | 看什么 |
 | --- | --- |
-| **`09_interactive/output/index.html`** | 入口：demo + KM/ROC + 体检报告 + 边界 + 复现 |
-| `09_interactive/output/predict_demo.html` | 拖滑块 → 实时关闭风险 + 逐特征贡献分解（纯前端，离线可算） |
+| **`09_interactive/output/index.html`** | 决策驾驶舱：KPI + 内嵌 demo + 年份效应 + 产品矩阵 + 边界 + 复现 |
+| `09_interactive/output/predict_demo.html` | 拖滑块 → 实时关闭风险 + 逐特征贡献分解 + **单因素敏感性**（纯前端，离线可算） |
+| `09_interactive/output/shap_force.html` | 可解释性：全局 SHAP 重要性 + 三个真实网点的逐特征分解 |
+| `09_interactive/output/model_report.html` | 模型体检：**年份效应（带 95% CI）** + 因子森林 + 指标 + 残差 Moran's I |
+| `09_interactive/output/guardrails.html` | 边界与止损：8 条已知限制 + 5 条止损条件 + 正确/错误用法对照 |
 | `09_interactive/output/risk_evolution.html` | 年度关闭数演化动图（**mp4 内嵌**），标出 2009–2014 危机后整合窗口 |
-| `09_interactive/output/shap_force.html` | 独立 SHAP 交互图：三个代表性网点的 force plot，hover 看每个特征的贡献 |
-| `09_interactive/output/km_roc.html` | KM（按银行脆弱性分层，hover 看 at-risk）+ ROC |
-| `09_interactive/output/model_report.html` | 系数森林图（点 + 95% CI）+ 指标 + 残差 Moran's I |
+| `09_interactive/output/km_roc.html` | KM（按银行脆弱性分层，hover 看 at-risk）+ ROC / 区分度 |
 
-**保真度自检（硬约束）**：demo 在测试集上复算 AUC = **0.8815**，与 `metrics.json`
+**保真度自检（硬约束，logit 路径）**：demo 在测试集上复算 AUC = **0.8815**，与 `metrics.json`
 的 **0.8814** 相差 0.0000；若差值 > 0.02，阶段直接抛错拒绝产出。
+
+> **降级说明**：样本级 CSV（`test_predictions.csv` 等）受 `.gitignore` 约束**不入库**，
+> 在本仓库里跑 ⑨ 时打分台会自动改用**入库的 cloglog 完整系数表**（区间取自
+> `05_map/output/map.md` 与 `02_profile`），KM/ROC 降级为上游 ⑦ 静态图。
+> 在有完整数据的机器上重跑会自动升级为 logit 主模型版 + 交互 KM/ROC + 动图。
 
 ## 运行
 

@@ -1,153 +1,438 @@
-<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>网点关闭风险预测 demo</title>
+<!doctype html><html lang="zh-CN" data-theme="light"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>风险打分台 · 这个网点明年会关闭吗</title>
+<script>
+(function(){
+  var KEY='p2-theme';
+  try{
+    var saved=localStorage.getItem(KEY);
+    if(!saved){ saved = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark':'light'; }
+    document.documentElement.setAttribute('data-theme', saved);
+  }catch(e){}
+  window.__toggleTheme=function(){
+    var cur=document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark';
+    document.documentElement.setAttribute('data-theme',cur);
+    try{localStorage.setItem(KEY,cur);}catch(e){}
+    var b=document.getElementById('themeBtn');
+    if(b){ b.textContent = cur==='dark' ? '\u2600 \u65e5\u95f4' : '\u263e \u591c\u95f4'; }
+    window.dispatchEvent(new Event('themechange'));
+  };
+  document.addEventListener('DOMContentLoaded',function(){
+    var b=document.getElementById('themeBtn');
+    if(b){ b.textContent = document.documentElement.getAttribute('data-theme')==='dark' ? '\u2600 \u65e5\u95f4' : '\u263e \u591c\u95f4'; }
+  });
+})();
+
+/* Plotly 不认 CSS 变量，只能画完再按主题 relayout。 */
+(function(){
+  window.__applyPlotTheme=function(){
+    var dark=document.documentElement.getAttribute('data-theme')==='dark';
+    var bg=dark?'#0b1220':'#ffffff', grid=dark?'#233047':'#e2e8f0',
+        fg=dark?'#e8eefc':'#0f172a', sub=dark?'#94a3b8':'#64748b';
+    var plots=document.querySelectorAll('.js-plotly-plot');
+    for(var i=0;i<plots.length;i++){
+      var d=plots[i]; if(!d.layout) continue;
+      var up={'paper_bgcolor':bg,'plot_bgcolor':bg,'font.color':sub};
+      Object.keys(d.layout).forEach(function(k){
+        if(/^[xy]axis\d*$/.test(k)){
+          up[k+'.gridcolor']=grid; up[k+'.linecolor']=grid;
+          up[k+'.zerolinecolor']=grid; up[k+'.tickfont.color']=sub;
+          up[k+'.title.font.color']=sub;
+        }
+      });
+      if(d.layout.title) up['title.font.color']=fg;
+      if(d.layout.legend) up['legend.font.color']=sub;
+      if(d.layout.annotations) up['annotations']=(d.layout.annotations||[]).map(function(a){
+        return Object.assign({},a,{font:Object.assign({},a.font||{},{color:sub})});
+      });
+      try{ Plotly.relayout(d, up); }catch(e){}
+      if(window.Plotly && d.data){
+        for(var j=0;j<d.data.length;j++){
+          if(d.data[j] && d.data[j].text){ try{ Plotly.restyle(d,{'textfont.color':sub},[j]); }catch(e){} }
+        }
+      }
+    }
+  };
+  document.addEventListener('DOMContentLoaded',function(){ setTimeout(window.__applyPlotTheme,60); });
+  window.addEventListener('themechange',function(){ setTimeout(window.__applyPlotTheme,30); });
+})();
+</script>
 <style>
-:root{--ink:#111827;--sub:#6B7280;--line:#E5E7EB;--up:#D55E00;--down:#0072B2;--bg:#FAFAFA}
+:root{
+  --ink:#0f172a; --ink-2:#334155; --sub:#64748b; --faint:#94a3b8;
+  --line:#e2e8f0; --line-2:#cbd5e1; --bg:#ffffff; --soft:#f8fafc; --soft-2:#f1f5f9;
+  --brand:#1d4ed8; --brand-soft:#eff4ff;
+  --risk:#ea580c; --risk-soft:#fff5ed;
+  --danger:#b91c1c; --danger-soft:#fef2f2;
+  --ok:#0f766e; --ok-soft:#f0fdfa;
+  --warn:#a16207; --warn-soft:#fefce8;
+  --purple:#6d28d9; --purple-soft:#f5f3ff;
+  --shadow:0 1px 2px rgba(15,23,42,.06), 0 8px 24px rgba(15,23,42,.06);
+  --radius:14px;
+}
+:root[data-theme="dark"]{
+  --ink:#e8eefc; --ink-2:#c3cee4; --sub:#94a3b8; --faint:#64748b;
+  --line:#233047; --line-2:#33425e; --bg:#0b1220; --soft:#111a2c; --soft-2:#17223a;
+  --brand:#7aa2ff; --brand-soft:#132240;
+  --risk:#fb923c; --risk-soft:#2a1708;
+  --danger:#f87171; --danger-soft:#2c1214;
+  --ok:#2dd4bf; --ok-soft:#0c2622;
+  --warn:#facc15; --warn-soft:#2a230d;
+  --purple:#a78bfa; --purple-soft:#1c1733;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px rgba(0,0,0,.35);
+}
+
 *{box-sizing:border-box}
-body{margin:0;font-family:"Microsoft YaHei","Noto Sans CJK SC",sans-serif;color:var(--ink);
-     background:#fff;line-height:1.7}
-.wrap{max-width:1120px;margin:0 auto;padding:36px 24px 80px}
-h1{font-size:26px;margin:0 0 6px} .lede{color:var(--sub);margin:0 0 20px;font-size:14.5px}
-.grid{display:grid;grid-template-columns:340px 1fr;gap:26px;align-items:start}
-@media(max-width:900px){.grid{grid-template-columns:1fr}}
-.panel{border:1px solid var(--line);border-radius:12px;padding:18px}
-.panel h3{margin:0 0 14px;font-size:15px}
-.f{margin-bottom:14px}
-.f label{display:flex;justify-content:space-between;font-size:12.5px;color:var(--sub)}
-.f label b{color:var(--ink);font-variant-numeric:tabular-nums}
-input[type=range]{width:100%;accent-color:#0072B2}
-select{width:100%;padding:6px 8px;border:1px solid var(--line);border-radius:6px;font-size:13px}
-.big{font-size:44px;font-weight:700;letter-spacing:-1px;font-variant-numeric:tabular-nums}
-.big small{font-size:15px;font-weight:500;color:var(--sub)}
-.bar{height:12px;background:var(--bg);border-radius:999px;overflow:hidden;margin:10px 0 4px}
-.bar i{display:block;height:100%;border-radius:999px}
-.hint{font-size:12px;color:var(--sub)}
-.wf{margin-top:6px}
-.row{display:grid;grid-template-columns:190px 1fr 78px;gap:8px;align-items:center;
-     font-size:12.5px;margin:3px 0}
-.row .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.trk{position:relative;height:14px;background:var(--bg);border-radius:3px}
-.trk i{position:absolute;top:0;height:100%;border-radius:2px}
-.val{text-align:right;font-variant-numeric:tabular-nums;color:var(--sub)}
-.warn{border-left:4px solid var(--up);background:#FFF7ED;padding:12px 16px;border-radius:0 8px 8px 0;
-      margin:22px 0 0;font-size:13px}
-.note{border-left:4px solid var(--down);background:#EFF6FF;padding:12px 16px;
-      border-radius:0 8px 8px 0;margin:22px 0 0;font-size:13px}
-code{background:var(--bg);padding:1px 5px;border-radius:4px;font-size:12px}
-</style></head><body><div class="wrap">
-<h1>这个网点会先死吗？—— 自己拖一拖</h1>
-<p class="lede">离散时间 logit 主模型（测试 AUC 0.8814）。
-改动下面的输入，右侧<b>实时</b>给出该网点的年度关闭风险，以及每个特征贡献了多少。
-所有计算在浏览器里完成，不联网、不上传。</p>
-<div class="grid">
-  <div class="panel"><h3>网点特征</h3><div id="inputs"></div></div>
-  <div>
-    <div class="panel">
-      <h3>年度关闭风险</h3>
-      <div class="big"><span id="p">–</span><small>　存活概率 <span id="surv">–</span></small></div>
-      <div class="bar"><i id="bar" style="width:0%"></i></div>
-      <div class="hint" id="cmp"></div>
-    </div>
-    <div class="panel" style="margin-top:18px">
-      <h3>这个结论是怎么来的（对数几率贡献分解）</h3>
-      <div class="wf" id="wf"></div>
-      <div class="hint">线性模型的贡献分解即 SHAP 值：各项之和 + 截距 = 对数几率。
-        正向（红）推高风险，负向（蓝）压低风险。</div>
-    </div>
-  </div>
+html{scroll-behavior:smooth}
+body{margin:0;font-family:"Microsoft YaHei","Noto Sans CJK SC","PingFang SC","Hiragino Sans GB",sans-serif;color:var(--ink);background:var(--bg);
+     line-height:1.75;-webkit-font-smoothing:antialiased;transition:background .25s,color .25s}
+a{color:var(--brand);text-decoration:none}
+a:hover{text-decoration:underline}
+.wrap{max-width:1180px;margin:0 auto;padding:26px 24px 80px}
+h1,h2,h3{line-height:1.3;letter-spacing:-.01em}
+h1{font-size:29px;margin:0 0 8px}
+h2{font-size:21px;margin:38px 0 12px;padding-bottom:10px;border-bottom:1px solid var(--line)}
+h3{font-size:16.5px;margin:22px 0 8px}
+p{margin:10px 0;font-size:14.5px;color:var(--ink-2)}
+.lede{font-size:15.5px;color:var(--sub);margin:8px 0 4px}
+.kicker{font-size:11.5px;letter-spacing:.16em;color:var(--risk);font-weight:800;
+        text-transform:uppercase;margin:0 0 6px}
+.muted{color:var(--sub);font-size:13px}
+code{background:var(--soft-2);padding:1.5px 6px;border-radius:5px;font-size:12.5px;
+     font-family:ui-monospace,Consolas,"Courier New",monospace;color:var(--ink-2)}
+hr{border:0;border-top:1px solid var(--line);margin:28px 0}
+
+.topbar{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:12px;
+  padding:11px 22px;background:var(--bg);border-bottom:1px solid var(--line);
+  backdrop-filter:saturate(180%) blur(8px)}
+.topbar .brand{font-weight:800;font-size:14px;letter-spacing:-.01em}
+.topbar .brand span{color:var(--risk)}
+.topbar .spacer{flex:1}
+.chip{font-size:11px;padding:3px 9px;border-radius:999px;background:var(--soft-2);
+  color:var(--sub);border:1px solid var(--line)}
+.btn{border:1px solid var(--line);background:var(--bg);color:var(--ink-2);border-radius:9px;
+  padding:6px 13px;font-size:13.5px;cursor:pointer;font-family:inherit;transition:.18s;
+  white-space:nowrap;text-decoration:none;display:inline-block}
+.btn:hover{border-color:var(--brand);color:var(--brand);transform:translateY(-1px);
+  text-decoration:none}
+.btn.primary{background:var(--brand);border-color:var(--brand);color:#fff}
+.btn.primary:hover{filter:brightness(1.08);color:#fff}
+
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:16px 0}
+.stat{border:1px solid var(--line);border-radius:12px;padding:12px 14px;background:var(--soft)}
+.stat .k{font-size:12px;color:var(--sub);display:block;margin-bottom:2px}
+.stat .v{font-size:24px;font-weight:750;font-variant-numeric:tabular-nums;
+  letter-spacing:-.02em;line-height:1.25;display:block}
+.stat .h{font-size:11.5px;color:var(--faint);display:block;margin-top:2px}
+.stat.good .v{color:var(--ok)} .stat.risk .v{color:var(--risk)}
+.stat.brand .v{color:var(--brand)} .stat.warn .v{color:var(--warn)}
+
+.grid{display:grid;gap:14px}
+.g2{grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}
+.g3{grid-template-columns:repeat(auto-fit,minmax(230px,1fr))}
+.g4{grid-template-columns:repeat(auto-fit,minmax(190px,1fr))}
+.card{border:1px solid var(--line);border-radius:var(--radius);padding:16px 18px;
+  background:var(--bg);box-shadow:var(--shadow);transition:.2s}
+.card:hover{border-color:var(--line-2);transform:translateY(-2px)}
+.card .t{font-weight:700;font-size:15px;margin:0 0 6px;display:flex;align-items:center;gap:8px}
+.card .d{font-size:13.5px;color:var(--sub);margin:0;line-height:1.7}
+.card .q{font-size:12.5px;color:var(--risk);margin:10px 0 0;font-weight:600}
+
+.note,.warn,.ok,.ask,.danger{border-radius:0 12px 12px 0;padding:13px 17px;margin:16px 0;
+  font-size:14px;border-left:4px solid}
+.note{background:var(--brand-soft);border-color:var(--brand)}
+.warn{background:var(--risk-soft);border-color:var(--risk)}
+.ok{background:var(--ok-soft);border-color:var(--ok)}
+.ask{background:var(--purple-soft);border-color:var(--purple)}
+.danger{background:var(--danger-soft);border-color:var(--danger)}
+.note b,.warn b,.ok b,.ask b,.danger b{display:block;margin-bottom:4px;font-size:14px}
+.note ul,.warn ul,.ok ul,.ask ul,.danger ul{margin:6px 0 0;padding-left:20px}
+.note li,.warn li,.ok li,.ask li,.danger li{margin:4px 0;font-size:13.5px;color:var(--ink-2)}
+.note p,.warn p,.ok p,.danger p{margin:4px 0;font-size:13.5px;color:var(--ink-2)}
+
+.guard{border:1px solid var(--line);border-left:4px solid var(--danger);
+  border-radius:0 12px 12px 0;padding:13px 17px;margin:10px 0;background:var(--danger-soft)}
+.guard b{font-size:13.5px;color:var(--danger);display:block;margin-bottom:3px}
+.guard span{font-size:13.5px;color:var(--ink-2);line-height:1.7}
+
+.fig{border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;margin:16px 0;
+  background:var(--bg);box-shadow:var(--shadow)}
+.fig iframe{width:100%;height:540px;border:0;display:block;background:var(--bg)}
+.fig img{width:100%;display:block;background:#fff}
+.fig .cap{font-size:12.5px;color:var(--sub);padding:9px 14px;background:var(--soft);
+  border-top:1px solid var(--line)}
+
+table{width:100%;border-collapse:collapse;font-size:13.5px;margin:14px 0}
+th,td{padding:9px 11px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+th{color:var(--sub);font-weight:650;font-size:12px;letter-spacing:.03em;text-transform:uppercase;
+   background:var(--soft)}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+tbody tr:hover{background:var(--soft)}
+
+.formula{background:var(--soft);border:1px solid var(--line);border-radius:12px;padding:14px 18px;
+  margin:14px 0;font-family:ui-monospace,Consolas,monospace;font-size:13.5px;color:var(--ink);
+  overflow-x:auto;line-height:1.9}
+.formula .lbl{display:block;font-family:"Microsoft YaHei","Noto Sans CJK SC","PingFang SC","Hiragino Sans GB",sans-serif;font-size:12px;color:var(--sub);margin-bottom:6px}
+
+.steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px;margin:16px 0}
+.step{border:1px solid var(--line);border-radius:12px;padding:13px 15px;background:var(--soft);
+  position:relative;overflow:hidden;text-decoration:none;color:inherit;display:block}
+.step:before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--risk)}
+.step b{display:block;font-size:13px;color:var(--risk);margin-bottom:4px;letter-spacing:.02em}
+.step span{font-size:13px;color:var(--sub);line-height:1.65;display:block}
+
+.badge{display:inline-block;font-size:11px;padding:2px 8px;border-radius:999px;
+  border:1px solid var(--line);color:var(--sub);background:var(--soft);margin-right:6px}
+.badge.b{color:var(--brand);border-color:var(--brand);background:var(--brand-soft)}
+.badge.r{color:var(--risk);border-color:var(--risk);background:var(--risk-soft)}
+.badge.g{color:var(--ok);border-color:var(--ok);background:var(--ok-soft)}
+.badge.d{color:var(--danger);border-color:var(--danger);background:var(--danger-soft)}
+.badge.p{color:var(--purple);border-color:var(--purple);background:var(--purple-soft)}
+
+.foot{margin-top:56px;padding-top:16px;border-top:1px solid var(--line);font-size:12px;
+  color:var(--faint)}
+@media (max-width:720px){
+  .wrap{padding:18px 14px 60px}
+  .fig iframe{height:430px}
+  h1{font-size:23px}
+}
+
+    .badges{margin:12px 0 18px}
+    .grid2{display:grid;grid-template-columns:340px 1fr;gap:22px;align-items:start}
+    @media(max-width:960px){.grid2{grid-template-columns:1fr}}
+    .panel{border:1px solid var(--line);border-radius:var(--radius);padding:16px 18px;
+      background:var(--bg);box-shadow:var(--shadow)}
+    .panel h3{margin:0 0 12px;font-size:14.5px}
+    .f{margin-bottom:15px}
+    .f label{display:flex;justify-content:space-between;align-items:baseline;
+      font-size:12.5px;color:var(--sub);gap:8px}
+    .f label i{font-style:normal;font-size:11px;color:var(--faint)}
+    .f label b{color:var(--ink);font-variant-numeric:tabular-nums;font-size:13px}
+    .f .sub{display:flex;justify-content:space-between;font-size:10.5px;color:var(--faint);
+      margin-top:2px;gap:8px}
+    .f .sub .rk{color:var(--risk);font-variant-numeric:tabular-nums}
+    input[type=range]{width:100%;accent-color:#1d4ed8;margin:4px 0 0}
+    select{width:100%;padding:6px 8px;border:1px solid var(--line);border-radius:7px;
+      font-size:12.5px;background:var(--bg);color:var(--ink);font-family:inherit;margin-top:4px}
+    .big{display:flex;align-items:baseline;gap:12px}
+    .big #p{font-size:44px;font-weight:750;letter-spacing:-1.5px;
+      font-variant-numeric:tabular-nums;line-height:1.1}
+    .tagbd{font-size:12px;padding:3px 10px;border-radius:999px;font-weight:700}
+    .tagbd.hi{background:var(--danger-soft);color:var(--danger);border:1px solid var(--danger)}
+    .tagbd.md{background:var(--risk-soft);color:var(--risk);border:1px solid var(--risk)}
+    .tagbd.lo{background:var(--ok-soft);color:var(--ok);border:1px solid var(--ok)}
+    .bar{height:11px;background:var(--soft-2);border-radius:999px;overflow:hidden;margin:10px 0 6px}
+    .bar i{display:block;height:100%;border-radius:999px;transition:width .18s,background .18s}
+    .hint{font-size:12px;color:var(--sub);margin-top:4px}
+    .wf{margin-top:8px}
+    .row{display:grid;grid-template-columns:170px 1fr 96px;gap:8px;align-items:center;
+      font-size:12px;margin:4px 0}
+    .row .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--ink-2)}
+    .trk{position:relative;height:15px;background:var(--soft-2);border-radius:3px}
+    .trk i{position:absolute;top:2px;height:11px;border-radius:2px}
+    .trk i.pos{background:#ea580c} .trk i.neg{background:#1d4ed8}
+    .trk i.cur{background:#0f172a;height:15px;top:0;opacity:.85}
+    .val{text-align:right;font-variant-numeric:tabular-nums;color:var(--sub);font-size:11.5px}
+    </style>
+
+</head><body>
+<div class="topbar">
+  <span class="brand">FDIC 网点寿命模型 <span>· 风险预测</span></span>
+  <span class="chip">王牌 demo</span>
+  <span class="spacer"></span>
+  <button class="btn" id="themeBtn" onclick="__toggleTheme()">☾ 夜间</button>
+  <a class="btn" href="index.html">← 返回入口</a>
 </div>
-<div class="warn"><b>边界：这是风险预测，不是因果、也不是 ROI 工具。</b>
-  改动输入不会改变网点的真实命运——它只展示模型「看过数据后」怎么打分。
-  不承诺干预阈值，不承诺 ROI（成本参数缺失）。</div>
-<div class="note"><b>保真度自检</b>：本页复现的测试集 AUC = <code>0.8815</code>，
-  与 <code>06_train/output/metrics.json</code> 的 <code>0.8814</code>
-  相差 <code>0.0</code>（n=100,000，事件率 13.78%）。
-  模型产物未保存截距，截距由事件率校准；系数与标准化参数全部来自上游产物。</div>
+<div class="wrap">
+  <h1>风险打分台 · 这个网点明年会关闭吗</h1><p class="lede">拖动特征 → 实时得到年度关闭风险、逐特征贡献分解与单因素敏感性。纯前端计算，离线可开。</p>
+  
+    <p>拖动下面的特征，右侧<b>实时</b>算出该网点下一年的关闭风险，并拆出每个特征
+    贡献了多少。所有计算在浏览器里完成，<b>不联网、不上传</b>。</p>
+    <div class="badges">
+      <span class="badge b">模型：cloglog（离散时间，带 95% CI）</span>
+      <span class="badge">来源：06_train/output/cloglog_summary.txt（完整系数表）</span>
+      <span class="badge r">风险预测，非因果</span>
+    </div>
+    <div class="grid2">
+      <div class="panel"><h3>网点特征</h3><div id="inputs"></div></div>
+      <div>
+        <div class="panel">
+          <h3>年度关闭风险</h3>
+          <div class="big"><span id="p">–</span><span class="tagbd" id="tag">–</span></div>
+          <div class="bar"><i id="bar" style="width:0%"></i></div>
+          <div class="hint" id="cmp"></div>
+          <div class="hint">线性预测器 η = <code id="eta">–</code>
+          　|　cloglog 连接：P = 1 − exp(−exp(η))</div>
+        </div>
+        <div class="panel" style="margin-top:16px">
+          <h3>这个分数是怎么来的（线性预测器贡献分解）</h3>
+          <div class="wf" id="wf"></div>
+          <div class="hint">线性模型的贡献分解即 SHAP 值：
+          <span style="color:#ea580c">橙＝推高风险</span>、
+          <span style="color:#1d4ed8">蓝＝压低风险</span>，按 |贡献| 降序。</div>
+        </div>
+        <div class="panel" style="margin-top:16px">
+          <h3>单因素敏感性：动一个变量，风险能摆动多少</h3>
+          <div class="wf" id="tor"></div>
+          <div class="hint">每个特征单独从最小值扫到最大值（其余保持当前），
+          条 = 风险可达区间，深色 = 当前风险。条越长 = 这个变量越「有话语权」。</div>
+        </div>
+      </div>
+    </div>
+    <div class="danger"><b>边界：这是风险预测，不是因果，也不是 ROI 工具。</b>
+      <ul>
+        <li>拖动滑块<b>不会</b>改变网点真实命运 —— 它只展示模型「看过数据后」怎么打分。</li>
+        <li>概率绝对值受训练期分层下采样影响（面板事件率 4.13%，建模样本事件率 33.3%）：只看<b>方向与相对量级</b>，不要把绝对概率当业务概率。</li>
+        <li>不承诺干预阈值、不承诺 ROI（成本参数缺失）。</li>
+      </ul></div>
+    
+    
+  <div class="foot">生成脚本 <code>09_interactive/09_interactive.py</code>　|
+  生成时间 2026-09-10 13:43　|
+  数字来自上游产物 <code>06_train/output/</code> 与 <code>08_conclude/output/</code>，不硬编码。</div>
 </div>
 <script>
-const SPEC = {"model": "logit_discrete_time（sklearn，主模型）", "intercept": -4.1643088214446955, "numeric": {"age": {"mean": 32.3212, "std": 35.27860896577415, "min": 0.0, "max": 232.0, "p50": 18.0, "coef": -0.0037874206766029}, "log_depsumbr": {"mean": 10.281872376645238, "std": 2.8559525860079753, "min": 0.0, "max": 19.657467698547315, "p50": 10.92448958836263, "coef": -0.1850759259479082}, "neighbor_count": {"mean": 9.8036, "std": 25.523262076780075, "min": 0.0, "max": 415.0, "p50": 5.0, "coef": -0.0591235974843635}, "lat": {"mean": 37.84449019229219, "std": 5.253910707985813, "min": -14.3200149999999, "max": 64.8584489872951, "p50": 38.969399011214, "coef": -0.0597924351237366}, "lng": {"mean": -89.86405957075658, "std": 15.577733002781999, "min": -170.718609999999, "max": 162.981, "p50": -86.8690090099671, "coef": -0.0054163234492069}, "bank_closed_rate": {"mean": 0.44905082746, "std": 0.4098333896487914, "min": 0.0, "max": 1.0, "p50": 0.280623, "coef": 2.0486871826397075}}, "categorical": {"year": {"values": ["1994", "1995", "1996", "1997", "1998", "1999", "2000", "2001", "2002", "2003", "2004", "2005", "2006", "2007", "2008", "2009", "2010", "2011", "2012", "2013", "2014", "2015", "2016", "2017", "2018", "2019", "2020", "2021", "2022", "2023", "2024", "2025"], "reference": ["1994"], "coef": {"1994": 0.0, "1995": -0.5376530373119445, "1996": 0.170130276046563, "1997": 0.5427096804600738, "1998": 0.3660341884129652, "1999": 0.7441572749623123, "2000": 0.7813637130781322, "2001": 0.74774702092067, "2002": 0.1247145085857806, "2003": 0.2588785615113805, "2004": 1.331803507590562, "2005": 1.3330915294108112, "2006": 1.211725335077925, "2007": 1.210863395366765, "2008": 1.4740815709995208, "2009": 1.8154681584165515, "2010": 2.1969518369169148, "2011": 2.0798544468784157, "2012": 1.7662424665212284, "2013": 1.835931512331123, "2014": 2.064960239824257, "2015": 1.6637400503391158, "2016": -1.224473075900705, "2017": -1.2259783242162454, "2018": -1.195043189131374, "2019": -1.2165916732792244, "2020": -1.2121003164698227, "2021": -1.1970406723670457, "2022": -1.168113704636771, "2023": -1.1734405497335, "2024": -1.17467690021204, "2025": -1.1809418791315571}}, "BKCLASS": {"values": ["N", "NM", "OI", "SA", "SB", "SL", "SM"], "reference": ["N"], "coef": {"N": 0.0, "NM": -0.2063915844799432, "OI": 0.0988862303346799, "SA": -0.1728749689086268, "SB": -0.0727126306616536, "SL": -0.0049571044316484, "SM": -0.1679906620497281}}, "fragility_tier": {"values": ["L0_单网点", "L1_多网点高集中", "L2_多网点地理分散"], "reference": ["L0_单网点", "L1_多网点高集中", "L2_多网点地理分散"], "coef": {"L0_单网点": 0.0, "L1_多网点高集中": 0.2245600888448336, "L2_多网点地理分散": 0.3144886982180719}}}, "label": {"age": ["网点年龄", "年"], "log_depsumbr": ["存款规模（对数）", "log(美元)"], "neighbor_count": ["同格网点数（竞争强度）", "个"], "lat": ["纬度", "°"], "lng": ["经度", "°"], "bank_closed_rate": ["所属银行历史关闭率", ""]}, "fidelity": {"auc_reproduced": 0.8815, "auc_reference": 0.8814, "abs_diff": 0.0, "n_test": 100000, "event_rate": 0.13782, "note": "截距由测试集事件率校准（产物未保存截距）；AUC 复现度用于证明本 demo 与主模型一致"}};
-const N = SPEC.numeric, C = SPEC.categorical, L = SPEC.label;
-const box = document.getElementById('inputs');
-const state = {};
-const fmt = (v, d=2) => Number(v).toFixed(d);
+    var SPEC = {"model": "cloglog（离散时间，带 95% CI）", "link": "cloglog", "source": "06_train/output/cloglog_summary.txt（完整系数表）", "intercept": -4.6055, "numeric": {"bank_closed_rate": {"label": "所属银行历史关闭率", "unit": "", "coef": 3.8156, "ci": [3.773, 3.858], "p": 0.0, "min": 0.0, "max": 1.0, "default": 0.5290157206728815, "note": "银行历史关闭率（0–1）；默认取全样本网点关闭率"}, "log_depsumbr": {"label": "存款规模", "unit": "美元（对数滑块）", "coef": -0.0305, "ci": [-0.033, -0.028], "p": 0.0, "min": 0.0, "max": 20.40471210220268, "default": 10.580530757347516, "log_amount": true, "note": "log_depsumbr = log1p(存款额)；滑块按金额对数刻度"}, "neighbor_count": {"label": "同格网点数（竞争强度）", "unit": "个", "coef": 0.0004, "ci": [2.72e-05, 0.001], "p": 0.034, "min": 0.0, "max": 415.0, "default": 5.0, "note": "区间来自 05_map/output/map.md（neighbor_count）"}, "age": {"label": "网点年龄", "unit": "年", "coef": 1.898e-05, "ci": [-0.0, 0.0], "p": 0.88, "min": 0.0, "max": 241.0, "default": 25.0, "note": "区间来自 05_map/output/map.md（age）"}, "lat": {"label": "纬度", "unit": "°", "coef": -0.0045, "ci": [-0.006, -0.003], "p": 0.0, "min": 22.275731578987664, "max": 53.55084954018663, "default": 37.913290559587146, "note": "区间取 mean ± 3σ（02_profile），仅作地理基线"}, "lng": {"label": "经度", "unit": "°", "coef": -0.0017, "ci": [-0.002, -0.001], "p": 0.0, "min": -134.99613056692885, "max": -45.03997361979357, "default": -90.0180520933612, "note": "区间取 mean ± 3σ（02_profile），仅作地理基线"}}, "categorical": {"year": {"label": "日历年", "reference": "1994", "options": {"1995": -0.0594, "1996": 0.4649, "1997": 0.7101, "1998": 0.5844, "1999": 0.8743, "2000": 0.8769, "2001": 0.7931, "2002": 0.4018, "2003": 0.5074, "2004": 1.1581, "2005": 1.2191, "2006": 1.1569, "2007": 1.1101, "2008": 1.3497, "2009": 1.5496, "2010": 1.8769, "2011": 1.7022, "2012": 1.6386, "2013": 1.747, "2014": 2.0553, "2015": 1.8815, "1994": 0.0}, "default": "2010"}, "BKCLASS": {"label": "银行监管类别", "reference": "N", "options": {"NM": -0.1724, "OI": 0.868, "SA": -0.1403, "SB": -0.0796, "SM": -0.1007, "N": 0.0}, "default": "NM"}, "fragility_tier": {"label": "银行脆弱性分层", "reference": "L0_单网点", "options": {"L1_多网点高集中": 0.3197, "L2_多网点地理分散": 0.4708, "L0_单网点": 0.0}, "default": "L0_单网点"}}, "note": "概率绝对值受训练期分层下采样影响（面板事件率 4.13%，建模样本事件率 33.3%）：只看<b>方向与相对量级</b>，不要把绝对概率当业务概率。"};
+    var IS_LOGIT = false;
+    var N = SPEC.numeric, C = SPEC.categorical;
+    var box = document.getElementById('inputs');
+    var state = {};
 
-function addRange(key){
-  const s = N[key], [nm, unit] = L[key] || [key, ''];
-  const step = Math.max((s.max - s.min)/200, 1e-6);
-  const w = document.createElement('div'); w.className='f';
-  w.innerHTML = `<label><span>${nm}<span class="u">${unit?'（'+unit+'）':''}</span></span>
-    <b id="v_${key}"></b></label>
-    <input type="range" id="i_${key}" min="${s.min}" max="${s.max}" step="${step}" value="${s.p50}">`;
-  box.appendChild(w);
-  state[key] = s.p50;
-  w.querySelector('input').addEventListener('input', e => {
-    state[key] = parseFloat(e.target.value); paint();
-  });
-}
+    function riskOf(eta){
+      if (IS_LOGIT) { return 1/(1+Math.exp(-eta)); }
+      return 1 - Math.exp(-Math.exp(eta));          // cloglog link
+    }
+    function fmt(v, d){ return Number(v).toFixed(d === undefined ? 2 : d); }
+    function display(key, v){
+      var s = N[key];
+      if (s.log_amount) { return Math.expm1(v); }   // 对数刻度 → 金额
+      return v;
+    }
+    function fmtDisplay(key, v){
+      var x = display(key, v);
+      if (Math.abs(x) >= 1e6) return (x/1e6).toFixed(2) + 'M';
+      if (Math.abs(x) >= 1e3) return (x/1e3).toFixed(1) + 'k';
+      return fmt(x, Math.abs(x) < 10 ? 2 : 0);
+    }
 
-function addSelect(key, label){
-  const c = C[key];
-  const w = document.createElement('div'); w.className='f';
-  w.innerHTML = `<label><span>${label}</span><b id="v_${key}"></b></label>
-    <select id="i_${key}">${c.values.map(v=>`<option value="${v}">${v}</option>`).join('')}</select>`;
-  box.appendChild(w);
-  state[key] = c.values.includes('2005') ? '2005' : c.values[0];
-  w.querySelector('select').value = state[key];
-  w.querySelector('select').addEventListener('change', e => {
-    state[key] = e.target.value; paint();
-  });
-}
+    function addRange(key){
+      var s = N[key];
+      var step = Math.max((s.max - s.min)/300, 1e-6);
+      var w = document.createElement('div'); w.className = 'f';
+      w.innerHTML = '<label><span>' + s.label +
+        (s.unit ? '<i>（' + s.unit + '）</i>' : '') +
+        '</span><b id="v_' + key + '"></b></label>' +
+        '<input type="range" id="i_' + key + '" min="' + s.min + '" max="' + s.max +
+        '" step="' + step + '" value="' + s.default + '">' +
+        '<div class="sub"><span>系数 ' + s.coef.toPrecision(4) +
+        ' · 95% CI [' + s.ci[0] + ', ' + s.ci[1] + ']</span>' +
+        '<span class="rk" id="r_' + key + '"></span></div>';
+      box.appendChild(w);
+      state[key] = s.default;
+      w.querySelector('input').addEventListener('input', function(e){
+        state[key] = parseFloat(e.target.value); paint();
+      });
+    }
+    function addSelect(key){
+      var c = C[key];
+      var opts = Object.keys(c.options).sort();
+      var w = document.createElement('div'); w.className = 'f';
+      w.innerHTML = '<label><span>' + c.label + '</span><b id="v_' + key + '"></b></label>' +
+        '<select id="i_' + key + '">' + opts.map(function(v){
+          return '<option value="' + v + '"' + (v === c.default ? ' selected' : '') +
+                 '>' + v + '　(' + (c.options[v] >= 0 ? '+' : '') +
+                 c.options[v].toFixed(3) + ')</option>';
+        }).join('') + '</select>' +
+        '<div class="sub"><span>参照档：' + c.reference + '（系数 = 0）</span></div>';
+      box.appendChild(w);
+      state[key] = c.default;
+      w.querySelector('select').addEventListener('change', function(e){
+        state[key] = e.target.value; paint();
+      });
+    }
 
-['age','log_depsumbr','neighbor_count','bank_closed_rate','lat','lng'].forEach(addRange);
-addSelect('year', '年份'); addSelect('BKCLASS', '银行类别');
-addSelect('fragility_tier', '银行脆弱性分层');
+    Object.keys(N).forEach(addRange);
+    Object.keys(C).forEach(addSelect);
 
-function contributions(){
-  const out = [];
-  for (const k in N){
-    const s = N[k];
-    const z = (state[k] - s.mean) / s.std;
-    out.push({name: (L[k]||[k])[0], v: s.coef * z, unit:(L[k]||[k,''])[1]});
-  }
-  for (const k in C){
-    const c = C[k];
-    out.push({name: k + ' = ' + state[k], v: (c.coef[state[k]] || 0)});
-  }
-  return out;
-}
+    function etaOf(over){
+      var e = SPEC.intercept, i;
+      for (var k in N){
+        var v = (over && over[k] !== undefined) ? over[k] : state[k];
+        e += N[k].coef * v;
+      }
+      for (var c in C){
+        var lv = (over && over[c] !== undefined) ? over[c] : state[c];
+        e += (C[c].options[lv] || 0);
+      }
+      return e;
+    }
+    function parts(){
+      var out = [{name: '截距（基线）', v: SPEC.intercept, kind: 'base'}];
+      for (var k in N) out.push({name: N[k].label, v: N[k].coef * state[k], kind: 'num', key: k});
+      for (var c in C) out.push({name: C[c].label + ' = ' + state[c],
+                                 v: (C[c].options[state[c]] || 0), kind: 'cat'});
+      return out;
+    }
 
-function paint(){
-  for (const k in N) document.getElementById('v_'+k).textContent = fmt(state[k], 2);
-  for (const k in C) document.getElementById('v_'+k).textContent = state[k];
+    var BASE = null;      // 默认档位下的风险，作为“基准”
+    function paint(){
+      var k, c;
+      for (k in N){
+        document.getElementById('v_' + k).textContent = fmtDisplay(k, state[k]);
+      }
+      for (c in C) document.getElementById('v_' + c).textContent = state[c];
 
-  const cs = contributions();
-  let logit = SPEC.intercept;
-  cs.forEach(c => logit += c.v);
-  const p = 1/(1+Math.exp(-logit));
-  document.getElementById('p').textContent = (p*100).toFixed(1) + '%';
-  document.getElementById('surv').textContent = ((1-p)*100).toFixed(1) + '%';
-  const bar = document.getElementById('bar');
-  bar.style.width = Math.min(100, p*100*3).toFixed(1) + '%';
-  bar.style.background = p > 0.1378 ? '#D55E00' : '#0072B2';
-  document.getElementById('cmp').textContent =
-    '测试集平均风险 13.78% —— 该网点为平均水平的 ' + (p/0.1378).toFixed(2) + ' 倍';
+      var eta = etaOf(), p = riskOf(eta);
+      if (BASE === null) BASE = riskOf(etaOf({}));
+      document.getElementById('p').textContent = (p * 100).toFixed(2) + '%';
+      document.getElementById('eta').textContent = eta.toFixed(3);
+      var bar = document.getElementById('bar');
+      bar.style.width = Math.min(100, Math.pow(p, 0.45) * 100).toFixed(1) + '%';
+      bar.style.background = p > BASE ? '#ea580c' : '#1d4ed8';
+      document.getElementById('cmp').textContent =
+        '基准网点（全部取默认档）风险 ' + (BASE * 100).toFixed(2) + '%　→　当前为基准的 ' +
+        (p / BASE).toFixed(2) + ' 倍';
+      document.getElementById('tag').textContent =
+        p >= 0.3 ? '高危' : (p >= 0.1 ? '偏高' : (p >= 0.03 ? '中等' : '低危'));
+      document.getElementById('tag').className = 'tagbd ' +
+        (p >= 0.3 ? 'hi' : (p >= 0.1 ? 'md' : 'lo'));
 
-  // 瀑布：从截距开始，逐项累加
-  const all = [{name:'截距（基线）', v: SPEC.intercept, base:0}];
-  let acc = SPEC.intercept;
-  cs.slice().sort((a,b)=>Math.abs(b.v)-Math.abs(a.v)).forEach(c=>{
-    all.push({name:c.name, v:c.v, base:acc}); acc += c.v;
-  });
-  const maxAbs = Math.max(...all.map(a=>Math.max(Math.abs(a.base), Math.abs(a.base+a.v))), 0.5);
-  document.getElementById('wf').innerHTML = all.map(a=>{
-    const l = Math.min(a.base, a.base+a.v), r = Math.max(a.base, a.base+a.v);
-    const left = ((l + maxAbs)/(2*maxAbs)*100).toFixed(2);
-    const wd = Math.max(((r-l)/(2*maxAbs)*100), 0.4).toFixed(2);
-    const col = a.v >= 0 ? '#D55E00' : '#0072B2';
-    return `<div class="row"><div class="nm" title="${a.name}">${a.name}</div>
-      <div class="trk"><i style="left:${left}%;width:${wd}%;background:${col};opacity:.85"></i></div>
-      <div class="val">${a.v>=0?'+':''}${fmt(a.v,3)}</div></div>`;
-  }).join('');
-}
-paint();
-</script></body></html>
+      // 贡献分解
+      var ps = parts().slice(1).sort(function(a,b){ return Math.abs(b.v) - Math.abs(a.v); });
+      var wf = document.getElementById('wf');
+      var maxAbs = Math.max.apply(null, ps.map(function(a){ return Math.abs(a.v); }).concat([0.3]));
+      wf.innerHTML = ps.map(function(a){
+        var w = Math.max(Math.abs(a.v) / maxAbs * 48, 0.5);
+        var pos = a.v >= 0;
+        return '<div class="row"><div class="nm" title="' + a.name + '">' + a.name + '</div>' +
+          '<div class="trk"><i class="' + (pos ? 'pos' : 'neg') + '" style="' +
+          (pos ? 'left:50%;width:' : 'right:50%;width:') + w.toFixed(2) + '%"></i></div>' +
+          '<div class="val">' + (pos ? '+' : '') + fmt(a.v, 3) + '</div></div>';
+      }).join('');
+
+      // 单因素敏感性（tornado）：每个数值特征从 min → max，其余保持当前
+      var tor = [];
+      for (k in N){
+        var s = N[k];
+        var o1 = {}, o2 = {}; o1[k] = s.min; o2[k] = s.max;
+        var p1 = riskOf(etaOf(o1)), p2 = riskOf(etaOf(o2));
+        tor.push({name: s.label, lo: Math.min(p1, p2), hi: Math.max(p1, p2),
+                  cur: p, up: p2 >= p1});
+        document.getElementById('r_' + k).textContent =
+          (p2 >= p1 ? '↑ ' : '↓ ') + (Math.abs(p2 - p1) * 100).toFixed(1) + 'pp';
+      }
+      tor.sort(function(a,b){ return (b.hi - b.lo) - (a.hi - a.lo); });
+      var tmax = Math.max.apply(null, tor.map(function(t){ return t.hi; }).concat([0.01]));
+      var scale = function(v){ return (v / tmax * 100).toFixed(2); };
+      document.getElementById('tor').innerHTML = tor.map(function(t){
+        var l = scale(t.lo), w = Math.max(scale(t.hi) - scale(t.lo), 0.6);
+        return '<div class="row"><div class="nm">' + t.name + '</div>' +
+          '<div class="trk"><i class="pos" style="left:' + l + '%;width:' + w.toFixed(2) +
+          '%;opacity:.45"></i><i class="cur" style="left:0;width:' + scale(t.cur).toFixed(2) +
+          '%"></i></div><div class="val">' + (t.lo*100).toFixed(1) + '→' +
+          (t.hi*100).toFixed(1) + '%</div></div>';
+      }).join('');
+    }
+    paint();
+    </script>
+</body></html>

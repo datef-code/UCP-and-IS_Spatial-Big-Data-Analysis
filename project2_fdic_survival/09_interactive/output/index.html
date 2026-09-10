@@ -1,89 +1,340 @@
-<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
-<title>FDIC 网点寿命模型 · 交互展示</title>
+<!doctype html><html lang="zh-CN" data-theme="light"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>什么样的网点会先死 · 决策驾驶舱</title>
+<script>
+(function(){
+  var KEY='p2-theme';
+  try{
+    var saved=localStorage.getItem(KEY);
+    if(!saved){ saved = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark':'light'; }
+    document.documentElement.setAttribute('data-theme', saved);
+  }catch(e){}
+  window.__toggleTheme=function(){
+    var cur=document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark';
+    document.documentElement.setAttribute('data-theme',cur);
+    try{localStorage.setItem(KEY,cur);}catch(e){}
+    var b=document.getElementById('themeBtn');
+    if(b){ b.textContent = cur==='dark' ? '\u2600 \u65e5\u95f4' : '\u263e \u591c\u95f4'; }
+    window.dispatchEvent(new Event('themechange'));
+  };
+  document.addEventListener('DOMContentLoaded',function(){
+    var b=document.getElementById('themeBtn');
+    if(b){ b.textContent = document.documentElement.getAttribute('data-theme')==='dark' ? '\u2600 \u65e5\u95f4' : '\u263e \u591c\u95f4'; }
+  });
+})();
+
+/* Plotly 不认 CSS 变量，只能画完再按主题 relayout。 */
+(function(){
+  window.__applyPlotTheme=function(){
+    var dark=document.documentElement.getAttribute('data-theme')==='dark';
+    var bg=dark?'#0b1220':'#ffffff', grid=dark?'#233047':'#e2e8f0',
+        fg=dark?'#e8eefc':'#0f172a', sub=dark?'#94a3b8':'#64748b';
+    var plots=document.querySelectorAll('.js-plotly-plot');
+    for(var i=0;i<plots.length;i++){
+      var d=plots[i]; if(!d.layout) continue;
+      var up={'paper_bgcolor':bg,'plot_bgcolor':bg,'font.color':sub};
+      Object.keys(d.layout).forEach(function(k){
+        if(/^[xy]axis\d*$/.test(k)){
+          up[k+'.gridcolor']=grid; up[k+'.linecolor']=grid;
+          up[k+'.zerolinecolor']=grid; up[k+'.tickfont.color']=sub;
+          up[k+'.title.font.color']=sub;
+        }
+      });
+      if(d.layout.title) up['title.font.color']=fg;
+      if(d.layout.legend) up['legend.font.color']=sub;
+      if(d.layout.annotations) up['annotations']=(d.layout.annotations||[]).map(function(a){
+        return Object.assign({},a,{font:Object.assign({},a.font||{},{color:sub})});
+      });
+      try{ Plotly.relayout(d, up); }catch(e){}
+      if(window.Plotly && d.data){
+        for(var j=0;j<d.data.length;j++){
+          if(d.data[j] && d.data[j].text){ try{ Plotly.restyle(d,{'textfont.color':sub},[j]); }catch(e){} }
+        }
+      }
+    }
+  };
+  document.addEventListener('DOMContentLoaded',function(){ setTimeout(window.__applyPlotTheme,60); });
+  window.addEventListener('themechange',function(){ setTimeout(window.__applyPlotTheme,30); });
+})();
+</script>
 <style>
-:root{--ink:#111827;--sub:#6B7280;--line:#E5E7EB;--up:#D55E00;--down:#0072B2}
+:root{
+  --ink:#0f172a; --ink-2:#334155; --sub:#64748b; --faint:#94a3b8;
+  --line:#e2e8f0; --line-2:#cbd5e1; --bg:#ffffff; --soft:#f8fafc; --soft-2:#f1f5f9;
+  --brand:#1d4ed8; --brand-soft:#eff4ff;
+  --risk:#ea580c; --risk-soft:#fff5ed;
+  --danger:#b91c1c; --danger-soft:#fef2f2;
+  --ok:#0f766e; --ok-soft:#f0fdfa;
+  --warn:#a16207; --warn-soft:#fefce8;
+  --purple:#6d28d9; --purple-soft:#f5f3ff;
+  --shadow:0 1px 2px rgba(15,23,42,.06), 0 8px 24px rgba(15,23,42,.06);
+  --radius:14px;
+}
+:root[data-theme="dark"]{
+  --ink:#e8eefc; --ink-2:#c3cee4; --sub:#94a3b8; --faint:#64748b;
+  --line:#233047; --line-2:#33425e; --bg:#0b1220; --soft:#111a2c; --soft-2:#17223a;
+  --brand:#7aa2ff; --brand-soft:#132240;
+  --risk:#fb923c; --risk-soft:#2a1708;
+  --danger:#f87171; --danger-soft:#2c1214;
+  --ok:#2dd4bf; --ok-soft:#0c2622;
+  --warn:#facc15; --warn-soft:#2a230d;
+  --purple:#a78bfa; --purple-soft:#1c1733;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px rgba(0,0,0,.35);
+}
+
 *{box-sizing:border-box}
-body{margin:0;font-family:"Microsoft YaHei","Noto Sans CJK SC",sans-serif;color:var(--ink);
-     background:#fff;line-height:1.75}
-.wrap{max-width:1040px;margin:0 auto;padding:44px 24px 90px}
-h1{font-size:29px;margin:0 0 6px} h2{font-size:20px;margin:48px 0 10px;
-  padding-top:10px;border-top:1px solid var(--line)}
-.lede{color:var(--sub);margin:10px 0 0;font-size:15.5px}
-.kicker{font-size:12px;letter-spacing:.14em;color:var(--up);font-weight:700;margin:0 0 8px}
-.card{border:1px solid var(--line);border-radius:12px;overflow:hidden;margin:16px 0 6px}
-.card iframe{width:100%;height:560px;border:0;display:block}
-.cap{font-size:12.5px;color:var(--sub);padding:8px 14px;background:#FAFAFA;
-     border-top:1px solid var(--line)}
-.warn{border-left:4px solid var(--up);background:#FFF7ED;padding:14px 18px;
-      border-radius:0 8px 8px 0;margin:18px 0;font-size:14px}
-.note{border-left:4px solid var(--down);background:#EFF6FF;padding:14px 18px;
-      border-radius:0 8px 8px 0;margin:18px 0;font-size:14px}
-.nav{display:flex;flex-wrap:wrap;gap:8px;margin:20px 0 0}
-.nav a{font-size:13px;text-decoration:none;color:var(--ink);border:1px solid var(--line);
-       border-radius:999px;padding:6px 14px}
-.nav a:hover{border-color:var(--up);color:var(--up)}
-code{background:#F3F4F6;padding:1px 5px;border-radius:4px;font-size:13px}
-ol,ul{padding-left:22px} li{margin:6px 0}
-.foot{margin-top:60px;padding-top:16px;border-top:1px solid var(--line);font-size:12px;color:var(--sub)}
-</style></head><body><div class="wrap">
-<h1>什么样的网点会先死</h1>
-<p class="lede">离散时间生存模型（logit / cloglog + SHAP + 空间残差）。
-测试集 AUC 0.881、C-index 0.810、Brier 0.161。
-核心结论：网点不是「老死」而是<b>「被关」</b>——谁家的网点、什么时候，比它自己多老更重要。</p>
-<div class="nav"><a href="#demo">① 预测 demo</a><a href="#km">② 演化动图 + KM/ROC</a>
-<a href="#shap">③ SHAP</a><a href="#report">④ 体检报告</a><a href="#limit">⑤ 边界</a><a href="#repro">⑥ 复现</a></div>
+html{scroll-behavior:smooth}
+body{margin:0;font-family:"Microsoft YaHei","Noto Sans CJK SC","PingFang SC","Hiragino Sans GB",sans-serif;color:var(--ink);background:var(--bg);
+     line-height:1.75;-webkit-font-smoothing:antialiased;transition:background .25s,color .25s}
+a{color:var(--brand);text-decoration:none}
+a:hover{text-decoration:underline}
+.wrap{max-width:1180px;margin:0 auto;padding:26px 24px 80px}
+h1,h2,h3{line-height:1.3;letter-spacing:-.01em}
+h1{font-size:29px;margin:0 0 8px}
+h2{font-size:21px;margin:38px 0 12px;padding-bottom:10px;border-bottom:1px solid var(--line)}
+h3{font-size:16.5px;margin:22px 0 8px}
+p{margin:10px 0;font-size:14.5px;color:var(--ink-2)}
+.lede{font-size:15.5px;color:var(--sub);margin:8px 0 4px}
+.kicker{font-size:11.5px;letter-spacing:.16em;color:var(--risk);font-weight:800;
+        text-transform:uppercase;margin:0 0 6px}
+.muted{color:var(--sub);font-size:13px}
+code{background:var(--soft-2);padding:1.5px 6px;border-radius:5px;font-size:12.5px;
+     font-family:ui-monospace,Consolas,"Courier New",monospace;color:var(--ink-2)}
+hr{border:0;border-top:1px solid var(--line);margin:28px 0}
 
-<h2 id="demo">① 上手试试：这个网点会先死吗</h2>
-<p class="kicker">产品感的核心</p>
-<p>拖动特征滑块，右侧实时给出年度关闭风险，并分解出每个特征贡献了多少
-（线性模型的贡献分解即 SHAP 值）。比任何静态图都直观。</p>
-<div class="card"><iframe src="predict_demo.html" loading="lazy"
-  title="网点关闭风险预测 demo"></iframe>
-<div class="cap">纯前端计算，不联网不上传。保真度自检：本页复现 AUC 0.8815
-vs 产物 0.8814（差 0.0）。</div></div>
+.topbar{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:12px;
+  padding:11px 22px;background:var(--bg);border-bottom:1px solid var(--line);
+  backdrop-filter:saturate(180%) blur(8px)}
+.topbar .brand{font-weight:800;font-size:14px;letter-spacing:-.01em}
+.topbar .brand span{color:var(--risk)}
+.topbar .spacer{flex:1}
+.chip{font-size:11px;padding:3px 9px;border-radius:999px;background:var(--soft-2);
+  color:var(--sub);border:1px solid var(--line)}
+.btn{border:1px solid var(--line);background:var(--bg);color:var(--ink-2);border-radius:9px;
+  padding:6px 13px;font-size:13.5px;cursor:pointer;font-family:inherit;transition:.18s;
+  white-space:nowrap;text-decoration:none;display:inline-block}
+.btn:hover{border-color:var(--brand);color:var(--brand);transform:translateY(-1px);
+  text-decoration:none}
+.btn.primary{background:var(--brand);border-color:var(--brand);color:#fff}
+.btn.primary:hover{filter:brightness(1.08);color:#fff}
 
-<h2 id="km">② 谁先死、什么时候死（演化动图）</h2>
-<div class="card"><iframe src="risk_evolution.html" loading="lazy" title="风险演化动图"></iframe>
-<div class="cap">左：年度关闭网点数（2009–2014 危机后整合窗口标橙）；
-右：模型眼中该年网点的预测风险分布。可下载 mp4 直接放进汇报材料。</div></div>
-<p>静态的 KM 与 ROC 见下：左为按银行脆弱性分层的 Kaplan–Meier（hover 看 at-risk 数），
-右为测试集 ROC。KM 尾部（&gt; 25 年）样本变薄，不要在那里下结论。</p>
-<div class="card"><iframe src="km_roc.html" loading="lazy" title="KM 与 ROC"></iframe>
-<div class="cap">两图口径与 07_visualize 的静态图一致。</div></div>
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:16px 0}
+.stat{border:1px solid var(--line);border-radius:12px;padding:12px 14px;background:var(--soft)}
+.stat .k{font-size:12px;color:var(--sub);display:block;margin-bottom:2px}
+.stat .v{font-size:24px;font-weight:750;font-variant-numeric:tabular-nums;
+  letter-spacing:-.02em;line-height:1.25;display:block}
+.stat .h{font-size:11.5px;color:var(--faint);display:block;margin-top:2px}
+.stat.good .v{color:var(--ok)} .stat.risk .v{color:var(--risk)}
+.stat.brand .v{color:var(--brand)} .stat.warn .v{color:var(--warn)}
 
-<h2 id="shap">③ 单个预测为什么这样判（SHAP 交互图）</h2>
-<p class="kicker">可解释性的核心</p>
-<p>三行 force plot 各是一个代表性网点：<b>红色</b>把风险往上推、<b>蓝色</b>往下压，
-从基线（截距）一路推到最终风险。hover 看每个特征的贡献量，点击看原始特征值。
-注意「年份」在危机后（2009–2014）大幅推高——这就是本课题「什么时候比多老更重要」的可视化。</p>
-<div class="card"><iframe src="shap_force.html" loading="lazy" title="SHAP 交互图"></iframe>
-<div class="cap">线性模型的 SHAP = coef × (x−mean)/std，是<b>精确</b>分解而非近似；
-与 predict_demo 的贡献分解同一套口径，这里用 plotly 自绘三行水平条形图（红推高、蓝压低），
-按 |SHAP| 降序，hover 看每个特征的原值。</div></div>
+.grid{display:grid;gap:14px}
+.g2{grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}
+.g3{grid-template-columns:repeat(auto-fit,minmax(230px,1fr))}
+.g4{grid-template-columns:repeat(auto-fit,minmax(190px,1fr))}
+.card{border:1px solid var(--line);border-radius:var(--radius);padding:16px 18px;
+  background:var(--bg);box-shadow:var(--shadow);transition:.2s}
+.card:hover{border-color:var(--line-2);transform:translateY(-2px)}
+.card .t{font-weight:700;font-size:15px;margin:0 0 6px;display:flex;align-items:center;gap:8px}
+.card .d{font-size:13.5px;color:var(--sub);margin:0;line-height:1.7}
+.card .q{font-size:12.5px;color:var(--risk);margin:10px 0 0;font-weight:600}
 
-<h2 id="report">④ 模型体检报告</h2>
-<div class="card"><iframe src="model_report.html" loading="lazy" title="模型体检报告"></iframe>
-<div class="cap">左：cloglog 系数森林（点 + 95% CI）；右：性能指标与残差 Moran's I。</div></div>
+.note,.warn,.ok,.ask,.danger{border-radius:0 12px 12px 0;padding:13px 17px;margin:16px 0;
+  font-size:14px;border-left:4px solid}
+.note{background:var(--brand-soft);border-color:var(--brand)}
+.warn{background:var(--risk-soft);border-color:var(--risk)}
+.ok{background:var(--ok-soft);border-color:var(--ok)}
+.ask{background:var(--purple-soft);border-color:var(--purple)}
+.danger{background:var(--danger-soft);border-color:var(--danger)}
+.note b,.warn b,.ok b,.ask b,.danger b{display:block;margin-bottom:4px;font-size:14px}
+.note ul,.warn ul,.ok ul,.ask ul,.danger ul{margin:6px 0 0;padding-left:20px}
+.note li,.warn li,.ok li,.ask li,.danger li{margin:4px 0;font-size:13.5px;color:var(--ink-2)}
+.note p,.warn p,.ok p,.danger p{margin:4px 0;font-size:13.5px;color:var(--ink-2)}
 
-<h2 id="limit">⑤ 边界（务必阅读）</h2>
-<div class="warn"><b>风险预测，不是因果，也不是 ROI 工具。</b>
-<ul>
-<li>改动 demo 里的输入<b>不会</b>改变网点真实命运，只展示模型怎么打分。</li>
-<li>残差 Moran's I 显著为正（0.141，p=0.005）→ 本地市场因素仍未进入模型。</li>
-<li><b>AUC 仅同口径可比</b>：跨数据集、跨抽样方案比较无效（事件率低，用了分层下采样）。</li>
-<li>不承诺干预阈值与 ROI（成本参数缺失）。</li>
-<li>左截断 51.76%、右删失 47%：早年样本与尾部估计都不牢。</li>
-</ul></div>
+.guard{border:1px solid var(--line);border-left:4px solid var(--danger);
+  border-radius:0 12px 12px 0;padding:13px 17px;margin:10px 0;background:var(--danger-soft)}
+.guard b{font-size:13.5px;color:var(--danger);display:block;margin-bottom:3px}
+.guard span{font-size:13.5px;color:var(--ink-2);line-height:1.7}
 
-<h2 id="repro">⑥ 可复现</h2>
-<div class="note">所有数字来自上游产物，不硬编码：
-<code>06_train/output/metrics.json</code>、<code>replication_manifest.json</code>
-（版本 / 参数 / 随机种子 42 / 输入指纹）、<code>logit_coefficients.csv</code>、
-<code>cloglog_coefficients.csv</code>、<code>shap_importance.csv</code>、
-<code>05_map/output/lineage.csv</code>（字段血缘）。
-重跑：<code>python main.py --stage 09</code>。</div>
+.fig{border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;margin:16px 0;
+  background:var(--bg);box-shadow:var(--shadow)}
+.fig iframe{width:100%;height:540px;border:0;display:block;background:var(--bg)}
+.fig img{width:100%;display:block;background:#fff}
+.fig .cap{font-size:12.5px;color:var(--sub);padding:9px 14px;background:var(--soft);
+  border-top:1px solid var(--line)}
 
-<div class="foot">数据来源：FDIC Summary of Deposits 1994–2025（只读）　|
-生成脚本 <code>09_interactive/09_interactive.py</code>　|
-生成时间 2026-09-09 21:38</div>
-</div></body></html>
+table{width:100%;border-collapse:collapse;font-size:13.5px;margin:14px 0}
+th,td{padding:9px 11px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+th{color:var(--sub);font-weight:650;font-size:12px;letter-spacing:.03em;text-transform:uppercase;
+   background:var(--soft)}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+tbody tr:hover{background:var(--soft)}
+
+.formula{background:var(--soft);border:1px solid var(--line);border-radius:12px;padding:14px 18px;
+  margin:14px 0;font-family:ui-monospace,Consolas,monospace;font-size:13.5px;color:var(--ink);
+  overflow-x:auto;line-height:1.9}
+.formula .lbl{display:block;font-family:"Microsoft YaHei","Noto Sans CJK SC","PingFang SC","Hiragino Sans GB",sans-serif;font-size:12px;color:var(--sub);margin-bottom:6px}
+
+.steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px;margin:16px 0}
+.step{border:1px solid var(--line);border-radius:12px;padding:13px 15px;background:var(--soft);
+  position:relative;overflow:hidden;text-decoration:none;color:inherit;display:block}
+.step:before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--risk)}
+.step b{display:block;font-size:13px;color:var(--risk);margin-bottom:4px;letter-spacing:.02em}
+.step span{font-size:13px;color:var(--sub);line-height:1.65;display:block}
+
+.badge{display:inline-block;font-size:11px;padding:2px 8px;border-radius:999px;
+  border:1px solid var(--line);color:var(--sub);background:var(--soft);margin-right:6px}
+.badge.b{color:var(--brand);border-color:var(--brand);background:var(--brand-soft)}
+.badge.r{color:var(--risk);border-color:var(--risk);background:var(--risk-soft)}
+.badge.g{color:var(--ok);border-color:var(--ok);background:var(--ok-soft)}
+.badge.d{color:var(--danger);border-color:var(--danger);background:var(--danger-soft)}
+.badge.p{color:var(--purple);border-color:var(--purple);background:var(--purple-soft)}
+
+.foot{margin-top:56px;padding-top:16px;border-top:1px solid var(--line);font-size:12px;
+  color:var(--faint)}
+@media (max-width:720px){
+  .wrap{padding:18px 14px 60px}
+  .fig iframe{height:430px}
+  h1{font-size:23px}
+}
+
+    .hero{display:grid;grid-template-columns:1.1fr .9fr;gap:28px;align-items:center;
+      padding:6px 0 10px}
+    .hero .tag{display:inline-block;font-size:11.5px;letter-spacing:.16em;color:var(--risk);
+      font-weight:800;margin-bottom:12px}
+    .hero-h{font-size:38px;line-height:1.16;margin:0 0 14px;letter-spacing:-.02em}
+    .hero-p{font-size:15px;color:var(--sub);line-height:1.85;margin:0 0 20px}
+    .hero-btns{display:flex;flex-wrap:wrap;gap:10px}
+    .pgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(265px,1fr));gap:14px}
+    .pcard{display:flex;flex-direction:column;border:1px solid var(--line);
+      border-radius:var(--radius);padding:16px 18px;background:var(--bg);
+      box-shadow:var(--shadow);text-decoration:none;color:inherit;transition:.2s}
+    .pcard:hover{transform:translateY(-3px);border-color:var(--brand);text-decoration:none}
+    .pcard .ico{font-size:21px;margin-bottom:8px}
+    .pcard .pt{font-weight:700;font-size:15.5px;color:var(--ink)}
+    .pcard .pb{display:inline-block;font-size:11px;padding:2px 8px;border-radius:999px;
+      background:var(--soft-2);color:var(--sub);margin:6px 0 8px;align-self:flex-start}
+    .pcard .pd{font-size:13.5px;color:var(--sub);line-height:1.7;flex:1}
+    .pcard .pq{font-size:13px;color:var(--brand);font-weight:650;margin-top:10px}
+    .pcard.c-b{border-top:3px solid var(--brand)}
+    .pcard.c-r{border-top:3px solid var(--risk)}
+    .pcard.c-g{border-top:3px solid var(--ok)}
+    .pcard.c-d{border-top:3px solid var(--danger)}
+    .pcard.c-p{border-top:3px solid var(--purple)}
+    @media(max-width:900px){ .hero{grid-template-columns:1fr} .hero-h{font-size:28px} }
+    </style>
+<script src="assets/vendor/plotly.min.js"></script>
+</head><body>
+<div class="topbar">
+  <span class="brand">FDIC 网点寿命模型 <span>· 风险预测</span></span>
+  <span class="chip">入口</span>
+  <span class="spacer"></span>
+  <button class="btn" id="themeBtn" onclick="__toggleTheme()">☾ 夜间</button>
+  
+</div>
+<div class="wrap">
+  <h1>什么样的网点会先死 · 决策驾驶舱</h1><p class="lede">离散时间生存模型（logit / cloglog + SHAP + 空间残差）｜风险预测，非因果｜FDIC SOD 1994–2025</p>
+  
+    <div class="hero">
+      <div class="hero-l">
+        <div class="tag">FDIC 网点寿命 · 离散时间生存模型</div>
+        <h1 class="hero-h">网点不是「老死」<br>而是「被关」</h1>
+        <p class="hero-p"><b>谁家的网点</b>（银行层脆弱性）与<b>什么时候</b>
+        （危机后 2009–2014 整合窗口，关闭率翻倍）比网点自身年龄更能解释生死；
+        规模是护城河，多网点且地理分散的银行其网点是行业重组的首选裁撤对象。</p>
+        <div class="hero-btns">
+          <a class="btn primary" href="predict_demo.html">直接上手打分 →</a>
+          <a class="btn" href="guardrails.html">先看边界</a>
+          <a class="btn" href="model_report.html">模型体检</a>
+        </div>
+      </div>
+      <div class="hero-r">
+        <div class="stats"><div class="stat brand"><span class="k">测试 AUC</span><span class="v">0.8814</span><span class="h">区分度（仅同口径可比）</span></div><div class="stat brand"><span class="k">C-index</span><span class="v">0.8096</span><span class="h">排序一致性</span></div><div class="stat good"><span class="k">Brier</span><span class="v">0.1609</span><span class="h">越低越好</span></div><div class="stat warn"><span class="k">残差 Moran's I</span><span class="v">0.141</span><span class="h">p=0.005 · 本地因素未建模</span></div></div>
+      </div>
+    </div>
+
+    <h2>① 上手试：这个网点明年会关闭吗</h2>
+    <p class="muted">王牌 demo。当前使用的是 <b>cloglog 模型（样本级 CSV 不入库，故用入库的完整系数表）</b>。</p>
+    <div class="fig"><iframe src="predict_demo.html" loading="lazy" style="height:760px"></iframe><div class="cap">拖动特征 → 实时风险 + 贡献分解 + 单因素敏感性。纯前端离线计算，不联网不上传。</div></div>
+
+    <h2>② 三问三答</h2>
+    <div class="grid g3">
+      <div class="card"><div class="t">准吗？</div>
+        <p class="d">测试 AUC <b>0.8814</b>、
+        C-index <b>0.8096</b>、Brier
+        <b>0.1609</b>。区分度良好。
+        但<b>只在同一口径内可比</b>（事件率低，训练做了分层下采样）。</p></div>
+      <div class="card"><div class="t">凭什么？</div>
+        <p class="d">前两大因子是 <b>year</b>（mean|SHAP| 2.02）与
+        <b>bank_closed_rate</b>（1.88），远超其余；
+        <b>age（网点年龄）只有 0.003</b> —— 「老网点更容易死」几乎不成立。</p></div>
+      <div class="card"><div class="t">有什么没解释？</div>
+        <p class="d">残差 Moran's I = <b>0.141
+        （p=0.005）</b>：控制银行与年份后，本地市场条件仍显著聚集。
+        点估计不是「网点自身属性的完整效应」。</p></div>
+    </div>
+
+    <h2>③ 结论主图：什么时候最危险</h2>
+    <div style="height:430px; width:100%;">                            <div id="9ba4afc5-34c8-4b75-8ad6-b8af33a38270" class="plotly-graph-div" style="height:100%; width:100%;"></div>            <script>                window.PLOTLYENV=window.PLOTLYENV || {};                                if (document.getElementById("9ba4afc5-34c8-4b75-8ad6-b8af33a38270")) {                    Plotly.newPlot(                        "9ba4afc5-34c8-4b75-8ad6-b8af33a38270",                        [{"fill":"toself","fillcolor":"rgba(234,88,12,.14)","hoverinfo":"skip","line":{"width":0},"name":"95% CI","x":[1995,1996,1997,1998,1999,2000,2001,2002,2003,2004,2005,2006,2007,2008,2009,2010,2011,2012,2013,2014,2015,2015,2014,2013,2012,2011,2010,2009,2008,2007,2006,2005,2004,2003,2002,2001,2000,1999,1998,1997,1996,1995],"y":{"dtype":"f8","bdata":"O99PjZdugj\u002fNzMzMzMzgPyUGgZVDi+g\u002fz\u002fdT46Wb5D+YbhKDwMrtP+xRuB6F6+0\u002fsp3vp8ZL6z\u002fByqFFtvPdP+f7qfHSTeI\u002fcT0K16Nw8z8730+Nl270P9v5fmq8dPM\u002fI9v5fmq88j8lBoGVQ4v2P+58PzVeuvk\u002f9ihcj8L1\u002fj\u002fn+6nx0k38Px1aZDvfT\u002fs\u002fSgwCK4cW\u002fT8AAAAAAAABQDEIrBxaZP8\u002fokW28\u002f3U\u002fD\u002fD9Shcj8L\u002fPzeJQWDl0Po\u002fH4XrUbge+T+TGARWDi36P7TIdr6fGv0\u002fQmDl0CLb9z+kcD0K16P0P2IQWDm0yPA\u002fxSCwcmiR8T9kO99PjZfyPwRWDi2ynfE\u002ffT81XrpJ3D9xPQrXo3DVP9v5fmq8dOc\u002faJHtfD816j+TGARWDi3qP83MzMzMzOA\u002fTDeJQWDl5D\u002fsUbgehevZP\u002fyp8dJNYsC\u002f"},"type":"scatter"},{"customdata":{"dtype":"f8","bdata":"\u002fKnx0k1iwL8730+Nl26CP+xRuB6F69k\u002fzczMzMzM4D9MN4lBYOXkPyUGgZVDi+g\u002fzczMzMzM4D\u002fP91PjpZvkP5MYBFYOLeo\u002fmG4Sg8DK7T9oke18PzXqP+xRuB6F6+0\u002f2\u002fl+arx05z+yne+nxkvrP3E9CtejcNU\u002fwcqhRbbz3T99PzVeukncP+f7qfHSTeI\u002fBFYOLbKd8T9xPQrXo3DzP2Q730+Nl\u002fI\u002fO99PjZdu9D\u002fFILByaJHxP9v5fmq8dPM\u002fYhBYObTI8D8j2\u002fl+arzyP6RwPQrXo\u002fQ\u002fJQaBlUOL9j9CYOXQItv3P+58PzVeuvk\u002ftMh2vp8a\u002fT\u002f2KFyPwvX+P5MYBFYOLfo\u002f5\u002fup8dJN\u002fD8fhetRuB75Px1aZDvfT\u002fs\u002fN4lBYOXQ+j9KDAIrhxb9P8P1KFyPwv8\u002fAAAAAAAAAUCiRbbz\u002fdT8PzEIrBxaZP8\u002f","shape":"21, 2"},"hovertemplate":"%{x} \u5e74\u003cbr\u003e\u7cfb\u6570 %{y:.3f}\u003cbr\u003e95% CI [%{customdata[0]:.3f}, %{customdata[1]:.3f}]\u003cextra\u003e\u003c\u002fextra\u003e","line":{"color":"#ea580c","width":2.8},"marker":{"color":["#ea580c","#ea580c","#ea580c","#ea580c","#ea580c","#ea580c","#ea580c","#ea580c","#ea580c","#ea580c","#ea580c","#ea580c","#ea580c","#ea580c","#b91c1c","#b91c1c","#b91c1c","#b91c1c","#b91c1c","#b91c1c","#ea580c"],"size":7},"mode":"lines+markers","name":"\u5e74\u4efd\u6548\u5e94","x":[1995,1996,1997,1998,1999,2000,2001,2002,2003,2004,2005,2006,2007,2008,2009,2010,2011,2012,2013,2014,2015],"y":{"dtype":"f8","bdata":"78nDQq1prr\u002f+Q\u002frt68DdP5p3nKIjueY\u002fbAn5oGez4j\u002fRkVz+Q\u002frrP8iYu5aQD+w\u002fqaROQBNh6T9lGeJYF7fZP1uxv+yePOA\u002fK\u002faX3ZOH8j+M22gAb4HzP9\u002fgC5OpgvI\u002fNKK0N\u002fjC8T9GlPYGX5j1Pwkbnl4py\u002fg\u002fZMxdS8gH\u002fj\u002fqBDQRNjz7Pw+cM6K0N\u002fo\u002fwcqhRbbz+z8awFsgQXEAQLTIdr6fGv4\u002f"},"type":"scatter"}],                        {"template":{"data":{"histogram2dcontour":[{"type":"histogram2dcontour","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"choropleth":[{"type":"choropleth","colorbar":{"outlinewidth":0,"ticks":""}}],"histogram2d":[{"type":"histogram2d","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"heatmap":[{"type":"heatmap","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"contourcarpet":[{"type":"contourcarpet","colorbar":{"outlinewidth":0,"ticks":""}}],"contour":[{"type":"contour","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"surface":[{"type":"surface","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"mesh3d":[{"type":"mesh3d","colorbar":{"outlinewidth":0,"ticks":""}}],"scatter":[{"fillpattern":{"fillmode":"overlay","size":10,"solidity":0.2},"type":"scatter"}],"parcoords":[{"type":"parcoords","line":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterpolargl":[{"type":"scatterpolargl","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"bar":[{"error_x":{"color":"#2a3f5f"},"error_y":{"color":"#2a3f5f"},"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"bar"}],"scattergeo":[{"type":"scattergeo","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterpolar":[{"type":"scatterpolar","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"histogram":[{"marker":{"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"histogram"}],"scattergl":[{"type":"scattergl","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatter3d":[{"type":"scatter3d","line":{"colorbar":{"outlinewidth":0,"ticks":""}},"marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattermap":[{"type":"scattermap","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterternary":[{"type":"scatterternary","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattercarpet":[{"type":"scattercarpet","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"carpet":[{"aaxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"baxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"type":"carpet"}],"table":[{"cells":{"fill":{"color":"#EBF0F8"},"line":{"color":"white"}},"header":{"fill":{"color":"#C8D4E3"},"line":{"color":"white"}},"type":"table"}],"barpolar":[{"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"barpolar"}],"pie":[{"automargin":true,"type":"pie"}]},"layout":{"autotypenumbers":"strict","colorway":["#636efa","#EF553B","#00cc96","#ab63fa","#FFA15A","#19d3f3","#FF6692","#B6E880","#FF97FF","#FECB52"],"font":{"color":"#2a3f5f"},"hovermode":"closest","hoverlabel":{"align":"left"},"paper_bgcolor":"white","plot_bgcolor":"#E5ECF6","polar":{"bgcolor":"#E5ECF6","angularaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"radialaxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"ternary":{"bgcolor":"#E5ECF6","aaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"baxis":{"gridcolor":"white","linecolor":"white","ticks":""},"caxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"coloraxis":{"colorbar":{"outlinewidth":0,"ticks":""}},"colorscale":{"sequential":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"sequentialminus":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"diverging":[[0,"#8e0152"],[0.1,"#c51b7d"],[0.2,"#de77ae"],[0.3,"#f1b6da"],[0.4,"#fde0ef"],[0.5,"#f7f7f7"],[0.6,"#e6f5d0"],[0.7,"#b8e186"],[0.8,"#7fbc41"],[0.9,"#4d9221"],[1,"#276419"]]},"xaxis":{"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","automargin":true,"zerolinewidth":2},"yaxis":{"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","automargin":true,"zerolinewidth":2},"scene":{"xaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2},"yaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2},"zaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2}},"shapedefaults":{"line":{"color":"#2a3f5f"}},"annotationdefaults":{"arrowcolor":"#2a3f5f","arrowhead":0,"arrowwidth":1},"geo":{"bgcolor":"white","landcolor":"#E5ECF6","subunitcolor":"white","showland":true,"showlakes":true,"lakecolor":"white"},"title":{"x":0.05}}},"shapes":[{"line":{"color":"#64748b","dash":"dot","width":1},"type":"line","x0":0,"x1":1,"xref":"x domain","y0":0,"y1":0,"yref":"y"},{"fillcolor":"#b91c1c","layer":"below","line":{"width":0},"opacity":0.07,"type":"rect","x0":2008.5,"x1":2014.5,"xref":"x","y0":0,"y1":1,"yref":"y domain"}],"font":{"family":"\"Microsoft YaHei\",\"Noto Sans CJK SC\",\"PingFang SC\",\"Hiragino Sans GB\",sans-serif","size":12.5,"color":"#64748b"},"margin":{"l":80,"r":30,"t":100,"b":70},"title":{"font":{"size":15,"color":"#0f172a"},"text":"\u003cb\u003e\u7f51\u70b9\u4e0d\u662f\u300c\u8001\u6b7b\u300d\u800c\u662f\u300c\u88ab\u5173\u300d\uff1a\u5371\u673a\u540e\u6574\u5408\u7a97\u53e3\uff0c\u5e74\u4efd\u6548\u5e94\u7ffb\u500d\u003c\u002fb\u003e\u003cbr\u003e\u003csub\u003ecloglog \u5e74\u4efd\u865a\u53d8\u91cf\uff08\u53c2\u7167 1994\uff0c\u7cfb\u6570 = 0\uff09\uff1by \u8d8a\u5927 = \u5f53\u5e74\u5173\u95ed\u98ce\u9669\u8d8a\u9ad8\uff1b\u6731\u7ea2\u70b9 = 2009\u20132014 \u6574\u5408\u7a97\u53e3\u003c\u002fsub\u003e","x":0.01,"xanchor":"left"},"paper_bgcolor":"#ffffff","plot_bgcolor":"#ffffff","height":430,"hovermode":"closest","showlegend":false,"xaxis":{"title":{"text":"\u65e5\u5386\u5e74","font":{"size":12.5,"color":"#64748b"}},"dtick":5,"tickfont":{"size":11.5,"color":"#64748b"},"gridcolor":"#e2e8f0","zerolinecolor":"#e2e8f0","linecolor":"#e2e8f0"},"yaxis":{"title":{"text":"\u5e74\u4efd\u6548\u5e94\u7cfb\u6570\uff08cloglog\uff0c95% CI\uff09","font":{"size":12.5,"color":"#64748b"}},"tickfont":{"size":11.5,"color":"#64748b"},"gridcolor":"#e2e8f0","zerolinecolor":"#e2e8f0","linecolor":"#e2e8f0"},"annotations":[{"font":{"color":"#b91c1c","size":12},"showarrow":false,"text":"\u5371\u673a\u540e\u6574\u5408\u7a97\u53e3","x":2011.5,"y":2.0553,"yshift":16}]},                        {"displaylogo": false, "responsive": true}                    )                };            </script>        </div>
+
+    <h2>④ 产品矩阵：6 个交互件</h2>
+    <div class="pgrid"><a class="pcard c-b" href="predict_demo.html">
+          <span class="ico">🎛</span>
+          <span class="pt">风险打分台</span>
+          <span class="pb">王牌 demo</span>
+          <span class="pd">拖滑块 → 实时风险 + 逐特征贡献分解 + 单因素敏感性 tornado。纯前端，离线可算。</span>
+          <span class="pq">→ 先玩这个</span>
+        </a><a class="pcard c-r" href="shap_force.html">
+          <span class="ico">🔍</span>
+          <span class="pt">可解释性</span>
+          <span class="pb">为什么</span>
+          <span class="pd">全局 SHAP 重要性（对数轴）+ 三个真实网点的逐特征分解，红推高蓝压低。</span>
+          <span class="pq">→ 看模型凭什么</span>
+        </a><a class="pcard c-g" href="model_report.html">
+          <span class="ico">🩺</span>
+          <span class="pt">模型体检报告</span>
+          <span class="pb">准不准</span>
+          <span class="pd">年份效应（带 95% CI）+ 非年份因子森林 + 性能指标 + 残差 Moran's I。</span>
+          <span class="pq">→ 看模型够不够用</span>
+        </a><a class="pcard c-d" href="guardrails.html">
+          <span class="ico">🛑</span>
+          <span class="pt">边界与止损</span>
+          <span class="pb">什么时候不能用</span>
+          <span class="pd">8 条已知限制 + 5 条止损条件 + 正确/错误用法对照。</span>
+          <span class="pq">→ 用之前必读</span>
+        </a><a class="pcard c-" href="km_roc.html">
+          <span class="ico">📉</span>
+          <span class="pt">生存与区分度</span>
+          <span class="pb">谁先死</span>
+          <span class="pd">KM 分层存活曲线 + 年度基准风险 + 测试集 AUC/C-index/Brier。</span>
+          <span class="pq">→ 看分离度</span>
+        </a><a class="pcard c-p" href="risk_evolution.html">
+          <span class="ico">🎬</span>
+          <span class="pt">风险演化动图</span>
+          <span class="pb">时间维度</span>
+          <span class="pd">年度关闭数 + 模型风险分布逐年推进（mp4 内嵌，可下载放汇报）。</span>
+          <span class="pq">→ 适合放汇报</span>
+        </a></div>
+
+    <h2>⑤ 边界速览（完整版见「边界与止损」）</h2>
+    <div class="guard"><b>限制 1</b><span>**左截断**：面板自 1994 起，出生早于 1994（或出生年缺失）的网点按左截断处理，已剔除事件早于首次观测的 11,787 个网点；网点年龄分布因此左偏，不宜直接读「年龄效应」。</span></div><div class="guard"><b>限制 2</b><span>**死亡年口径**：SIMS_ACQUIRED_DATE 只在并购当年（及之后若干年）出现，按「该网点出现过的最晚年份」判定死亡；若某年补录口径变化会改变关闭率。</span></div><div class="guard"><b>限制 3</b><span>**CERT 归属**：银行层脆弱性按**首次观测所属银行**聚合（并购后不追溯重标），因此并购后关闭的网点仍计入原银行，银行层指标是基线属性而非时变属性。</span></div><div class="guard"><b>限制 4</b><span>**右删失 47%**：近半数网点在 2025 年仍存活，长寿命区间的 KM 曲线受样本量限制，尾部不确定。</span></div>
+    <div class="danger"><b>一句话边界</b>这是<b>风险预测</b>，不是因果、不是 ROI 工具；不承诺干预阈值，不承诺 ROI（成本参数缺失）。</div>
+
+    <h2>⑥ 可复现</h2>
+    <div class="grid g2">
+      <div>
+        <h3>运行环境（冻结）</h3>
+        <table><tbody><tr><td><code>python</code></td><td>3.13.15</td></tr><tr><td><code>platform</code></td><td>Windows-11-10.0.26200-SP0</td></tr><tr><td><code>pandas</code></td><td>3.0.5</td></tr><tr><td><code>numpy</code></td><td>2.5.2</td></tr><tr><td><code>scipy</code></td><td>1.18.1</td></tr><tr><td><code>scikit-learn</code></td><td>1.9.0</td></tr></tbody></table>
+      </div>
+      <div>
+        <h3>关键参数（冻结）</h3>
+        <table><tbody><tr><td><code>random_state</code></td><td>42</td></tr><tr><td><code>max_total_sample</code></td><td>500000</td></tr><tr><td><code>shap_sample_n</code></td><td>2000</td></tr><tr><td><code>moran_k</code></td><td>8</td></tr><tr><td><code>moran_n_perm</code></td><td>199</td></tr><tr><td><code>c_index_max_n</code></td><td>120000</td></tr><tr><td><code>duration_proxy</code></td><td>age（year − est_year）</td></tr></tbody></table>
+      </div>
+    </div>
+    <div class="note"><b>面板与命令</b>面板 <b>1,667,283</b> 网点-年观测 / <b>140,751</b> 网点，事件率 <b>4.13%</b>，年份 1994–2025。<br>重跑：<code>python main.py</code>（单阶段 <code>python main.py --stage 06</code>）。<br>来源：<code>06_train/output/replication_manifest.json</code>。数据：FDIC Summary of Deposits 1994–2025（公共领域，只读）。</div>
+    
+  <div class="foot">生成脚本 <code>09_interactive/09_interactive.py</code>　|
+  生成时间 2026-09-10 13:43　|
+  数字来自上游产物 <code>06_train/output/</code> 与 <code>08_conclude/output/</code>，不硬编码。</div>
+</div>
+<script></script>
+</body></html>

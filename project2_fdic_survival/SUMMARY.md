@@ -1,7 +1,7 @@
 # SUMMARY.md · project2_fdic_survival
 
 > FDIC 网点寿命生存模型（离散时间 logit / cloglog + SHAP + 空间残差）
-> 自动生成于 2026-09-09T21:38:41；规范见 `datakit/PROJECT_STRUCTURE.md`。
+> 自动生成于 2026-09-10T13:43:51；规范见 `datakit/PROJECT_STRUCTURE.md`。
 
 ## 阶段摘要
 
@@ -15,7 +15,7 @@
 | 06_train | ✅ | panel_rows=1667283；test_auc=0.8814；test_c_index=0.8096；test_brier=0.1609；moran_i=0.1412；top_shap_feature=year |
 | 07_visualize | ✅ | figures=6；branches=140751 |
 | 08_conclude | ✅ | conclusion=网点不是「老死」而是「被关」——谁家的网点（银行层脆弱性）与什么时候（危机后 2009–2014 整合窗口，关闭率翻倍）比网点自身年龄更能解释生死；规模是护城河（存款越大越长寿），多网点且地理分散的银行其网点是行业重组的首选裁撤对象。模型测试 AUC 0.881 / C-index 0.810；残差 Moran's I 0.141（p=0.005）说明本地市场因素仍未进入模型。；test_auc=0.8814… |
-| 09_interactive | ✅ | figures=6；auc_reproduced=0.8815 |
+| 09_interactive | ✅ | figures=7；demo_model=cloglog 模型（样本级 CSV 不入库，故用入库的完整系数表） |
 
 ## 一句话结论
 

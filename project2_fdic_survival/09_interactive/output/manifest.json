@@ -1,96 +1,116 @@
 {
-  "generated_at": "2026-09-09T21:38:41",
+  "generated_at": "2026-09-10T13:43:51",
   "generator": {
     "tool": "plotly + vanilla JS",
-    "version": "7.0.0",
     "script": "09_interactive/09_interactive.py",
+    "modules": [
+      "studio_data.py",
+      "studio_ui.py",
+      "studio_figs.py"
+    ],
     "encoding": "utf-8",
     "font": "Microsoft YaHei",
     "self_contained": true,
-    "reproducible": true
+    "reproducible": true,
+    "note": "plotly.js 与配图集中在 output/assets/；output/ 整体可拷走、离线可开"
   },
   "entry": "index.html",
-  "n_figures": 5,
-  "fidelity_check": {
-    "auc_reproduced": 0.8815,
-    "auc_reference": 0.8814,
-    "abs_diff": 0.0,
-    "n_test": 100000,
-    "event_rate": 0.13782,
-    "note": "截距由测试集事件率校准（产物未保存截距）；AUC 复现度用于证明本 demo 与主模型一致"
+  "n_figures": 7,
+  "degraded": {
+    "km_roc": true,
+    "predict_demo": true,
+    "missing_csv": [
+      "logit_coefficients",
+      "test_predictions",
+      "branch_panel",
+      "cloglog_coefficients"
+    ],
+    "reason": "样本级 CSV 受仓库根 .gitignore 的 */*/*/*.csv 约束，不入库"
   },
   "figures": [
     {
       "file": "index.html",
-      "title": "什么样的网点会先死（入口）",
+      "title": "什么样的网点会先死（决策驾驶舱）",
       "type": "entry",
-      "question": "结论、demo、体检报告能不能一站式看到？",
-      "alt_text": "串联预测 demo、KM/ROC 与体检报告的入口页",
-      "source": "本目录三件产物",
+      "question": "模型值不值得信、能怎么用、边界在哪？",
+      "alt_text": "KPI + 王牌 demo 内嵌 + 年份效应 + 产品矩阵 + 护栏 + 复现",
+      "source": "本目录各产物 + 06_train/output + 08_conclude/output",
       "n": 100000,
       "scope": "1994–2025；右删失计入风险集；左截断已剔除",
-      "tool": "html"
+      "tool": "html + plotly"
     },
     {
       "file": "predict_demo.html",
-      "title": "这个网点会先死吗（可拖动）",
+      "title": "风险打分台（王牌 demo）",
       "type": "predict_demo",
-      "question": "给定特征，模型给这个网点打多少风险分？",
-      "alt_text": "拖动特征滑块即时得到关闭风险与逐特征贡献分解",
-      "unit": "y=年度关闭概率；贡献为对数几率",
-      "source": "06_train/output/logit_coefficients.csv + test_predictions.csv",
+      "question": "给定特征，这个网点明年关闭风险多少？",
+      "alt_text": "拖滑块 → 实时风险 + 逐特征贡献分解 + 单因素敏感性 tornado",
+      "unit": "y = 年度关闭概率；贡献为线性预测器尺度",
+      "source": "06_train/output/cloglog_summary.txt（完整系数表）",
       "n": 100000,
-      "scope": "logit 主模型；截距由事件率校准",
+      "scope": "cloglog（离散时间，带 95% CI）",
       "tool": "vanilla JS",
       "reproducible": true
     },
     {
-      "file": "km_roc.html",
-      "title": "银行脆弱性越高，网点存活率越低",
-      "type": "km_roc",
-      "question": "不同银行脆弱性分层的网点存活曲线有差异吗？",
-      "alt_text": "三条 KM 阶梯曲线分离，配 ROC 曲线与随机线对照",
-      "unit": "左 x=观测年数 y=存活率；右 x=FPR y=TPR",
-      "source": "05_map/output/data/branch_panel.csv + 06_train/output/test_predictions.csv",
-      "n": 152538,
-      "scope": "右删失计入风险集；左截断已剔除",
+      "file": "shap_force.html",
+      "title": "可解释性：模型凭什么说它风险高",
+      "type": "shap_explorer",
+      "question": "全局哪些特征在驱动？单个预测里每个特征贡献多少？",
+      "alt_text": "SHAP 重要性条形（对数轴）+ 三个真实样本的逐特征分解，红推高蓝压低",
+      "unit": "x = mean |SHAP| / SHAP 值（logit 贡献）",
+      "source": "06_train/output/train_report.md + 09_interactive/output/shap_force.json",
+      "n": 9,
+      "scope": "线性模型 SHAP = coef×(x−mean)/std（精确）",
       "tool": "plotly"
     },
     {
       "file": "model_report.html",
       "title": "模型体检报告：准，但没那么准",
       "type": "model_report",
-      "question": "模型性能与残差诊断一起看，够不够用？",
-      "alt_text": "系数森林图（点+95%CI）与 AUC/C-index/Brier/Moran's I 指标条",
-      "unit": "左 x=系数；右 x=指标值",
-      "source": "06_train/output/{cloglog_coefficients.csv, metrics.json, moran_i.json}",
+      "question": "模型准不准、残差里还有没有东西？",
+      "alt_text": "年份效应（带 95% CI）+ 非年份因子森林 + 性能指标 + 残差 Moran's I",
+      "unit": "左 x = 年份 / 系数；右为指标卡",
+      "source": "06_train/output/{cloglog_summary.txt, metrics.json, moran_i.json}",
       "n": 100000,
-      "scope": "cloglog 提供 CI；logit 提供性能指标",
+      "scope": "cloglog 提供 95% CI；logit 提供性能指标",
       "tool": "plotly"
+    },
+    {
+      "file": "guardrails.html",
+      "title": "边界与止损：什么情况下不能用",
+      "type": "guardrails",
+      "question": "这个模型在什么情况下不该被使用？",
+      "alt_text": "8 条已知限制 + 5 条止损条件 + 正确/错误用法对照",
+      "source": "08_conclude/output/conclusion_report.json",
+      "n": 13,
+      "scope": "风险预测，非因果；不承诺干预阈值与 ROI",
+      "tool": "html"
+    },
+    {
+      "file": "km_roc.html",
+      "title": "生存与区分度：谁先死",
+      "type": "km_roc",
+      "question": "不同银行脆弱性分层的网点存活曲线有差异吗？",
+      "alt_text": "KM 分层曲线（hover 看 at-risk）+ ROC；降级时为上游静态图",
+      "unit": "左 x=观测年数 y=存活率；右 x=FPR y=TPR",
+      "source": "05_map/output/data/branch_panel.csv + 07_visualize 静态图",
+      "n": 152538,
+      "scope": "右删失计入风险集；左截断已剔除",
+      "tool": "plotly",
+      "degraded": true
     },
     {
       "file": "risk_evolution.html",
       "title": "网点不是老死，而是被关",
       "type": "animation",
-      "question": "关闭在时间上是怎么分布的？模型看到的风险怎么变？",
+      "question": "关闭在时间上怎么分布？模型看到的风险怎么变？",
       "alt_text": "左图年度关闭柱在 2009–2014 明显抬升，右图风险分布同步右移",
       "unit": "左 x=年份 y=关闭网点数；右 x=预测风险 y=网点数",
       "source": "05_map/output/data/branch_panel.csv + 06_train/output/test_predictions.csv",
       "n": 152538,
       "scope": "mp4（FuncAnimation）内嵌 <video>；按 acq_year 统计",
       "tool": "matplotlib + ffmpeg"
-    },
-    {
-      "file": "shap_force.html",
-      "title": "三个代表性网点：谁把它推向死亡",
-      "type": "shap_force",
-      "question": "单个预测里，每个特征贡献了多少？",
-      "alt_text": "三行水平条形图，红推高蓝压低 SHAP 值，按 |SHAP| 降序，hover 看原值",
-      "unit": "x=SHAP 值（logit 贡献）；y=特征名（按 |SHAP| 降序）",
-      "source": "06_train/output/logit_coefficients.csv + test_predictions.csv",
-      "n": 3,
-      "scope": "logit 主模型；线性模型 SHAP = coef×(x−mean)/std（精确，非近似）",
-      "tool": "plotly"
     }
   ]
 }

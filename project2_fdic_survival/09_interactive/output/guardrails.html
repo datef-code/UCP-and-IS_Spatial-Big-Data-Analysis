@@ -1,6 +1,6 @@
 <!doctype html><html lang="zh-CN" data-theme="light"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>生存与区分度 · 谁先死，模型分得开吗</title>
+<title>边界与止损 · 什么情况下不能用这个模型</title>
 <script>
 (function(){
   var KEY='p2-theme';
@@ -201,25 +201,29 @@ tbody tr:hover{background:var(--soft)}
 </head><body>
 <div class="topbar">
   <span class="brand">FDIC 网点寿命模型 <span>· 风险预测</span></span>
-  <span class="chip">生存分析</span>
+  <span class="chip">边界</span>
   <span class="spacer"></span>
   <button class="btn" id="themeBtn" onclick="__toggleTheme()">☾ 夜间</button>
   <a class="btn" href="index.html">← 返回入口</a>
 </div>
 <div class="wrap">
-  <h1>生存与区分度 · 谁先死，模型分得开吗</h1><p class="lede">Kaplan–Meier（按银行脆弱性分层）+ 年度基准风险 + 测试集区分度。</p>
+  <h1>边界与止损 · 什么情况下不能用这个模型</h1><p class="lede">8 条已知限制 + 5 条止损条件 + 正确/错误用法对照。</p>
   
-    <div class="warn"><b>当前环境没有样本级 CSV，本页为降级版。</b>
-    可 hover 的交互式 KM / ROC 需要 <code>05_map/output/data/branch_panel.csv</code> 与
-    <code>06_train/output/test_predictions.csv</code>；二者受仓库根 <code>.gitignore</code>
-    约束不入库，重跑 ⑤⑥ 后本页会<b>自动升级</b>为交互版。
-    <b>下面是上游 ⑦ 阶段真实产出的静态图，不是示意图。</b></div>
+    <p class="kicker">产品 2 的要点：标注边界</p>
+    <p>预测模型最容易被误读为因果 / ROI 工具。这一页把「什么情况下<b>不能</b>用」
+    写在明面上 —— <b>能被质疑的模型才可信</b>。</p>
+    <div class="danger"><b>一句话边界</b>本模型是<b>风险预测</b>（离散时间 hazard），<b>不是因果识别</b>；不承诺干预阈值，不承诺 ROI（成本参数缺失）。</div>
 
-    <div class="fig"><img src="assets/fig/02-km-by-group.png" alt="KM by group" loading="lazy"><div class="cap">上游 ⑦：KM 按银行脆弱性分层 —— 银行越脆弱，网点存活率越低</div></div><div class="fig"><img src="assets/fig/01-baseline-hazard-by-year.png" alt="baseline hazard" loading="lazy"><div class="cap">上游 ⑦：年度基准风险 —— 危机后整合窗口关闭率翻倍</div></div>
+    <h2>① 已知限制（8 条）</h2>
+    <div class="guard"><b>限制 1</b><span>**左截断**：面板自 1994 起，出生早于 1994（或出生年缺失）的网点按左截断处理，已剔除事件早于首次观测的 11,787 个网点；网点年龄分布因此左偏，不宜直接读「年龄效应」。</span></div><div class="guard"><b>限制 2</b><span>**死亡年口径**：SIMS_ACQUIRED_DATE 只在并购当年（及之后若干年）出现，按「该网点出现过的最晚年份」判定死亡；若某年补录口径变化会改变关闭率。</span></div><div class="guard"><b>限制 3</b><span>**CERT 归属**：银行层脆弱性按**首次观测所属银行**聚合（并购后不追溯重标），因此并购后关闭的网点仍计入原银行，银行层指标是基线属性而非时变属性。</span></div><div class="guard"><b>限制 4</b><span>**右删失 47%**：近半数网点在 2025 年仍存活，长寿命区间的 KM 曲线受样本量限制，尾部不确定。</span></div><div class="guard"><b>限制 5</b><span>**事件率低（4.13%）**：logit 训练做了保留全部事件行的分层下采样（50 万 / 20 万），AUC/C-index 的绝对值随抽样比例变化，跨口径比较需固定抽样。</span></div><div class="guard"><b>限制 6</b><span>**残差仍有空间自相关**（Moran's I 显著为正）：说明本地市场条件（县域经济、竞争密度变化）未进入模型，点估计不可解释为「网点自身属性的完整效应」。</span></div><div class="guard"><b>限制 7</b><span>**相关不等于因果**：本模型是风险预测（离散时间 hazard），不是因果识别；不承诺干预阈值、不承诺 ROI（成本参数缺失）。</span></div><div class="guard"><b>限制 8</b><span>**坐标缺失 4.19%**：无坐标网点不进入 H3 网格，空间特征（竞争强度）与 Moran's I 只覆盖有坐标子样本。</span></div>
 
-    <h2>区分度（测试集）</h2>
-    <div class="stats"><div class="stat brand"><span class="k">AUC</span><span class="v">0.8814</span><span class="h">仅同口径可比</span></div><div class="stat brand"><span class="k">C-index</span><span class="v">0.8096</span><span class="h">排序一致性</span></div><div class="stat good"><span class="k">Brier</span><span class="v">0.1609</span><span class="h">越低越好</span></div><div class="stat warn"><span class="k">事件率</span><span class="v">13.78%</span><span class="h">n=100,000</span></div></div>
-    <div class="note"><b>读图要点</b><ul><li>KM 曲线<b>尾部（> 25 年）</b>风险集已很小，置信带很宽 —— 不要在那里下结论。</li><li>AUC / C-index 依赖事件率与抽样口径，<b>跨数据集比较无效</b>。</li><li>右删失 47%：近半数网点 2025 年仍存活，长寿命区间样本有限。</li></ul></div>
+    <h2>② 止损条件（5 条 · 触发即停止）</h2>
+    <p class="muted">来自 <code>08_conclude/output/conclusion_report.json</code>。
+    任何一条被触发，就不该继续往下解读模型输出。</p>
+    <div class="guard"><b>止损条件 1</b><span>若把系数读成**因果效应**（如「把网点规模提高 1% 可降低关闭风险 X%」）→ 停止：本模型是预测性风险模型，无识别设计。</span></div><div class="guard"><b>止损条件 2</b><span>若用模型输出换算**干预阈值 / ROI**（如「关闭概率 > p 就该撤并」）→ 停止：缺成本参数（网点重置、客户迁移、CAC），量纲不成立。</span></div><div class="guard"><b>止损条件 3</b><span>若把 **C-index / AUC** 当作跨数据集可比指标 → 停止：两者依赖事件率与抽样口径，只能在同一次运行的训练 / 测试口径下比较。</span></div><div class="guard"><b>止损条件 4</b><span>若对 **2010 年之前**的年份效应做业务解读 → 停止：早年的出生/死亡日期登记不完整，左截断比例高，年份效应混入了登记口径变化。</span></div><div class="guard"><b>止损条件 5</b><span>若用 **KM 曲线尾部**（> 25 年）下结论 → 停止：风险集在该区间已很小，置信带很宽。</span></div>
+
+    <h2>③ 正确用法 vs 错误用法</h2>
+    <div class="grid g2"><div class="card"><div class="t">✅ 可以这样用</div><ul style="margin:8px 0 0;padding-left:20px"><li style="font-size:13.5px;color:var(--sub);margin:6px 0">把风险分当作<b>排序 / 分层</b>依据：先查分高的那批网点</li><li style="font-size:13.5px;color:var(--sub);margin:6px 0">把它作为<b>进一步尽调的线索</b>，配合本地市场信息一起判断</li><li style="font-size:13.5px;color:var(--sub);margin:6px 0">在同一口径内（同一次运行、同抽样）比较不同网点 / 群体的相对风险</li><li style="font-size:13.5px;color:var(--sub);margin:6px 0">结合银行层脆弱性做<b>组合层面</b>的敞口观察</li></ul></div><div class="card"><div class="t">❌ 不能这样用</div><ul style="margin:8px 0 0;padding-left:20px"><li style="font-size:13.5px;color:var(--sub);margin:6px 0">把系数读成<b>因果效应</b>：「把存款做大一倍就能降低 X% 风险」</li><li style="font-size:13.5px;color:var(--sub);margin:6px 0">换算<b>干预阈值 / ROI</b>：「风险 > p 就该撤并」（缺成本参数）</li><li style="font-size:13.5px;color:var(--sub);margin:6px 0">跨数据集、跨抽样方案比较 <b>AUC / C-index</b> 的绝对值</li><li style="font-size:13.5px;color:var(--sub);margin:6px 0">对 <b>2010 年之前</b>的年份效应做业务解读（登记口径不完整）</li><li style="font-size:13.5px;color:var(--sub);margin:6px 0">用 <b>KM 曲线尾部（> 25 年）</b> 下结论（风险集太小）</li></ul></div></div>
     
   <div class="foot">生成脚本 <code>09_interactive/09_interactive.py</code>　|
   生成时间 2026-09-10 13:43　|

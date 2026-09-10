@@ -107,18 +107,18 @@
   "09_interactive": {
     "stage": "09_interactive",
     "blocking": false,
-    "figures": 6,
-    "auc_reproduced": 0.8815,
+    "figures": 7,
+    "demo_model": "cloglog 模型（样本级 CSV 不入库，故用入库的完整系数表）",
     "artifacts": [
       "index.html",
       "predict_demo.html",
       "shap_force.html",
-      "risk_evolution.html",
-      "km_roc.html",
       "model_report.html",
+      "guardrails.html",
+      "km_roc.html",
       "manifest.json"
     ],
     "ok": true,
-    "seconds": 12.0
+    "seconds": 1.0
   }
 }
