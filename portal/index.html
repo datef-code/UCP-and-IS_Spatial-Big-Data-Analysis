@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>网点决策台 SDP · 连锁网点空间决策分析平台</title>
+<meta name="description" content="面向银行与连锁网络「开关店」决策的空间影响评估与风险预测产品矩阵：事前风险排序 + 事后影响评估 + 可自证的证据链。">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<div id="progress"><i></i></div>
+
+<header class="topbar">
+  <div class="brand" id="brand">
+    <span class="logo">SDP</span>
+    <span class="bname">
+      <b>网点决策台</b>
+      <em>Spatial Decision Platform</em>
+    </span>
+  </div>
+
+  <nav class="nav" id="nav"></nav>
+
+  <div class="tools">
+    <div class="searchbox">
+      <input id="search" type="search" placeholder="搜索：场景 / 指标 / 风险 / 问答…" autocomplete="off">
+      <div id="searchResults" class="search-results" hidden></div>
+    </div>
+    <button id="themeBtn" class="icon-btn" title="切换深色模式" aria-label="切换深色模式">◐</button>
+    <button id="tocBtn" class="icon-btn only-mobile" title="目录">☰</button>
+  </div>
+</header>
+
+<div class="layout">
+  <aside class="sidebar" id="sidebar">
+    <div class="side-title">目录</div>
+    <ul id="toc" class="toc"></ul>
+    <div class="side-foot">
+      <div class="badge-line"><span class="dot ok"></span><span id="dataState">数据加载中…</span></div>
+      <div class="mini" id="genAt"></div>
+      <div class="mini">全部数字来自仓库入库产物，缺失即降级披露</div>
+    </div>
+  </aside>
+
+  <main class="main" id="main">
+    <div id="view"></div>
+    <footer class="foot">
+      <div>
+        <b>口径与可信度</b>：本页所有数字由 <code>portal/build_data.py</code> 从仓库入库产物抽取，
+        取不到即标注「缺失」并显式降级，<b>不填充任何估算值</b>。重建命令见 <code>portal/README.md</code>。
+      </div>
+      <div class="mini" id="footMeta"></div>
+    </footer>
+  </main>
+</div>
+
+<script src="data/portal_data.js"></script>
+<script src="data/content.js"></script>
+<script src="data/tools.js"></script>
+<script src="assets/charts.js"></script>
+<script src="assets/engines.js"></script>
+<script src="assets/app.js"></script>
+</body>
+</html>

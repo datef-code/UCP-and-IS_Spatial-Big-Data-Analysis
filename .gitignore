@@ -20,7 +20,7 @@ project7_mnist_eda/
 gov-sdk/
 html/
 docs/
-.codebuddy
+#.codebuddy
 # 打包备份与临时产物
 *.zip
 projects/
