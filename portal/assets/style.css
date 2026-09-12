@@ -358,8 +358,11 @@ pre.code, .report-body pre {
   .main { padding: 0; max-width: none; }
   .card, .figure, .stat { break-inside: avoid; box-shadow: none; }
   body { background: #fff; color: #000; }
-  /* 打印报告时只保留报告正文 */
-  body.print-report .card:not(.keep-print) { display: none; }
+  /* 打印报告：只保留报告根容器 #repRoot（步骤条、页脚、其它页面元素全部隐藏） */
+  body.print-report .foot { display: none !important; }
+  body.print-report #view > *:not(#repRoot) { display: none !important; }
+  body.print-report #repLab { display: none !important; }
+  body.print-report .no-print { display: none !important; }
   details.drill { break-inside: avoid; }
   details.drill > .body { display: block !important; }
 }

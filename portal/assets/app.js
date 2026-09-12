@@ -142,11 +142,11 @@
     return `<div class="note warn"><b>当前数据层来自「数据接入」现场重估</b>（不是仓库入库产物）：
       拟合时间 ${esc(String(r.at || '').slice(0, 19).replace('T', ' '))}；
       可用模块 ${esc(on.join(' / ') || '无')}；样本 ${esc(String(((r.dataset || {}).rows) || '—'))} 行。
-      <a href="#ingest">回到数据接入</a>
+      <a href="#start">回到数据与项目</a>
       <button class="btn ghost" id="refitDrop" style="margin-left:8px">恢复仓库产物</button></div>`;
   }
 
-  /** 由真实产物推导的结论强度（不是手填的）；统一走引擎 gradeFromData，保证「工作台 / 冲击页 / 报告」三处一致 */
+  /** 由真实产物推导的结论强度（不是手填的）；统一走引擎 gradeFromData，保证「准入体检 / 报告」一致 */
   function computeGrade(p) {
     const prj = p || Store.load();
     return E.gradeFromData(D, toExo((prj.intakeAnswers || {}).exogenous));
@@ -154,10 +154,8 @@
 
   function stepStatus(id) {
     const p = Store.load();
+    if (id === 'start') return p.name ? 'done' : 'todo';
     if (id === 'intake') return (p.intakeAnswers && p.intakeAnswers.exogenous) ? 'done' : 'todo';
-    if (id === 'impact') return p.impactInput && p.impactInput.strength != null ? 'done' : 'todo';
-    if (id === 'risk') return p.riskInput && p.riskInput.year ? 'done' : 'todo';
-    if (id === 'caliber') return p.caliberInput && p.caliberInput.dataset ? 'done' : 'todo';
     if (id === 'report') return (stepStatus('intake') === 'done') ? 'ready' : 'blocked';
     return 'todo';
   }
@@ -167,21 +165,22 @@
    * ================================================================== */
   const PAGES = [];
 
-  /* 导航分组：把 10 个平铺入口收敛成 3 组，减少"看一眼不知道从哪开始"的负担 */
+  /* 旧地址别名：产品已从"六页工作台"收敛为"一个项目 → 一份报告"，
+     旧书签（#workbench/#ingest/#impact/#risk/#caliber）自动落到新页面，不留死链。 */
+  const ALIAS = { workbench: 'start', ingest: 'start', impact: 'report', risk: 'report', caliber: 'report' };
+
+  /* 导航分组：入口只留三个 —— 数据与项目 → 准入体检 → 评估报告 */
   const NAV_SECTIONS = [
-    ['分析流程', ['workbench', 'ingest', 'intake', 'impact', 'risk', 'caliber', 'report']],
+    ['评估流程', ['start', 'intake', 'report']],
     ['了解与帮助', ['help', 'product']],
     ['可信度', ['evidence', 'about']],
   ];
 
   /* 分析流程的单一事实来源：顺序、短名、一句话职责 */
   const FLOW = [
-    ['ingest', '数据接入', '任何份数 / 任何字段 → 一份数据集'],
+    ['start', '数据与项目', '导入数据 + 填写项目信息'],
     ['intake', '准入体检', '能不能做、能做到什么等级'],
-    ['impact', '冲击评估', '影响多大 / 传多远 / 第几年最深'],
-    ['risk', '风险归因', '哪些门店最可能出事、由什么决定'],
-    ['caliber', '口径实验室', '换权重 / 换尺度，结论会不会翻'],
-    ['report', '评估报告', '合成一份带边界与血缘的交付物'],
+    ['report', '评估报告', '一份带证据链、边界与血缘的交付物'],
   ];
   const FLOW_IDS = FLOW.map(s => s[0]);
 
@@ -193,49 +192,30 @@
   }
   function flowDone(p) {
     return {
-      ingest: false,                                   // 可选步骤，不阻塞流程
+      start: !!p.name,                                 // 项目信息非必填，不阻塞流程
       intake: !!(p.intakeAnswers || {}).exogenous,
-      impact: (p.impactInput || {}).strength != null,
-      risk: !!(p.riskInput || {}).year,
-      caliber: !!(p.caliberInput || {}).dataset,
     };
   }
-  /** 工作台的「建议下一步」：只把当前最该做的一步推到最前面，其余收进折叠区 */
+  /** 「建议下一步」：只把当前最该做的一步推到最前面，其余收进折叠区 */
   function nextStepCard() {
     const p = Store.load();
     const done = flowDone(p);
-    const idx = FLOW.findIndex(s => s[0] !== 'ingest' && !done[s[0]]);
+    const idx = FLOW.findIndex(s => s[0] !== 'report' && !done[s[0]]);
     const target = idx >= 0 ? FLOW[idx] : FLOW[FLOW.length - 1];
-    const allDone = idx < 0 && !!(p.intakeAnswers || {}).exogenous;
+    const allDone = idx < 0;
     return `<div class="card" style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;border-left:3px solid var(--brand)">
       <div style="flex:1 1 260px">
-        <h3 style="margin:0">${allDone ? '流程已完成' : '建议下一步'}：${esc(target[1])}</h3>
+        <h3 style="margin:0">${allDone ? '可以出报告了' : '建议下一步'}：${esc(target[1])}</h3>
         <p style="margin:4px 0 0" class="mini">${esc(target[2])}</p>
       </div>
-      <a class="btn" href="#${esc(target[0])}">${allDone ? '生成报告' : '进入'} →</a>
+      <a class="btn" href="#${esc(target[0])}">进入 →</a>
     </div>`;
   }
 
-  /* ---------- 工作台 ---------- */
+  /* ---------- 数据与项目（唯一入口：导入数据 + 填写项目信息） ---------- */
   PAGES.push({
-    id: 'workbench', name: '工作台', render() {
+    id: 'start', name: '数据与项目', render() {
       const p = Store.load();
-      const g = computeGrade(p);
-      const steps = (T.workbench || {}).steps || [];
-      const stepsHtml = steps.map(s => {
-        const st = stepStatus(s.id);
-        const badge = st === 'done' ? '<span class="tag ok">已完成</span>'
-          : st === 'ready' ? '<span class="tag brand">可生成</span>'
-            : st === 'blocked' ? '<span class="tag warn">待前置</span>'
-              : '<span class="tag">未开始</span>';
-        return `<details class="drill" ${s.id === 'intake' ? 'open' : ''}>
-          <summary>${esc(s.no)} ${esc(s.name)} ${badge}${s.required ? '<span class="tag danger">必需</span>' : ''}</summary>
-          <div class="body">
-            <p>${esc(s.why)}</p>
-            <a class="btn" href="#${esc(s.id)}">进入 →</a>
-          </div></details>`;
-      }).join('');
-
       const samples = ((T.workbench || {}).samples || []).map((s, i) =>
         `<div class="card" style="margin:0"><h4 style="margin-top:0">${esc(s.name)}</h4>
           <p>${esc(s.desc)}</p>
@@ -243,16 +223,17 @@
 
       return `
       <div class="page-head">
-        <div class="kicker">WORKBENCH</div>
-        <h1>工作台 · 空间影响评估项目</h1>
-        <p>${esc((T.workbench || {}).intro || '')}</p>
+        <div class="kicker">STEP 1 · DATA &amp; PROJECT</div>
+        <h1>数据与项目</h1>
+        <p>一个「评估项目」只需要两件事：<b>导入数据</b>、<b>填写项目信息</b>。冲击评估、风险归因、口径检验
+          全部在内部一次算完，最后统一在 <a href="#report">评估报告</a> 交付。</p>
       </div>
 
       ${refitBanner()}
       ${nextStepCard()}
 
       <div class="card">
-        <h3>项目信息</h3>
+        <h3>① 项目信息</h3>
         <div class="grid g2" style="gap:10px">
           <label class="fld"><span>项目名称</span><input id="pjName" type="text" value="${esc(p.name)}" placeholder="例：某连锁便利店 · 竞对退出影响评估"></label>
           <label class="fld"><span>客户 / 委托方</span><input id="pjClient" type="text" value="${esc(p.client)}" placeholder="例：某咨询机构（终客户：连锁便利店）"></label>
@@ -267,20 +248,11 @@
         <div class="mini" id="pjMeta" style="margin-top:8px"></div>
       </div>
 
-      <div class="card">
-        <h3>当前结论强度</h3>
-        <div style="margin-bottom:8px">${gradeBadge(g)}</div>
-        <ul style="margin:0">${(g.reasons || []).map(r => `<li>${esc(r)}</li>`).join('')}</ul>
-        <div class="note">该等级由引擎依据<b>真实产物</b>自动判定（事件前 τ 的 |t|、前趋势/post 量级比、敏感性是否已跑、是否有时序外推验证），不是手填选项。</div>
-      </div>
+      <h2 class="sect">② 导入数据</h2>
+      ${ingestSectionHTML()}
 
-      <div class="card">
-        <h3>评估流程（五步）</h3>
-        ${stepsHtml}
-      </div>
-
-      <div class="page-head" style="margin-top:22px"><div class="kicker">SAMPLES</div><h1 style="font-size:19px">一键载入示例项目</h1>
-        <p>不想从零填表？载入一个示例看完整流程。示例数据为<b>演示用构造数据</b>，参数取自本项目真实分布。</p></div>
+      <h2 class="sect">③ 没有数据？先载入一个示例</h2>
+      <p class="mini" style="margin-bottom:10px">示例是<b>演示用构造数据</b>，参数取自本项目真实分布，用于快速看完整流程；正式评估请换成你自己的数据。</p>
       <div class="grid g2">${samples}</div>`;
     },
     bind() {
@@ -299,8 +271,7 @@
       $$('[data-sample]').forEach(btn => btn.addEventListener('click', () => {
         const s = ((T.workbench || {}).samples || [])[Number(btn.dataset.sample)];
         if (!s) return;
-        const fresh = Object.assign(Store.blank(), s.project);
-        Store.p = fresh; Store.save();
+        Store.p = Object.assign(Store.blank(), s.project); Store.save();
         render('#' + current());
       }));
 
@@ -317,6 +288,8 @@
         fr.onload = () => { try { Store.p = JSON.parse(fr.result); Store.save(); render('#' + current()); } catch (e) { alert('JSON 解析失败：' + e.message); } };
         fr.readAsText(f);
       });
+
+      bindIngest();
     },
   });
 
@@ -372,8 +345,8 @@
     </div>`).join('');
   }
 
-  PAGES.push({
-    id: 'ingest', name: '数据接入', render() {
+  /* 数据接入区（并入「数据与项目」页；函数声明提升，故可被上面的页面调用） */
+  function ingestSectionHTML() {
       const cols = ING ? ING.dataset.columns : [];
       const ds = ING ? ING.dataset : null;
       const shapeTag = ING ? `<span class="tag brand">形态：${esc(ING.shape.kind)}</span>` : '';
@@ -386,10 +359,8 @@
         ING_TPLS.map((t, i) => `<option value="${i}">${esc(t.name)}</option>`)).join('');
 
       return `
-      <div class="page-head"><div class="kicker">STEP 0 · INGEST</div>
-        <h1>数据接入（泛化）</h1>
-        <p>不假设列名、不假设形态：一次可导入<b>多份文件</b>（按列名并集拼接），角色由<b>内容</b>推断且可人工覆盖，
-          识别面板 / 事件流 / 横截面 / 边表后路由到不同体检规则；确认后用<b>你自己的数据</b>现场重估系数。</p></div>
+      <p class="mini" style="margin:2px 0 10px">不假设列名、不假设形态：一次可导入<b>多份文件</b>（按列名并集拼接），角色由<b>内容</b>推断且可人工覆盖，
+        识别面板 / 事件流 / 横截面 / 边表后路由到不同体检规则；确认后用<b>你自己的数据</b>现场重估系数。</p>
 
       <div class="note">需本地服务：<code>datakit/.venv/Scripts/python.exe portal/serve.py</code>。
         上传文件在响应后立即删除；本机路径模式不复制数据。<span class="ro" id="ingState">检测服务…</span></div>
@@ -467,8 +438,10 @@
         </div>` : ''}
       </div>` : ''}
       <div id="ingPick" style="display:none"></div>`;
-    },
-    bind() {
+  }
+
+  /* 数据接入的全部交互（上传 / 本机路径 / 映射模板 / 现场重估） */
+  function bindIngest() {
       const st = document.getElementById('ingState');
       async function health() {
         try {
@@ -490,7 +463,7 @@
           if (!res.ok) { st.textContent = '失败：' + (res.error || '未知'); return; }
           ING = res; ING_FILES = files; ING_SRC = { mode: 'upload', paths: files.map(f => f.name) }; ING_REFIT = null;
           st.textContent = `已解析 ${files.length} 个文件`;
-          render('#ingest');
+          render('#start');
         });
       };
       bindFile('ingFiles');
@@ -510,7 +483,7 @@
         if (!res.ok) { st.textContent = '失败：' + (res.error || '未知'); return; }
         ING = res; ING_FILES = null; ING_SRC = { mode: 'paths', paths, limit }; ING_REFIT = null;
         st.textContent = '已解析本机路径';
-        render('#ingest');
+        render('#start');
       });
 
       const rk = document.getElementById('ingRecheck');
@@ -521,11 +494,11 @@
         if (ING_SRC.mode === 'paths') {
           const res = await ingJSON('/api/ingest_paths', body);
           if (!res.ok) { alert('失败：' + (res.error || '')); return; }
-          ING = res; render('#ingest');
+          ING = res; render('#start');
         } else {
           const res = await ingFramed('/api/ingest', ING_FILES || [], 'override=' + encodeURIComponent(JSON.stringify(override)));
           if (!res.ok) { alert('失败：' + (res.error || '')); return; }
-          ING = res; render('#ingest');
+          ING = res; render('#start');
         }
       });
 
@@ -535,7 +508,7 @@
         if (!name) { alert('请填写模板名'); return; }
         const r = await ingJSON('/api/templates', { name, mapping: ingMappingFromUI(), shape: ING.shape.kind, columns: (ING.dataset.columns || []) });
         if (!r.ok) { alert('保存失败：' + (r.error || '')); return; }
-        ING_TPLS = r.templates || []; alert('已保存模板：' + r.saved); render('#ingest');
+        ING_TPLS = r.templates || []; alert('已保存模板：' + r.saved); render('#start');
       });
       const tl = document.getElementById('ingTplLoad');
       if (tl) tl.addEventListener('click', () => {
@@ -564,18 +537,17 @@
         }
         if (!res.ok) { state.textContent = '失败：' + (res.error || '未知'); return; }
         ING_REFIT = res; state.textContent = '重估完成';
-        render('#ingest');
+        render('#start');
       });
       const ap = document.getElementById('ingApply');
       if (ap) ap.addEventListener('click', () => {
         if (!ING_REFIT || !ING_REFIT.artifact) return;
         Refit.save({ artifact: ING_REFIT.artifact, capabilities: ING_REFIT.capabilities,
           spec: ING_REFIT.spec, dataset: ING_REFIT.dataset, at: new Date().toISOString() });
-        alert('已载入为当前数据层。工作台 / 冲击评估 / 风险归因 / 评估报告 现在使用本次重估的系数。');
-        location.hash = '#workbench';
+        alert('已载入为当前数据层。评估报告现在使用本次重估的系数。');
+        location.hash = '#start';
       });
-    },
-  });
+  }
 
   /* ---------- ① 准入体检 ---------- */
   PAGES.push({
@@ -674,51 +646,9 @@
     },
   });
 
-  /* ---------- ② 冲击评估 ---------- */
-  PAGES.push({
-    id: 'impact', name: '冲击评估', render() {
-      const p = Store.load();
-      const ip = p.impactInput || {};
-      const presets = ((T.impact || {}).presets || []).map(x =>
-        `<button class="chip" data-strength="${x.strength}">${esc(x.name)}</button>`).join('');
-      return `
-      <div class="page-head"><div class="kicker">STEP 2 · IMPACT</div>
-        <h1>冲击评估</h1><p>${esc((T.impact || {}).lead || '')}</p></div>
-
-      <div class="card">
-        <h3>输入</h3>
-        <div class="fld"><span>暴露强度（treat_strength = log1p(5 km 内同业关闭事件数)）</span>
-          <div class="row"><input id="imStrength" type="range" min="0" max="5" step="0.01" value="${ip.strength == null ? 1.61 : ip.strength}">
-          <span class="ro" id="imStrengthRo">${(ip.strength == null ? 1.61 : ip.strength).toFixed(2)}</span></div>
-        </div>
-        <div class="filters" style="margin:6px 0 12px">${presets}</div>
-        <div class="mini" style="margin-bottom:12px">${esc((T.impact || {}).taxNote || '')}</div>
-        <div class="fld"><span>事件年份（用于坐标精度折扣）</span>
-          <div class="row"><input id="imYear" type="range" min="1994" max="2025" step="1" value="${ip.eventYear == null ? 2012 : ip.eventYear}">
-          <span class="ro" id="imYearRo">${ip.eventYear == null ? 2012 : ip.eventYear}</span></div></div>
-      </div>
-
-      <div id="impactResult"></div>`;
-    },
-    bind() {
-      const s = document.getElementById('imStrength'), y = document.getElementById('imYear');
-      const commit = () => {
-        const cur = Store.load().impactInput || {};
-        Store.set({ impactInput: Object.assign({}, cur, {
-          strength: Number(s.value), eventYear: Number(y.value),
-        }) });
-        document.getElementById('imStrengthRo').textContent = Number(s.value).toFixed(2);
-        document.getElementById('imYearRo').textContent = y.value;
-        paint();
-      };
-      if (s) s.addEventListener('input', commit);
-      if (y) y.addEventListener('input', commit);
-      $$('[data-strength]').forEach(b => b.addEventListener('click', () => {
-        s.value = b.dataset.strength; commit();
-      }));
-      paint();
-    },
-  });
+  /* 冲击评估 / 风险归因 / 口径检验不再各占一个页面：
+     - 输入控件收进「评估报告 → 参数实验室」；
+     - 结果由 paint() 渲染进报告里的 #impactResult / #riskResult / #caliberResult。 */
 
   /* ---------- ③ 风险归因 ---------- */
   const RISK_DEFAULT = { age: 25, deposit: 39360, neighbor: 5, lat: 38.9, lng: -86.22, bankClosedRate: 0.15, year: 2003, bkclass: 'N', fragility: 'L0_单网点' };
@@ -737,10 +667,137 @@
     };
   }
 
+  /* ---- 报告：项目 → 计算对象（供页面渲染 / Markdown / JSON 导出复用） ---- */
+  function buildProject() {
+    const p = Store.load();
+    const ia = p.intakeAnswers || {};
+    const ans = {
+      stableId: ia.stableId, idMatchRate: ia.idMatchRate, coordNullRate: ia.coordNullRate,
+      outcomeLevel: ia.outcomeLevel, years: ia.years, eventDefined: ia.eventDefined,
+      exogenous: toExo(ia.exogenous),
+    };
+    const hasIntake = Object.keys(ia).length > 0;
+    return {
+      name: p.name, client: p.client, industry: p.industry, decision: p.decision,
+      intake: hasIntake ? E.intake(ans) : null,
+      impact: (p.impactInput && p.impactInput.strength != null)
+        ? E.impact({ strength: p.impactInput.strength, eventYear: p.impactInput.eventYear }, D,
+          { exogenous: toExo(ia.exogenous) }) : null,
+      risk: (p.riskInput && p.riskInput.year)
+        ? E.risk({
+          age: p.riskInput.age, log_depsumbr: Math.log1p(p.riskInput.deposit || 0),
+          neighbor_count: p.riskInput.neighbor, lat: p.riskInput.lat, lng: p.riskInput.lng,
+          bank_closed_rate: p.riskInput.bankClosedRate, year: p.riskInput.year,
+          bkclass: p.riskInput.bkclass, fragility: p.riskInput.fragility,
+        }, D) : null,
+      grade: computeGrade(p),
+    };
+  }
+
+  /* ---- 报告：门禁横幅（准入体检 = 能不能做） ---- */
+  function reportGateHTML(p) {
+    const ia = p.intakeAnswers || {};
+    if (!Object.keys(ia).length) {
+      return `<div class="note warn"><b>还没做准入体检。</b>报告仍按默认假设生成，但「能不能做、结论上限」尚未判定 →
+        <a href="#intake">先做准入体检</a>（7 个问题，约 2 分钟）。</div>`;
+    }
+    const r = E.intake({
+      stableId: ia.stableId, idMatchRate: ia.idMatchRate, coordNullRate: ia.coordNullRate,
+      outcomeLevel: ia.outcomeLevel, years: ia.years, eventDefined: ia.eventDefined, exogenous: toExo(ia.exogenous),
+    });
+    const cls = r.hardFail ? 'danger' : (r.go ? '' : 'warn');
+    const verdict = r.hardFail ? '一票否决 · 不建议进入建模' : (r.go ? '通过 · 可进入建模' : '有条件通过 · 需先补数');
+    return `<div class="note ${cls}"><b>准入体检：${verdict}</b>（评分 ${(r.scorePct * 100).toFixed(0)}/100）；
+      结论强度上限 <b>${esc(r.ceiling || '—')}</b> 级；预计工期 ${r.weeks[0]}–${r.weeks[1]} 周。
+      ${r.blockers.length ? `<div style="margin-top:4px">⛔ ${r.blockers.map(esc).join('；')}</div>` : ''}
+      <a href="#intake" style="margin-left:6px">查看 / 修改 →</a></div>`;
+  }
+
+  /* ---- 报告：抬头（一句话结论 + KPI 条 + 结论强度与用法） ---- */
+  function reportHeadlineHTML(proj) {
+    const p = Store.load();
+    const g = proj.grade || computeGrade(p);
+    const im = (proj.impact && proj.impact.ok) ? proj.impact : null;
+    const tw = (D.impact || {}).twfe || {};
+    const rt = (D.risk || {}).test || {};
+    const t0 = im ? (im.byTau.find(z => z.tau === 0) || {}).effect : null;
+    const t4 = im ? (im.byTau.find(z => z.tau === 4) || {}).effect : null;
+    const lede = im
+      ? `暴露强度 <b>${nf(im.strengthInput, 2)}</b> 处，效应 <b>${fmtPct(im.marginal.atInput.effect)}</b>
+         （95% 近似区间 [${fmtPct(im.marginal.atInput.ci.lo)}, ${fmtPct(im.marginal.atInput.ci.hi)}]）；
+         事件后逐年加深（τ=0 ${fmtPct(t0)} → τ=4 ${fmtPct(t4)}）。`
+      : '冲击评估不可用（数据层未取到 TWFE 系数，已降级）。';
+    return `
+      <div class="page-head" style="margin-top:14px">
+        <h1 style="font-size:26px">${esc(p.name || '空间影响评估报告')}</h1>
+        <p>${lede}</p>
+        <div style="margin-top:6px">
+          <span class="tag brand">${esc(p.client || '未填写客户 / 委托方')}</span>
+          <span class="tag">${esc(p.industry || '未填写行业')}</span>
+          <span class="tag">数据层生成于 ${esc(String((D.meta || {}).generated_at || '').slice(0, 10) || '—')}</span>
+        </div>
+      </div>
+      <div class="grid g4">
+        ${stat('结论强度', g.level + ' 级 · ' + g.name, esc(g.use), g.level === 'A' ? 'pos' : (g.level === 'C' ? 'neg' : ''))}
+        ${stat('TWFE 平均效应', fmtPct(tw.post), 'p = ' + fmtNum(tw.post_p, 6))}
+        ${stat('均值处边际效应', im && im.marginal.atMean ? fmtPct(im.marginal.atMean.effect) : null, '观测支撑域 [' + (im ? nf(im.supportLowerBound, 2) : '—') + ', 5+]')}
+        ${stat('风险模型 AUC', rt.auc == null ? null : nf(rt.auc, 4), '随机划分（非时序外推）')}
+      </div>
+      <div class="card" style="margin-top:12px">
+        <h3>${esc(g.level)} 级 · ${esc(g.name)} —— 可以怎么用</h3>
+        <div class="note"><b>可用于：</b>${esc(g.use)}。</div>
+        <ul>${(g.reasons || []).map(r => `<li>${esc(r)}</li>`).join('')}</ul>
+      </div>`;
+  }
+
+  /* ---- 报告：限制 / 血缘 / 指纹 ---- */
+  function reportLimitsHTML(proj) {
+    const im = (proj.impact && proj.impact.ok) ? proj.impact : null;
+    const rk = (proj.risk && proj.risk.ok) ? proj.risk : null;
+    const cal = E.caliber((Store.load().caliberInput || {}), D);
+    const all = []
+      .concat(im ? im.caveats : [])
+      .concat(rk ? rk.caveats : [])
+      .concat((cal && cal.ok) ? cal.caveats : []);
+    const src = []
+      .concat(im ? im.source : [])
+      .concat(rk ? rk.source : [])
+      .concat((cal && cal.ok) ? cal.source : []);
+    const g = proj.grade || computeGrade(Store.load());
+    const md = E.buildReport(proj, D);
+    const fpMatch = md.match(/报告指纹\*\*：`([0-9a-f]+)`/);
+    const fp = fpMatch ? fpMatch[1] : '—';
+    return `
+      <div class="grid g2">
+        <div class="card" style="margin:0">
+          <h3>报告指纹</h3>
+          <div class="stat" style="border:none;padding:0;background:transparent"><div class="v" style="font-size:20px">${esc(fp)}</div>
+            <div class="k">同一组输入 + 同一版数据层 → 同一指纹</div></div>
+          <p class="mini" style="margin-top:8px">用来核对「手上这份 PDF 对应哪一版数据 / 哪一组输入」。</p>
+        </div>
+        <div class="card" style="margin:0">
+          <h3>禁令（命中即停止）</h3>
+          <ul>
+            <li>不得用于 <b>ROI 测算或干预阈值</b>决策（成本参数缺失，量纲不成立）</li>
+            <li>不得对外作 <b>因果表述</b>（结论强度为 ${esc(g.level)} 级）</li>
+            <li>不得以单一聚合值替代 <b>本地 / 邻域分解</b>（两者方向相反）</li>
+          </ul>
+        </div>
+      </div>
+      ${caveatBlock(all, '使用边界汇总（全部模块强制披露）')}
+      ${sourceBlock(Array.from(new Set(src)))}
+      <p class="mini">完整可交付正文（含逐年明细表、空间分解与血缘）见本页「下载 .md」；由
+        <code>engines.js · buildReport</code> 生成，与页面数字同源。</p>`;
+  }
+
+  /* ---------- ⑤ 评估报告（主交付物：自动生成的静态叙事 + 折叠「参数实验室」） ---------- */
   PAGES.push({
-    id: 'risk', name: '风险归因', render() {
+    id: 'report', name: '评估报告', render() {
       const p = Store.load();
-      const v = Object.assign({}, RISK_DEFAULT, p.riskInput || {});
+      const sel = p.caliberInput || {};
+      const sets = ((D.teaching || {}).datasets) || [];
+      const ip = p.impactInput || {};
+      const rv = Object.assign({}, RISK_DEFAULT, p.riskInput || {});
       const R = riskRanges();
       const mc = ((D.risk || {}).model_card || {});
       const [y0, y1] = R.year;
@@ -749,60 +806,131 @@
       const bks = ['N', 'NM', 'SA', 'SB', 'SM'];   // SL 已退化，剔除
       const frags = ['L0_单网点', 'L1_多网点高集中', 'L2_多网点地理分散'];
       const depMax = R.deposit[1];
+      const curStrength = ip.strength == null ? 1.61 : ip.strength;
 
-      const flds = ((T.risk || {}).fields || []).map(f => {
+      const riskFlds = ((T.risk || {}).fields || []).map(f => {
         let ctrl = '';
         if (f.input === 'rate') {
-          ctrl = `<div class="row"><input type="range" id="rk_${f.key}" min="0" max="1" step="0.01" value="${v[f.key] != null ? v[f.key] : 0.15}">
-            <span class="ro" id="ro_${f.key}">${(v[f.key] != null ? v[f.key] : 0.15).toFixed(2)}</span></div>`;
+          ctrl = `<div class="row"><input type="range" id="rk_${f.key}" min="0" max="1" step="0.01" value="${rv[f.key] != null ? rv[f.key] : 0.15}">
+            <span class="ro" id="ro_${f.key}">${(rv[f.key] != null ? rv[f.key] : 0.15).toFixed(2)}</span></div>`;
         } else if (f.input === 'logAmount') {
-          const t = depMax > 0 ? Math.log1p(v[f.key] || 1) / Math.log1p(depMax) : 0;
+          const t = depMax > 0 ? Math.log1p(rv[f.key] || 1) / Math.log1p(depMax) : 0;
           ctrl = `<div class="row"><input type="range" id="rk_${f.key}" min="0" max="100" step="0.5" value="${(t * 100).toFixed(1)}">
-            <span class="ro" id="ro_${f.key}">${fmtUSD(v[f.key])}</span></div>`;
+            <span class="ro" id="ro_${f.key}">${fmtUSD(rv[f.key])}</span></div>`;
         } else if (f.input === 'int') {
-          ctrl = `<div class="row"><input type="range" id="rk_${f.key}" min="${R[f.key] ? R[f.key][0] : 0}" max="${R[f.key] ? R[f.key][1] : 100}" step="1" value="${v[f.key] != null ? v[f.key] : 0}">
-            <span class="ro" id="ro_${f.key}">${v[f.key] != null ? v[f.key] : 0}</span></div>`;
+          ctrl = `<div class="row"><input type="range" id="rk_${f.key}" min="${R[f.key] ? R[f.key][0] : 0}" max="${R[f.key] ? R[f.key][1] : 100}" step="1" value="${rv[f.key] != null ? rv[f.key] : 0}">
+            <span class="ro" id="ro_${f.key}">${rv[f.key] != null ? rv[f.key] : 0}</span></div>`;
         } else {
           const rr = R[f.key] || [-100, 100];
-          ctrl = `<div class="row"><input type="range" id="rk_${f.key}" min="${rr[0]}" max="${rr[1]}" step="0.01" value="${v[f.key] != null ? v[f.key] : rr[0]}">
-            <span class="ro" id="ro_${f.key}">${(v[f.key] != null ? v[f.key] : rr[0]).toFixed(2)}</span></div>`;
+          ctrl = `<div class="row"><input type="range" id="rk_${f.key}" min="${rr[0]}" max="${rr[1]}" step="0.01" value="${rv[f.key] != null ? rv[f.key] : rr[0]}">
+            <span class="ro" id="ro_${f.key}">${(rv[f.key] != null ? rv[f.key] : rr[0]).toFixed(2)}</span></div>`;
         }
-        return `<div class="qitem"><div class="ql">${esc(f.label)} <span class="mini">${esc(f.unit || '')}</span></div>${ctrl}
-          <div class="qh">${esc(f.hint || '')}</div></div>`;
+        return `<label class="fld" style="margin-bottom:8px"><span>${esc(f.label)} <span class="mini">${esc(f.unit || '')}</span></span>${ctrl}</label>`;
       }).join('');
 
+      const strengthPresets = ((T.impact || {}).presets || []).map(x =>
+        `<button class="chip ${Math.abs(curStrength - x.strength) < 1e-9 ? 'on' : ''}" data-strength="${x.strength}">${esc(x.name)}</button>`).join('');
+
       return `
-      <div class="page-head"><div class="kicker">STEP 3 · RISK</div>
-        <h1>风险归因台</h1><p>${esc((T.risk || {}).lead || '')}</p></div>
+      <div id="repRoot">
+      <div class="page-head"><div class="kicker">STEP 3 · DELIVERABLE</div>
+        <h1>评估报告</h1>
+        <p>这一页就是交付物本身：结论、证据、机制、风险、口径与限制一次生成，每个数字都可追溯到仓库内的产物文件。
+          需要逐项调参时展开最下方的「参数实验室」——不改参数也能出报告，默认值取自项目真实分布。</p></div>
 
-      <div class="note warn"><b>本模块不是预测器。</b>${esc((T.risk || {}).notice || '')}</div>
+      <div id="repGate"></div>
+      <div id="repHeadline"></div>
 
-      <div class="card">
-        <h3>适用域守门</h3>
-        <p>模型可用的年份区间为 <b>${y0}–${y1}</b>。
-          ${(mc.degenerate_levels || {}).year ? `${(mc.degenerate_levels || {}).year.join('、')} 年的系数已退化，本工具会拒绝打分。` : ''}
-          ${(mc.degenerate_levels || {}).bkclass ? `银行类别 ${(mc.degenerate_levels || {}).bkclass.join('、')} 同样被剔除。` : ''}</p>
-        <p class="mini">${esc(mc.degenerate_why || '')}</p>
-      </div>
+      <div class="page-head" style="margin-top:22px"><div class="kicker">EVIDENCE</div>
+        <h2 style="margin:0;font-size:19px">① 证据与机制</h2>
+        <p>事件研究给出效应大小与时间形状；强度曲线给出效应的观测支撑域；空间分解说明这是「再配置」还是「区域净增」。</p></div>
+      <div id="impactResult"></div>
 
-      <div class="card">
-        <h3>门店参数</h3>
-        ${flds}
-        <div class="grid g4" style="margin-top:10px">
-          <label class="fld"><span>年份</span><select id="rk_year">${yearOpts.map(y => `<option value="${y}" ${String(y) === String(v.year) ? 'selected' : ''}>${y}</option>`).join('')}</select></label>
-          <label class="fld"><span>银行类别</span><select id="rk_bkclass">${bks.map(b => `<option value="${b}" ${b === v.bkclass ? 'selected' : ''}>${b}</option>`).join('')}</select></label>
-          <label class="fld"><span>银行脆弱性分层</span><select id="rk_fragility">${frags.map(b => `<option value="${b}" ${b === v.fragility ? 'selected' : ''}>${b}</option>`).join('')}</select></label>
+      <div class="page-head" style="margin-top:22px"><div class="kicker">RISK</div>
+        <h2 style="margin:0;font-size:19px">② 风险归因</h2>
+        <p>哪些门店更可能出事、主要由什么决定。它是历史归因，不是预测。</p></div>
+      <div id="riskResult"></div>
+
+      <div class="page-head" style="margin-top:22px"><div class="kicker">CALIBER</div>
+        <h2 style="margin:0;font-size:19px">③ 口径检验</h2>
+        <p>「邻居」是人为定义；换口径结论会不会翻，决定结论稳不稳。</p></div>
+      <div id="caliberResult"></div>
+
+      <div class="page-head" style="margin-top:22px"><div class="kicker">LIMITS &amp; PROVENANCE</div>
+        <h2 style="margin:0;font-size:19px">④ 限制、血缘与可复现</h2></div>
+      <div id="repLimits"></div>
+
+      <details class="drill" id="repLab">
+        <summary>参数实验室（可选：改了参数，上面的报告会重算）</summary>
+        <div class="body">
+          <div class="note">这里是「内部程序」的输入。改完即重算；不改也能出报告 —— 默认值取自项目真实分布。</div>
+
+          <h4>冲击评估</h4>
+          <label class="fld"><span>暴露强度（treat_strength = 环加权和，不是 log1p 计数）</span>
+            <div class="row"><input id="imStrength" type="range" min="0" max="5" step="0.01" value="${curStrength}">
+            <span class="ro" id="imStrengthRo">${curStrength.toFixed(2)}</span></div></label>
+          <div class="filters" style="margin:6px 0">${strengthPresets}</div>
+          <label class="fld"><span>事件年份（用于坐标精度折扣）</span>
+            <div class="row"><input id="imYear" type="range" min="1994" max="2025" step="1" value="${ip.eventYear == null ? 2012 : ip.eventYear}">
+            <span class="ro" id="imYearRo">${ip.eventYear == null ? 2012 : ip.eventYear}</span></div></label>
+          <div class="mini">${esc((T.impact || {}).taxNote || '')}</div>
+
+          <h4>风险归因</h4>
+          <div class="note warn"><b>本模块不是预测器。</b>${esc((T.risk || {}).notice || '')}
+            模型可用年份 <b>${y0}–${y1}</b>${(mc.degenerate_levels || {}).bkclass ? `，类别 ${(mc.degenerate_levels || {}).bkclass.join('、')} 已剔除` : ''}。</div>
+          ${riskFlds}
+          <div class="grid g3" style="margin-top:6px">
+            <label class="fld"><span>年份</span><select id="rk_year">${yearOpts.map(y => `<option value="${y}" ${String(y) === String(rv.year) ? 'selected' : ''}>${y}</option>`).join('')}</select></label>
+            <label class="fld"><span>银行类别</span><select id="rk_bkclass">${bks.map(b => `<option value="${b}" ${b === rv.bkclass ? 'selected' : ''}>${b}</option>`).join('')}</select></label>
+            <label class="fld"><span>银行脆弱性分层</span><select id="rk_fragility">${frags.map(b => `<option value="${b}" ${b === rv.fragility ? 'selected' : ''}>${b}</option>`).join('')}</select></label>
+          </div>
+          <div class="filters" style="margin-top:8px">
+            ${((T.risk || {}).presets || []).map((x, i) => `<button class="chip" data-riskpreset="${i}">${esc(x.name)}</button>`).join('')}
+          </div>
+
+          <h4>口径检验</h4>
+          <div class="seg" id="calSeg">
+            ${sets.map(s => `<button data-ds="${esc(s.dataset)}" class="${(sel.dataset || 'fdic') === s.dataset ? 'on' : ''}">${esc(s.dataset)}</button>`).join('')}
+          </div>
+          <div class="mini" style="margin-top:6px">四个数据集来自 project6 的 L0→L3 实测阶梯；切换即可看到同一方法在不同数据分布下的差异。</div>
         </div>
-        <div class="filters" style="margin-top:10px">
-          ${((T.risk || {}).presets || []).map((x, i) => `<button class="chip" data-riskpreset="${i}">${esc(x.name)}</button>`).join('')}
-        </div>
-      </div>
+      </details>
 
-      <div id="riskResult"></div>`;
+      <div class="card no-print" style="margin-top:12px">
+        <div class="row" style="gap:8px;flex-wrap:wrap">
+          <button class="btn" data-print>打印 / 导出 PDF</button>
+          <button class="btn ghost" data-copy="rpMd">复制 Markdown</button>
+          <button class="btn ghost" data-download="rpMd" data-filename="space-impact-report.md">下载 .md</button>
+          <button class="btn ghost" id="rpJson">下载结果 JSON</button>
+        </div>
+        <div class="mini" style="margin-top:8px">打印时自动隐藏导航、参数实验室与本节按钮，只输出报告正文。</div>
+      </div>
+      <pre id="rpMd" data-raw="" style="display:none"></pre>
+      </div>`;
     },
     bind() {
-      function commit() {
+      // 报告自动生成，不需要"生成 / 刷新"按钮
+      paint();
+
+      // 参数实验室：用 change（不是 input）触发，避免连续重算把页面拖住
+      const s = document.getElementById('imStrength'), y = document.getElementById('imYear');
+      const commitImpact = () => {
+        const cur = Store.load().impactInput || {};
+        Store.set({ impactInput: Object.assign({}, cur, { strength: Number(s.value), eventYear: Number(y.value) }) });
+        const ro1 = document.getElementById('imStrengthRo'), ro2 = document.getElementById('imYearRo');
+        if (ro1) ro1.textContent = Number(s.value).toFixed(2);
+        if (ro2) ro2.textContent = y.value;
+        paint();
+      };
+      if (s) s.addEventListener('change', commitImpact);
+      if (y) y.addEventListener('change', commitImpact);
+      $$('[data-strength]').forEach(b => b.addEventListener('click', () => {
+        if (!s) return; s.value = b.dataset.strength; commitImpact();
+      }));
+
+      function commitRisk() {
         const g = id => document.getElementById(id);
+        if (!g('rk_age')) return;
         const inp = {
           age: Number(g('rk_age').value),
           deposit: expm1(Number(g('rk_deposit').value) / 100 * Math.log1p(riskRanges().deposit[1])),
@@ -814,56 +942,31 @@
           bkclass: g('rk_bkclass').value,
           fragility: g('rk_fragility').value,
         };
-        document.getElementById('ro_age').textContent = inp.age;
-        document.getElementById('ro_neighbor').textContent = inp.neighbor;
-        document.getElementById('ro_lat').textContent = inp.lat.toFixed(2);
-        document.getElementById('ro_lng').textContent = inp.lng.toFixed(2);
-        document.getElementById('ro_bankClosedRate').textContent = inp.bankClosedRate.toFixed(2);
-        document.getElementById('ro_deposit').textContent = fmtUSD(inp.deposit);
+        ['age', 'neighbor'].forEach(k => { const el = g('ro_' + k); if (el) el.textContent = inp[k]; });
+        const rl = g('ro_lat'), rg = g('ro_lng'), rb = g('ro_bankClosedRate'), rd = g('ro_deposit');
+        if (rl) rl.textContent = inp.lat.toFixed(2);
+        if (rg) rg.textContent = inp.lng.toFixed(2);
+        if (rb) rb.textContent = inp.bankClosedRate.toFixed(2);
+        if (rd) rd.textContent = fmtUSD(inp.deposit);
         Store.set({ riskInput: inp });
         paint();
       }
       ['rk_age', 'rk_deposit', 'rk_neighbor', 'rk_lat', 'rk_lng', 'rk_bankClosedRate'].forEach(id => {
         const el = document.getElementById(id);
-        if (el) el.addEventListener('input', commit);
+        if (el) el.addEventListener('change', commitRisk);
       });
       ['rk_year', 'rk_bkclass', 'rk_fragility'].forEach(id => {
         const el = document.getElementById(id);
-        if (el) el.addEventListener('change', commit);
+        if (el) el.addEventListener('change', commitRisk);
       });
       $$('[data-riskpreset]').forEach(b => b.addEventListener('click', () => {
         const pr = ((T.risk || {}).presets || [])[Number(b.dataset.riskpreset)];
         if (!pr) return;
         Store.set({ riskInput: Object.assign({}, pr.v) });
         render('#' + current());
+        const lab = document.getElementById('repLab'); if (lab) lab.open = true;
       }));
-      paint();
-    },
-  });
 
-  /* ---------- ④ 口径实验室 ---------- */
-  PAGES.push({
-    id: 'caliber', name: '口径实验室', render() {
-      const p = Store.load();
-      const sel = p.caliberInput || {};
-      const sets = ((D.teaching || {}).datasets) || [];
-      return `
-      <div class="page-head"><div class="kicker">STEP 4 · CALIBER</div>
-        <h1>口径实验室</h1>
-        <p>「邻居」是人为定义，不是客观事实。同一份数据换一种空间权重或格值尺度，Moran's I 会变——
-          这决定了你的结论有多依赖口径选择。</p></div>
-
-      <div class="card">
-        <h3>选择数据集</h3>
-        <div class="seg" id="calSeg">
-          ${sets.map(s => `<button data-ds="${esc(s.dataset)}" class="${(sel.dataset || 'fdic') === s.dataset ? 'on' : ''}">${esc(s.dataset)}</button>`).join('')}
-        </div>
-        <div class="mini" style="margin-top:8px">四个数据集来自 project6 的 L0→L3 实测阶梯；切换即可看到同一方法在不同数据分布下的差异。</div>
-      </div>
-
-      <div id="caliberResult"></div>`;
-    },
-    bind() {
       const seg = document.getElementById('calSeg');
       if (seg) seg.addEventListener('click', ev => {
         const b = ev.target.closest('button'); if (!b) return;
@@ -871,74 +974,18 @@
         Store.set({ caliberInput: { dataset: b.dataset.ds } });
         paint();
       });
-      paint();
-    },
-  });
 
-  /* ---------- ⑤ 评估报告 ---------- */
-  PAGES.push({
-    id: 'report', name: '评估报告', render() {
-      const p = Store.load();
-      return `
-      <div class="page-head"><div class="kicker">STEP 5 · DELIVERABLE</div>
-        <h1>评估报告</h1>
-        <p>把前四步的结果合成一份可交付物：含结论强度、使用边界、禁止用途与完整数据血缘。
-          报告中的每个数字都可追溯到仓库内的产物文件。</p></div>
-
-      <div class="card">
-        <div class="row" style="gap:8px;flex-wrap:wrap">
-          <button class="btn" id="rpBuild">生成 / 刷新报告</button>
-          <button class="btn ghost" data-copy="rpMd">复制 Markdown</button>
-          <button class="btn ghost" data-download="rpMd" data-filename="space-impact-report.md">下载 .md</button>
-          <button class="btn ghost" id="rpJson">下载结果 JSON</button>
-          <button class="btn ghost" data-print>打印 / 导出 PDF</button>
-        </div>
-        <div class="mini" style="margin-top:8px">打印时会自动隐藏导航与表单，只输出报告正文。</div>
-      </div>
-      <div class="card keep-print" id="rpOut"><div class="note">点击「生成 / 刷新报告」。</div></div>
-      <pre id="rpMd" data-raw="" style="display:none"></pre>`;
-    },
-    bind() {
-      const build = () => {
-        const p = Store.load();
-        const ia = p.intakeAnswers || {};
-        const ans = {
-          stableId: ia.stableId, idMatchRate: ia.idMatchRate, coordNullRate: ia.coordNullRate,
-          outcomeLevel: ia.outcomeLevel, years: ia.years, eventDefined: ia.eventDefined,
-          exogenous: toExo(ia.exogenous),
-        };
-        const hasIntake = Object.keys(ia).length > 0;
-        const proj = {
-          name: p.name, client: p.client, industry: p.industry, decision: p.decision,
-          intake: hasIntake ? E.intake(ans) : null,
-          impact: (p.impactInput && p.impactInput.strength != null)
-            ? E.impact({ strength: p.impactInput.strength, eventYear: p.impactInput.eventYear }, D) : null,
-          risk: (p.riskInput && p.riskInput.year)
-            ? E.risk({
-              age: p.riskInput.age, log_depsumbr: Math.log1p(p.riskInput.deposit || 0),
-              neighbor_count: p.riskInput.neighbor, lat: p.riskInput.lat, lng: p.riskInput.lng,
-              bank_closed_rate: p.riskInput.bankClosedRate, year: p.riskInput.year,
-              bkclass: p.riskInput.bkclass, fragility: p.riskInput.fragility,
-            }, D) : null,
-          grade: computeGrade(p),
-        };
-        const md = E.buildReport(proj, D);
-        const pre = document.getElementById('rpMd');
-        pre.textContent = md; pre.dataset.raw = md;
-        document.getElementById('rpOut').innerHTML = `<div class="report-body">${md2html(md)}</div>`;
-        return proj;
-      };
-      const b = document.getElementById('rpBuild');
-      if (b) b.addEventListener('click', build);
       const j = document.getElementById('rpJson');
       if (j) j.addEventListener('click', () => {
-        const proj = build();
-        const payload = { project: Store.load(), computed: proj, dataLayer: { generated_at: (D.meta || {}).generated_at, provenance: ((D.meta || {}).provenance || []).slice(0, 0) } };
+        const proj = buildProject();
+        const payload = { project: Store.load(), computed: proj, dataLayer: { generated_at: (D.meta || {}).generated_at } };
         download('space-impact-result.json', JSON.stringify(payload, null, 2), 'application/json');
       });
-      build();
     },
   });
+
+  /* 口径实验室 / 评估报告旧页已并入上面的新「评估报告」页：
+     口径选择在报告底部的「参数实验室」，报告正文由 paint() 渲染进 #caliberResult 等容器。 */
 
   /* ---------- 帮助 ---------- */
   PAGES.push({
@@ -952,61 +999,54 @@
       return `
       <div class="page-head"><div class="kicker">HELP</div>
         <h1>使用帮助</h1>
-        <p>三条使用路径、六步流程、常见问题与术语。看完这一页就能上手；
+        <p>三条使用路径、三步流程、常见问题与术语。看完这一页就能上手；
            更细的边界与方法说明见「产品说明」与「证据与边界」。</p></div>
 
       ${hasRefit ? `<div class="note warn">你当前正在使用<b>现场重估的数据层</b>（不是仓库自带产物）。
-        <a href="#ingest">回到数据接入</a> 或在工作台点「恢复仓库产物」。</div>` : ''}
+        <a href="#start">回到数据与项目</a> 并点「恢复仓库产物」。</div>` : ''}
 
       <h2 class="sect">选择你的路径</h2>
       <div class="grid g3">
         ${pathCard('A', '只想看看它能做什么', [
-        '打开 <a href="#workbench">工作台</a>，在页面底部点一个<b>示例项目</b>',
-        '按 <a href="#impact">② 冲击评估</a> → <a href="#risk">③ 风险归因</a> → <a href="#report">⑤ 评估报告</a> 顺序点一遍',
-        '每个结果都自带「使用边界」，注意看那几行'],
-        '<a class="btn ghost" href="#workbench">去工作台</a>')}
+        '打开 <a href="#start">数据与项目</a>，在页面底部点一个<b>示例项目</b>',
+        '点「建议下一步」依次走：<a href="#intake">准入体检</a> → <a href="#report">评估报告</a>',
+        '报告里的每一节都自带「使用边界」，注意看那几行'],
+        '<a class="btn ghost" href="#start">去数据与项目</a>')}
         ${pathCard('B', '要用我自己的数据', [
         '先启动本地服务：<b>双击 <code>portal/start.bat</code></b>（自动找 Python、挑空闲端口、开浏览器；Git Bash 用 <code>bash portal/start.sh</code>）',
-        '打开 <a href="#ingest">数据接入</a>：上传多份文件，或填本机路径 / 通配符',
+        '在 <a href="#start">数据与项目</a> →「导入数据」：上传多份文件，或填本机路径 / 通配符',
         '核对<b>字段映射</b>（自动推断可改；不对就改，可存成模板）',
         '点「<b>开始重估</b>」→ 看能力判定 → 点「<b>载入为当前数据层</b>」',
-        '之后四个模块就用你自己的系数工作了'],
-        '<a class="btn" href="#ingest">去数据接入</a>')}
+        '之后的报告就按你自己的系数生成'],
+        '<a class="btn" href="#start">去数据与项目</a>')}
         ${pathCard('C', '要交付给别人', [
-        '走完 <a href="#ingest">数据接入</a> → <a href="#intake">准入体检</a> → 各分析模块',
-        '到 <a href="#report">⑤ 评估报告</a>，含结论强度、禁止用途、完整数据血缘',
+        '走完 <a href="#start">数据与项目</a> → <a href="#intake">准入体检</a> → <a href="#report">评估报告</a>',
+        '报告含结论强度、禁止用途、完整数据血缘与报告指纹',
         '「打印 / 导出 PDF」只输出报告正文；也可下载 Markdown 与结果 JSON'],
         '<a class="btn ghost" href="#report">去评估报告</a>')}
       </div>
 
-      <h2 class="sect">六步流程：每步做什么、产出什么</h2>
+      <h2 class="sect">三步流程：每步做什么、产出什么</h2>
       <div class="card"><table>
         <thead><tr><th style="width:34px">#</th><th style="width:110px">步骤</th><th>你要做的</th><th>你会得到</th></tr></thead>
         <tbody>
-          <tr><td>0</td><td><a href="#ingest">数据接入</a></td>
-            <td>导入数据（多文件 / 本机路径），确认字段映射</td>
+          <tr><td>1</td><td><a href="#start">数据与项目</a></td>
+            <td>导入数据（多文件 / 本机路径）+ 填项目信息，确认字段映射</td>
             <td>数据集概览、形态判定、体检结果；可选：用你的数据重估系数</td></tr>
-          <tr><td>1</td><td><a href="#intake">准入体检</a></td>
+          <tr><td>2</td><td><a href="#intake">准入体检</a></td>
             <td>回答 7 个问题（或上传 CSV 自动预填）</td>
             <td>能不能做（Go/No-Go）、结论强度上限 A/B/C、预计工期、补数清单</td></tr>
-          <tr><td>2</td><td><a href="#impact">冲击评估</a></td>
-            <td>拖两个滑杆：暴露强度、事件年份</td>
-            <td>逐年影响曲线 + 置信带、本地/邻域分解、均值处边际效应</td></tr>
-          <tr><td>3</td><td><a href="#risk">风险归因</a></td>
-            <td>填一个门店的参数（或点预设样本）</td>
-            <td>逐因子贡献瀑布、全特征 vs 剔除泄漏的保守版本</td></tr>
-          <tr><td>4</td><td><a href="#caliber">口径实验室</a></td>
-            <td>切换数据集，看不同口径下的差异</td>
-            <td>同一方法在不同数据/口径下的 Moran's I 对比</td></tr>
-          <tr><td>5</td><td><a href="#report">评估报告</a></td>
-            <td>点「生成 / 刷新报告」</td>
-            <td>可打印 PDF / 可复制 Markdown / 结果 JSON（带指纹与血缘）</td></tr>
-        </tbody></table></div>
+          <tr><td>3</td><td><a href="#report">评估报告</a></td>
+            <td>直接看（自动生成）；想调参数展开报告底部的「参数实验室」</td>
+            <td>结论 / 证据 / 机制 / 风险 / 口径 / 限制六章 + 可打印 PDF + .md + 结果 JSON</td></tr>
+        </tbody></table>
+        <p class="mini" style="margin-top:8px">冲击评估、风险归因、口径检验不再各占一个页面：它们由内部管道一次算完，直接进报告；
+          需要逐项调参时用报告底部的「参数实验室」。</p></div>
 
       <h2 class="sect">常见问题</h2>
       <div class="card">
         <details class="drill" open><summary>我的数据是很多份文件、字段还不一样，能直接用吗？</summary>
-          <div class="body"><p>可以。在<a href="#ingest">数据接入</a>里：</p>
+          <div class="body"><p>可以。在<a href="#start">数据与项目</a> 的「导入数据」里：</p>
           <ul>
             <li><b>多份文件</b>：多选或拖入整个文件夹，系统按<b>列名并集</b>纵向拼接成一个数据集，缺列留空并登记。</li>
             <li><b>字段不同</b>：角色不靠列名认，而是靠<b>取值分布</b>（年份看值域、坐标看值域且成对、实体看"在期上是否重复"）。
@@ -1027,7 +1067,7 @@
         <details class="drill"><summary>「结论强度 A / B / C」是什么意思？</summary>
           <div class="body"><p>它是<b>自动判定</b>的，不是手选：由外生性、事件前趋势的 |t|、前趋势与 post 的量级比、
             敏感性是否跑过、是否有时序外推验证共同决定。等级越低，可对外主张的力度越弱。
-            工作台、冲击页、报告三处用的是同一个评级器，不会互相矛盾。</p></div></details>
+            准入体检页与报告用的是同一个评级器，不会互相矛盾。</p></div></details>
         <details class="drill"><summary>「支撑域」和「止损条件」是什么？</summary>
           <div class="body"><p><b>支撑域</b>：模型只在观测到的暴露强度范围内可信。低于下界的取值是<b>外推</b>，
             页面上会用颜色标出，并单独报「均值处的边际效应」。<br>
@@ -1040,12 +1080,12 @@
           <div class="body"><ul>
             <li><b>报告</b>：<a href="#report">评估报告</a> →「打印 / 导出 PDF」只输出正文，或「下载 .md」。</li>
             <li><b>数据</b>：同页「下载结果 JSON」，含所用系数与数据层指纹，可交给下游程序。</li>
-            <li><b>项目存档</b>：<a href="#workbench">工作台</a> →「导出项目 JSON」，下次「导入项目 JSON」即可恢复全部输入。</li>
+            <li><b>项目存档</b>：<a href="#start">数据与项目</a> →「导出项目 JSON」，下次「导入项目 JSON」即可恢复全部输入。</li>
           </ul>
           <p>注意：「导出项目 JSON」和「下载结果 JSON」不是一回事，前者才能被导入回来。</p></div></details>
         <details class="drill"><summary>怎么恢复成仓库自带的数据？</summary>
-          <div class="body"><p>如果载入过现场重估的数据层，<a href="#workbench">工作台</a>顶部会出现横幅，
-            点<b>「恢复仓库产物」</b>即可；也可以回到<a href="#ingest">数据接入</a>重新解析。</p></div></details>
+          <div class="body"><p>如果载入过现场重估的数据层，<a href="#start">数据与项目</a> 顶部会出现横幅，
+            点<b>「恢复仓库产物」</b>即可；也可以在同一页的「导入数据」里重新解析。</p></div></details>
         <details class="drill"><summary>顶部的搜索框能搜什么？</summary>
           <div class="body"><p>搜的是全部页面正文（含帮助页）。试试「准入」「暴露强度」「泄漏」「结论强度」「再配置」。</p></div></details>
       </div>
@@ -1383,13 +1423,28 @@ node --test portal/tests/engines.test.js            # 引擎单测（数量以�
       return;
     }
 
-    if (cur === 'impact') {
+    /* ---- 评估报告页：报告正文 + Markdown + 三块结果容器（自动生成） ---- */
+    if (cur === 'report') {
+      const proj = buildProject();
+      const md = E.buildReport(proj, D);
+      const pre = document.getElementById('rpMd');
+      if (pre) { pre.textContent = md; pre.dataset.raw = md; }
+      const gEl = document.getElementById('repGate');
+      if (gEl) gEl.innerHTML = reportGateHTML(p);
+      const hEl = document.getElementById('repHeadline');
+      if (hEl) hEl.innerHTML = reportHeadlineHTML(proj);
+      const lEl = document.getElementById('repLimits');
+      if (lEl) lEl.innerHTML = reportLimitsHTML(proj);
+    }
+
+    if (cur === 'report') {
       const box = document.getElementById('impactResult');
-      if (!box) return;
+      if (box) {
       const ip = p.impactInput || {};
       const r = E.impact({ strength: ip.strength, eventYear: ip.eventYear }, D,
         { exogenous: toExo((p.intakeAnswers || {}).exogenous) });
-      if (!r.ok) { box.innerHTML = `<div class="card"><div class="note danger">${esc(r.reason)}</div></div>`; return; }
+      if (!r.ok) { box.innerHTML = `<div class="card"><div class="note danger">${esc(r.reason)}</div></div>`; }
+      else {
 
       // τ 曲线
       const tauPts = r.byTau.map(x => ({ x: x.tau, y: x.effect, lo: x.lo, hi: x.hi }));
@@ -1495,17 +1550,18 @@ node --test portal/tests/engines.test.js            # 引擎单测（数量以�
         </div>
         ${caveatBlock(r.caveats, '使用边界（本模块强制披露）')}
         ${sourceBlock(r.source)}`;
-      return;
+      }
+      }
     }
 
-    if (cur === 'risk') {
+    if (cur === 'report') {
       const box = document.getElementById('riskResult');
-      if (!box) return;
+      if (box) {
       const ri = p.riskInput;
       if (!ri || !ri.year) {
-        box.innerHTML = `<div class="card"><div class="note">调整上面的参数后，这里会实时给出归因结果。</div></div>`;
-        return;
+        box.innerHTML = `<div class="card"><div class="note">在下方「参数实验室 · 风险归因」里填一个门店参数（或点预设样本），这里会给出归因结果。</div></div>`;
       }
+      else {
       const r = E.risk({
         age: ri.age, log_depsumbr: Math.log1p(ri.deposit || 0), neighbor_count: ri.neighbor,
         lat: ri.lat, lng: ri.lng, bank_closed_rate: ri.bankClosedRate,
@@ -1515,8 +1571,8 @@ node --test portal/tests/engines.test.js            # 引擎单测（数量以�
         box.innerHTML = `<div class="card"><h3>拒绝打分</h3>
           <div class="note danger"><b>${esc(r.reason)}</b>${r.detail ? `<br>${esc(r.detail)}` : ''}</div>
           <div class="note">这是护栏而不是缺陷：给出一个看似合理的错数，比拒绝服务危险得多。</div></div>`;
-        return;
       }
+      else {
       const items = r.contributions.filter(x => x.kind === 'numeric' || x.kind === 'categorical')
         .map(x => ({ label: x.name, value: x.value }))
         .sort((a, b) => Math.abs(b.value) - Math.abs(a.value));
@@ -1578,15 +1634,18 @@ node --test portal/tests/engines.test.js            # 引擎单测（数量以�
         </div>
         ${caveatBlock(r.caveats, '使用边界（本模块强制披露）')}
         ${sourceBlock(r.source)}`;
-      return;
+      }
+      }
+      }
     }
 
-    if (cur === 'caliber') {
+    if (cur === 'report') {
       const box = document.getElementById('caliberResult');
-      if (!box) return;
+      if (box) {
       const sel = p.caliberInput || {};
       const r = E.caliber(sel, D);
-      if (!r.ok) { box.innerHTML = `<div class="card"><div class="note danger">${esc(r.reason)}</div></div>`; return; }
+      if (!r.ok) { box.innerHTML = `<div class="card"><div class="note danger">${esc(r.reason)}</div></div>`; }
+      else {
       const moranSvg = CH.vbar({
         items: r.all.filter(x => x.moran != null).map(x => ({
           label: x.dataset, value: x.moran, sub: nf(x.cells, 0) + ' 格',
@@ -1622,7 +1681,8 @@ node --test portal/tests/engines.test.js            # 引擎单测（数量以�
         </div>
         ${caveatBlock(r.caveats, '使用边界（含商用许可）')}
         ${sourceBlock(r.source)}`;
-      return;
+      }
+      }
     }
   }
 
@@ -1632,11 +1692,13 @@ node --test portal/tests/engines.test.js            # 引擎单测（数量以�
   const navEl = document.getElementById('nav');
   const tocEl = document.getElementById('toc');
   const viewEl = document.getElementById('view');
-  let _cur = 'workbench';
+  let _cur = 'start';
   const current = () => _cur;
 
   function render(hash) {
-    const id = String(hash || '').replace(/^#/, '') || 'workbench';
+    const raw = String(hash || '').replace(/^#/, '') || 'start';
+    const id = ALIAS[raw] || raw;                       // 旧地址 → 新页面
+    if (ALIAS[raw]) location.replace('#' + id);          // 同步地址栏，避免留下死链
     const page = PAGES.find(p => p.id === id) || PAGES[0];
     _cur = page.id;
     viewEl.innerHTML = (FLOW_IDS.indexOf(page.id) >= 0 ? stepBar(page.id) : '') + page.render();
@@ -1683,39 +1745,8 @@ node --test portal/tests/engines.test.js            # 引擎单测（数量以�
     }
   }
 
-  /* ---- 极简 Markdown → HTML（报告渲染用，先转义再处理） ---- */
-  function md2html(md) {
-    const lines = String(md).split('\n');
-    let out = '', inTbl = false, inList = false, tRowIdx = 0;
-    const closeAll = () => { if (inTbl) { out += '</tbody></table>'; inTbl = false; } if (inList) { out += '</ul>'; inList = false; } };
-    for (let raw of lines) {
-      const line = raw.replace(/\r$/, '');
-      if (/^\s*\|/.test(line)) {
-        const cells = line.trim().replace(/^\||\|$/g, '').split('|').map(c => c.trim());
-        if (/^[\s|:\-]+$/.test(line) && cells.every(c => /^:?-{2,}:?$/.test(c) || c === '')) continue;
-        if (!inTbl) { closeAll(); out += '<table><tbody>'; inTbl = true; tRowIdx = 0; }
-        const head = tRowIdx === 0 ? 'th' : 'td';
-        out += '<tr>' + cells.map(c => `<${head}>${inline(c)}</${head}>`).join('') + '</tr>';
-        tRowIdx++;
-        continue;
-      }
-      closeAll();
-      const h = line.match(/^(#{1,4})\s+(.*)$/);
-      if (h) { out += `<h${h[1].length}>${inline(h[2])}</h${h[1].length}>`; continue; }
-      if (/^\s*[-*]\s+/.test(line)) { if (!inList) { out += '<ul>'; inList = true; } out += `<li>${inline(line.replace(/^\s*[-*]\s+/, ''))}</li>`; continue; }
-      if (/^\s*>\s?/.test(line)) { out += `<div class="note">${inline(line.replace(/^\s*>\s?/, ''))}</div>`; continue; }
-      if (line.trim() === '') continue;
-      out += `<p>${inline(line)}</p>`;
-    }
-    closeAll();
-    return out;
-  }
-  function inline(s) {
-    return esc(s)
-      .replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>')
-      .replace(/`([^`]+)`/g, '<code>$1</code>')
-      .replace(/\*([^*]+)\*/g, '<i>$1</i>');
-  }
+  /* 注：评估报告已改为「直接渲染 HTML」的静态叙事，不再需要 Markdown→HTML 转换；
+     Markdown 仍作为可下载的交付格式，由 engines.js · buildReport 生成。 */
 
   /* ---- 上传体检 ---- */
   function bindUpload() {
@@ -1841,7 +1872,7 @@ node --test portal/tests/engines.test.js            # 引擎单测（数量以�
   });
   const tocBtn = document.getElementById('tocBtn');
   tocBtn.addEventListener('click', () => document.getElementById('sidebar').classList.toggle('show'));
-  document.getElementById('brand').addEventListener('click', () => { location.hash = '#workbench'; });
+  document.getElementById('brand').addEventListener('click', () => { location.hash = '#start'; });
 
   const bar = document.querySelector('#progress i');
   window.addEventListener('scroll', () => {

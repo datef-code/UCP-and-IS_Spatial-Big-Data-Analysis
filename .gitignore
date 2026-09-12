@@ -36,6 +36,9 @@ projects
 # 不追踪的文件
 IloveYibo动画.ipynb
 
+# 品牌素材暂存目录里的临时签名链接（COS 预签名 URL 含 q-ak 密钥，禁止入库）
+_brand_staging/url*.txt
+
 # 产物
 */*/*/*.csv
 */*/*/*.parquet
