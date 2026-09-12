@@ -25,7 +25,7 @@
 加深（事件研究 τ=0 约 -4.4pp → τ=4 约 -10.1pp；TWFE post ≈ -0.053，
 p<0.001）；post × strength 交互为正（+0.014），提示处理强度更高的网点
 负效应更缓和。聚合 H3 cell 层 SLX 的 W_treat 为正 → 存款在更广地理尺度
-再配置。事件前 τ=-2 轻微为负 + 区域共同冲击未排除 → 关联证据而非严格因果。**
+再配置。事件前 τ=-2 显著为负 + 区域共同冲击未排除 → 关联证据而非严格因果。**
 
 ## 1. 模型总览
 
@@ -56,7 +56,7 @@ p<0.001）；post × strength 交互为正（+0.014），提示处理强度更�
 
 **双向固定效应（UNINUMBR + YEAR）+ 聚类稳健 SE（cluster on UNINUMBR）。
 y = dep_chg_rate（clip ±50pp）；回归量 post × strength。**
-**Caution：平行趋势近似通过但 τ=-2 轻微为负，共同区域冲击未完全排除
+**Caution：平行趋势近似通过但 τ=-2 显著为负，共同区域冲击未完全排除
 → 该 β 为关联证据，见 2.3。**
 
 | 参数 | 系数 | SE | t | p |
@@ -86,7 +86,7 @@ n_obs = 955025, n_entities = 73324, n_times = 31, R²_within = 0.003054.
 ### 2.3 事件研究的平行趋势诊断
 
 **pre-trend max|t| = 4.12：τ=-3 不显著
-（-0.0019, p=0.33），τ=-2 轻微为负（-0.0069，约为 post 效应的 1/8）——
+（-0.0019, p=0.33），τ=-2 显著为负（-0.0069，约为 post 效应的 1/8）——
 平行趋势近似成立，无正向预期。残余的 τ=-2 负值若反映"被辐射区域处于衰退
 走廊"，则共同区域冲击会贡献部分 post 下行；因此把点估计读作**关联证据**，
 严格因果留给 IV/匹配 / Callaway–Sant'Anna 类设计。**
@@ -121,14 +121,12 @@ I = 0.07033, E[I] = -3.333e-05, z_sim = 23.3, p_sim = 0.001
 ### 3.4 效应分解（direct / spillover / total）
 - sar_approx: direct = +0.006739, spillover = -0.0009799, total = +0.005759, spillover_share = -0.1701324779388358
 - sem: direct = +0.007131, spillover = +0, total = +0.007131, spillover_share = n/a
-**SAR ρ 异常说明**：spreg.GM_Lag 在 30k×30k KNN 稀疏网络上数值不稳（ρ 常不在 (0,1)）。本研究的 SAR 给出 ρ = -0.1701（pseudo-R² = 0.01084），其一阶近似的溢出项（spill≈-0.002）也不稳健；**本研究仅把 SLX 的 W_treat = 0.0073 (p=0.009) 作为邻 cell 溢出的代理（正）**。
+**SAR ρ 异常说明**：spreg.GM_Lag 在 30k×30k KNN 稀疏网络上数值不稳（ρ 常不在 (0,1)）。本研究的 SAR 给出 ρ = -0.1701（pseudo-R² = 0.01084），其一阶近似的溢出项（spill≈-0.002）也不稳健；**本研究仅把 SLX 的 W_treat = 0.008986（p=0.00126）作为邻 cell 溢出的代理（正）**。注意：`estimate.json` 里另有 OLS 的 `treat_strength`（≈0.00731，混合值），两者口径不同、不可互换 —— 早期版本曾把该 OLS 系数误写成本行的 SLX W_treat，现已改为从 `spatial_fits.slx.params` 直接取值。
 
 ## 4. 距离带敏感性
 5 km 内关闭事件 cell 数；标准环与合并环两套口径见 06_visualize.py
 ['0_1', '1_3', '3_5', '5_10'] 主回归 = treat_strength（中等环）
-坐标精度分年代：2023–2025 EXACT 85.98%；1994–2022 US_Rooftop 16.37% / US_Streets 31.57% /
-US_Zipcode 4.97%（编码词表 2023 年切换，不可跨年代直接比较）
-→ <1 km 距离环存在系统性失真；主表用 5 km 中等环。旧口径「EXACT 占 45.45%」已作废。
+{'top_precision_pct_by_era': {'2023-2025_EXACT': 0.8598, '1994-2022_US_Rooftop': 0.1637, '1994-2022_US_Streets': 0.3157, '1994-2022_US_Zipcode': 0.0497}, 'explanation': 'SIMS_PROJECTION 取值词表 2023 年切换，不可跨年代直接比较；早年多为插值坐标 → <1 km 距离环存在系统性失真；主表用 5 km 中等环。旧口径『EXACT 占 45.45%』已作废（混淆编码切换与样本退出时间）', 'supersedes': 'EXACT_pct_45.45'}
 衰减曲线：![attenuation](../07_visualize/output/figures/fig_attenuation_curve.png)
 
 事件强度 τ 衰减：![tau](../07_visualize/output/figures/fig_event_attenuation.png)
@@ -146,7 +144,7 @@ Kepler.gl 自包含 HTML（关闭事件 + H3 R8 cells）：../07_visualize/outpu
 - ![Event attenuation](../07_visualize/output/figures/fig_event_attenuation.png)
 
 ## 6. 已知限制 & 必须声明
-① **事件前 τ=-2 轻微为负（-0.0069, p<0.001；τ=-3 不显著）**：平行趋势
+① **事件前 τ=-2 显著为负（-0.0069, p<0.001；τ=-3 不显著）**：平行趋势
    近似通过但非理想。若被辐射区域本身处于衰退走廊，共同区域冲击会贡献
    部分 post 下行 → TWFE/事件研究点估计为**关联证据**而非严格因果。
    修正方向：事件前窗口、IV/匹配、或 Callaway–Sant'Anna 类 staggered 估计。

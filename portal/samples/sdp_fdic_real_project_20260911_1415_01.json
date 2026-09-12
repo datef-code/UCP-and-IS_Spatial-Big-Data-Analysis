@@ -1,0 +1,35 @@
+{
+  "id": "sdp-fdic-real-20260911",
+  "name": "FDIC 网点数据 · 同业退出影响评估（真实数据可导入样例）",
+  "client": "内部演示（数据来自 data_raw/fdic，32 个 SOD CSV）",
+  "industry": "银行 / 网点网络规划",
+  "decision": "5 km 内同业网点退出后，我方网点的存款规模影响多大、传多远、第几年最深",
+  "intakeAnswers": {
+    "stableId": true,
+    "idMatchRate": 0.95,
+    "coordNullRate": 0.0521,
+    "outcomeLevel": "store",
+    "years": 32,
+    "eventDefined": true,
+    "exogenous": "yes"
+  },
+  "impactInput": {
+    "strength": 1.61,
+    "eventYear": 2012
+  },
+  "riskInput": {
+    "age": 25,
+    "deposit": 39360,
+    "neighbor": 5,
+    "lat": 38.9,
+    "lng": -86.22,
+    "bankClosedRate": 0.15,
+    "year": 2003,
+    "bkclass": "N",
+    "fragility": "L0_单网点"
+  },
+  "caliberInput": {
+    "dataset": "fdic"
+  },
+  "updatedAt": "2026-09-11T14:15:00.000Z"
+}

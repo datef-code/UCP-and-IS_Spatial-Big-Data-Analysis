@@ -1,0 +1,279 @@
+{
+  "generated_at": "2026-09-11T13:52:51+08:00",
+  "generator": "portal/audit/rerun_p5_full_chain.py",
+  "protocol": {
+    "goal": "从 data_raw 原始 SOD CSV 起步，独立重建到 06 估计，并与上游入库产物逐阶段对拍",
+    "sandbox": "portal/audit/_sandbox/project1_fdic_spatial",
+    "upstream_root": "project1_fdic_spatial",
+    "source_root_used": "data_raw/fdic",
+    "raw_files": 32,
+    "stages": [
+      "01_discover",
+      "02_profile",
+      "03_clean",
+      "04_validate",
+      "05_map",
+      "06_estimate"
+    ],
+    "elapsed_minutes": 4.12,
+    "verify_only": false,
+    "isolation": "复制阶段入口 .py + datakit.yaml + config/ 到沙箱；__file__ 推导的输出目录因此指向沙箱，上游文件不被写入",
+    "count_rows_disabled": true
+  },
+  "stages_ran": [
+    {
+      "stage": "01_discover",
+      "file_count": 32,
+      "group_count": 1,
+      "total_size_human": "1.58 GB",
+      "columns_consistent": true,
+      "ok": true,
+      "blocking": true,
+      "seconds": 2.5
+    },
+    {
+      "stage": "02_profile",
+      "rows": 2822977,
+      "columns": 13,
+      "year_range": "1994-2025",
+      "level_distribution": {
+        "important": 5,
+        "required": 4,
+        "optional": 3,
+        "ignore": 1
+      },
+      "outliers": 2383023,
+      "violation_kinds": 3,
+      "ok": true,
+      "blocking": true,
+      "seconds": 27.0
+    },
+    {
+      "stage": "03_clean",
+      "rows_before": 2822977,
+      "rows_after": 2702716,
+      "removed_rate": "4.26%",
+      "steps": 8,
+      "ok": true,
+      "blocking": true,
+      "seconds": 10.3
+    },
+    {
+      "stage": "04_validate",
+      "checks": 8,
+      "passed": 8,
+      "blocking": false,
+      "recommendations": 1,
+      "control_coverage": 0.983386,
+      "ok": true,
+      "seconds": 8.6
+    },
+    {
+      "stage": "05_map",
+      "panel_rows": 2702716,
+      "branches": 152538,
+      "h3_cells": 70109,
+      "closure_events": 27018,
+      "event_type_dist": {
+        "alive_censored": 76097,
+        "attrition_missing": 46828,
+        "closed_ma": 29613
+      },
+      "ok": true,
+      "blocking": true,
+      "seconds": 26.4
+    },
+    {
+      "stage": "06_estimate",
+      "blocking": false,
+      "twfe_post": -0.05259387020663611,
+      "twfe_post_x_strength": 0.013823280070386227,
+      "twfe_p": 0.0,
+      "event_study_tau0": -0.04379581109171783,
+      "resid_moran_p": 0.001,
+      "ok": true,
+      "seconds": 172.5
+    }
+  ],
+  "checks": [
+    {
+      "label": "01_discover · catalog.yaml",
+      "ok": true,
+      "upstream": "project1_fdic_spatial/01_discover/output/catalog.yaml",
+      "sandbox": "portal/audit/_sandbox/project1_fdic_spatial/01_discover/output/catalog.yaml",
+      "note": "文件存在性对拍（内容含时间戳，不做字节比较）"
+    },
+    {
+      "label": "01_discover · catalog.md",
+      "ok": true,
+      "upstream": "project1_fdic_spatial/01_discover/output/catalog.md",
+      "sandbox": "portal/audit/_sandbox/project1_fdic_spatial/01_discover/output/catalog.md",
+      "note": "文件存在性对拍（内容含时间戳，不做字节比较）"
+    },
+    {
+      "label": "02_profile · raw_long.parquet",
+      "upstream": "project1_fdic_spatial/02_profile/output/raw_long.parquet",
+      "sandbox": "portal/audit/_sandbox/project1_fdic_spatial/02_profile/output/raw_long.parquet",
+      "ok": true,
+      "rows": {
+        "upstream": 2822977,
+        "sandbox": 2822977
+      },
+      "cols": {
+        "upstream": 13,
+        "sandbox": 13
+      },
+      "max_abs_diff": {}
+    },
+    {
+      "label": "03_clean · cleaned.parquet",
+      "upstream": "project1_fdic_spatial/03_clean/output/cleaned.parquet",
+      "sandbox": "portal/audit/_sandbox/project1_fdic_spatial/03_clean/output/cleaned.parquet",
+      "ok": true,
+      "rows": {
+        "upstream": 2702716,
+        "sandbox": 2702716
+      },
+      "cols": {
+        "upstream": 13,
+        "sandbox": 13
+      },
+      "max_abs_diff": {}
+    },
+    {
+      "label": "05_map · branch_dim.csv",
+      "upstream": "project1_fdic_spatial/05_map/output/data/branch_dim.csv",
+      "sandbox": "portal/audit/_sandbox/project1_fdic_spatial/05_map/output/data/branch_dim.csv",
+      "ok": true,
+      "rows": {
+        "upstream": 152538,
+        "sandbox": 152538
+      },
+      "cols": {
+        "upstream": 18,
+        "sandbox": 18
+      },
+      "max_abs_diff": {
+        "lat": 0.0,
+        "lng": 0.0
+      }
+    },
+    {
+      "label": "05_map · closure_exposure.csv",
+      "upstream": "project1_fdic_spatial/05_map/output/data/closure_exposure.csv",
+      "sandbox": "portal/audit/_sandbox/project1_fdic_spatial/05_map/output/data/closure_exposure.csv",
+      "ok": true,
+      "rows": {
+        "upstream": 27018,
+        "sandbox": 27018
+      },
+      "cols": {
+        "upstream": 15,
+        "sandbox": 15
+      },
+      "max_abs_diff": {
+        "lat": 0.0,
+        "lng": 0.0
+      }
+    },
+    {
+      "label": "05_map · branch_year_panel.parquet",
+      "upstream": "project1_fdic_spatial/05_map/output/data/branch_year_panel.parquet",
+      "sandbox": "portal/audit/_sandbox/project1_fdic_spatial/05_map/output/data/branch_year_panel.parquet",
+      "ok": true,
+      "rows": {
+        "upstream": 2702716,
+        "sandbox": 2702716
+      },
+      "cols": {
+        "upstream": 9,
+        "sandbox": 9
+      },
+      "max_abs_diff": {}
+    },
+    {
+      "label": "06_estimate · did_panel.parquet",
+      "upstream": "project1_fdic_spatial/06_estimate/output/data/did_panel.parquet",
+      "sandbox": "portal/audit/_sandbox/project1_fdic_spatial/06_estimate/output/data/did_panel.parquet",
+      "ok": true,
+      "rows": {
+        "upstream": 1814985,
+        "sandbox": 1814985
+      },
+      "cols": {
+        "upstream": 12,
+        "sandbox": 12
+      },
+      "max_abs_diff": {
+        "strength_t0": 0.0,
+        "dep_chg_rate": 0.0,
+        "post": 0.0,
+        "treated": 0.0
+      }
+    },
+    {
+      "label": "06_estimate · estimate.json 头条系数",
+      "ok": true,
+      "compare": {
+        "twfe.post": {
+          "upstream": -0.05259387020663611,
+          "sandbox": -0.05259387020663611
+        },
+        "twfe.post_x_strength": {
+          "upstream": 0.013823280070386227,
+          "sandbox": 0.013823280070386227
+        },
+        "twfe.se.post": {
+          "upstream": 0.0016430377821804692,
+          "sandbox": 0.0016430377821804692
+        },
+        "twfe.se.post_x_strength": {
+          "upstream": 0.00171193124972214,
+          "sandbox": 0.00171193124972214
+        },
+        "twfe.n_obs": {
+          "upstream": 955025,
+          "sandbox": 955025
+        },
+        "event_study.tau0": {
+          "upstream": -0.04379581109171783,
+          "sandbox": -0.04379581109171783
+        },
+        "event_study.tau-2": {
+          "upstream": -0.006881715596122951,
+          "sandbox": -0.006881715596122951
+        },
+        "event_study.tau4": {
+          "upstream": -0.10067675352931099,
+          "sandbox": -0.10067675352931099
+        }
+      },
+      "max_abs_diff": {
+        "twfe.post": 0.0,
+        "twfe.post_x_strength": 0.0,
+        "twfe.se.post": 0.0,
+        "twfe.se.post_x_strength": 0.0,
+        "twfe.n_obs": 0.0,
+        "event_study.tau0": 0.0,
+        "event_study.tau-2": 0.0,
+        "event_study.tau4": 0.0
+      }
+    }
+  ],
+  "verdict": "通过",
+  "run_error": null,
+  "headline": {
+    "did_panel_rows": {
+      "upstream": 1814985,
+      "sandbox": 1814985
+    },
+    "strength_t0_max_abs_diff": 0.0,
+    "dep_chg_rate_max_abs_diff": 0.0,
+    "estimate_ok": true,
+    "estimate_twfe_post_x_strength": {
+      "upstream": 0.013823280070386227,
+      "sandbox": 0.013823280070386227
+    }
+  },
+  "conclusion": "从 32 个原始 CSV 起步重建：通过。 did_panel 行数 上游1814985 / 沙箱1814985，strength_t0 最大绝对差 0.0；头条系数对拍 一致。"
+}

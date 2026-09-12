@@ -1,7 +1,7 @@
 /* ============================================================================
  * 网点决策台 v2 · 应用层
- * 结构：工作台（评估项目）→ ① 准入体检 → ② 冲击评估 → ③ 风险归因
- *       → ④ 口径实验室 → ⑤ 评估报告   ／   说明页：产品 · 证据与边界 · 关于
+ * 结构：工作台（评估项目）→ 数据接入 → ① 准入体检 → ② 冲击评估 → ③ 风险归因
+ *       → ④ 口径实验室 → ⑤ 评估报告   ／   说明页：帮助 · 产品 · 证据与边界 · 关于
  * 事实数字一律取 window.SDP_DATA（由 build_data.py 从入库产物生成），
  * 取不到即显式降级，绝不填充估算值。
  * ========================================================================== */
@@ -25,6 +25,8 @@
   const fmtNum = (v, d) => (v == null || !isFinite(v)) ? '—' : Number(v).toFixed(d == null ? 4 : d);
   const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
   const expm1 = (x) => Math.expm1(x);
+  /** 外生性三态归一：兼容布尔（旧项目 JSON / 历史示例）与问卷字符串（yes/no/unsure） */
+  const toExo = (v) => (v === true || v === 'yes') ? true : ((v === false || v === 'no') ? false : null);
   function fmtUSD(v) {
     if (v == null || !isFinite(v)) return '—';
     if (v >= 1e8) return (v / 1e8).toFixed(2) + ' 亿美元';
@@ -38,6 +40,28 @@
         <div class="s">产物未入库，不填充估算值</div></div>`;
     }
     return `<div class="stat ${kind || ''}"><div class="v">${v}</div><div class="k">${esc(k)}</div>${sub ? `<div class="s">${sub}</div>` : ''}</div>`;
+  }
+  /** 把内容层里的指标指针（如 risk.test.auc / #teaching.cells_total）解析成真实值；取不到返回 null → 显式降级 */
+  const METRIC_DERIVED = {
+    '#impact.tau0': () => { const t = (((D.impact || {}).event_study || {}).table || []).find(z => z.tau === 0); return t ? t.effect : null; },
+    '#teaching.dataset_count': () => (((D.teaching || {}).datasets || []).length || null),
+    '#teaching.cells_total': () => { const a = ((D.teaching || {}).datasets || []); return a.length ? a.reduce((s, x) => s + (x.cells || 0), 0) : null; },
+    '#teaching.moran_range': () => {
+      const v = ((D.teaching || {}).datasets || []).map(x => x.moran_i).filter(isFinite);
+      if (!v.length) return null;
+      const mn = Math.min.apply(null, v);
+      return mn > 0 ? Math.max.apply(null, v) / mn : null;
+    },
+  };
+  function fmtMetric(v) {
+    if (v == null || (typeof v === 'number' && !isFinite(v))) return null;
+    if (typeof v === 'number') return Math.abs(v) >= 100 ? nf(v, 0) : nf(v, 4);
+    return String(v);
+  }
+  function resolveMetric(path) {
+    if (Object.prototype.hasOwnProperty.call(METRIC_DERIVED, path)) return fmtMetric(METRIC_DERIVED[path]());
+    const v = String(path).split('.').reduce((o, k) => (o == null ? null : o[k]), D);
+    return fmtMetric(v);
   }
   function figure(cap, sub, svg, legend) {
     return `<div class="figure"><div class="cap">${esc(cap)}</div><div class="sub">${esc(sub || '')}</div>${svg}
@@ -90,25 +114,42 @@
     set(obj) { Object.assign(this.load(), obj); this.save(); },
   };
 
-  /** 由真实产物推导的结论强度（不是手填的） */
+  /* ================================================================== *
+   * 1.5 重估数据层：用「客户自己的数据」现场拟合出的产物，覆盖仓库产物
+   *     —— 这是产品不再被锁死在 FDIC/三个项目系数上的关键开关。
+   * ================================================================== */
+  const REFIT_KEY = 'sdp.refit.v1';
+  const Refit = {
+    raw() { try { return JSON.parse(localStorage.getItem(REFIT_KEY) || 'null'); } catch (e) { return null; } },
+    save(o) { try { localStorage.setItem(REFIT_KEY, JSON.stringify(o)); } catch (e) { /* 隐私模式静默 */ } applyRefit(); },
+    clear() { try { localStorage.removeItem(REFIT_KEY); } catch (e) { /* ignore */ } location.reload(); },
+  };
+  function applyRefit() {
+    const r = Refit.raw();
+    if (!r || !r.artifact) return;
+    // 整体替换而非合并：否则仓库产物里的项目专属字段（如 strength_disclosure 的 t=8.07、
+    // 环敏感性、坐标精度词表）会串到客户数据的结果里 —— 那正是"锁死特定数据"的一种表现。
+    if (r.artifact.impact) D.impact = Object.assign({}, r.artifact.impact);
+    if (r.artifact.risk) D.risk = Object.assign({}, r.artifact.risk);
+    D._refit_active = true;
+  }
+  applyRefit();
+  function refitBanner() {
+    const r = Refit.raw();
+    if (!r) return '';
+    const caps = r.capabilities || {};
+    const on = Object.keys(caps).filter(k => caps[k]);
+    return `<div class="note warn"><b>当前数据层来自「数据接入」现场重估</b>（不是仓库入库产物）：
+      拟合时间 ${esc(String(r.at || '').slice(0, 19).replace('T', ' '))}；
+      可用模块 ${esc(on.join(' / ') || '无')}；样本 ${esc(String(((r.dataset || {}).rows) || '—'))} 行。
+      <a href="#ingest">回到数据接入</a>
+      <button class="btn ghost" id="refitDrop" style="margin-left:8px">恢复仓库产物</button></div>`;
+  }
+
+  /** 由真实产物推导的结论强度（不是手填的）；统一走引擎 gradeFromData，保证「工作台 / 冲击页 / 报告」三处一致 */
   function computeGrade(p) {
     const prj = p || Store.load();
-    const ia = prj.intakeAnswers || {};
-    const exo = ia.exogenous === 'yes' ? true : (ia.exogenous === 'no' ? false : null);
-    const esT = ((((D.impact || {}).event_study) || {}).pre_trend_max_abs_t);
-    const tbl = (((D.impact || {}).event_study) || {}).table || [];
-    const t0 = (tbl.find(r => r.tau === 0) || {}).effect;
-    const tm2 = (tbl.find(r => r.tau === -2) || {}).effect;
-    const ratio = (t0 && tm2 != null) ? Math.abs(tm2 / t0) : null;
-    const audit = (D.impact || {}).sensitivity_audit || {};
-    return E.gradeEvidence({
-      exogenous: exo,
-      preTrendMaxAbsT: esT,
-      preTrendRatio: ratio,
-      ringsVerified: !!audit.rings_alternative_has_coefficients,
-      bootstrapCI: !!audit.bootstrap_ci,
-      outOfTime: false,
-    });
+    return E.gradeFromData(D, toExo((prj.intakeAnswers || {}).exogenous));
   }
 
   function stepStatus(id) {
@@ -125,6 +166,55 @@
    * 2. 页面
    * ================================================================== */
   const PAGES = [];
+
+  /* 导航分组：把 10 个平铺入口收敛成 3 组，减少"看一眼不知道从哪开始"的负担 */
+  const NAV_SECTIONS = [
+    ['分析流程', ['workbench', 'ingest', 'intake', 'impact', 'risk', 'caliber', 'report']],
+    ['了解与帮助', ['help', 'product']],
+    ['可信度', ['evidence', 'about']],
+  ];
+
+  /* 分析流程的单一事实来源：顺序、短名、一句话职责 */
+  const FLOW = [
+    ['ingest', '数据接入', '任何份数 / 任何字段 → 一份数据集'],
+    ['intake', '准入体检', '能不能做、能做到什么等级'],
+    ['impact', '冲击评估', '影响多大 / 传多远 / 第几年最深'],
+    ['risk', '风险归因', '哪些门店最可能出事、由什么决定'],
+    ['caliber', '口径实验室', '换权重 / 换尺度，结论会不会翻'],
+    ['report', '评估报告', '合成一份带边界与血缘的交付物'],
+  ];
+  const FLOW_IDS = FLOW.map(s => s[0]);
+
+  function stepBar(cur) {
+    const i = FLOW_IDS.indexOf(cur);
+    return `<div class="steps">${FLOW.map(([id, name, why], k) => `
+      <a class="step ${id === cur ? 'on' : ''} ${k < i ? 'done' : ''}" href="#${id}" title="${esc(why)}">
+        <i>${k + 1}</i><span>${esc(name)}</span></a>`).join('')}</div>`;
+  }
+  function flowDone(p) {
+    return {
+      ingest: false,                                   // 可选步骤，不阻塞流程
+      intake: !!(p.intakeAnswers || {}).exogenous,
+      impact: (p.impactInput || {}).strength != null,
+      risk: !!(p.riskInput || {}).year,
+      caliber: !!(p.caliberInput || {}).dataset,
+    };
+  }
+  /** 工作台的「建议下一步」：只把当前最该做的一步推到最前面，其余收进折叠区 */
+  function nextStepCard() {
+    const p = Store.load();
+    const done = flowDone(p);
+    const idx = FLOW.findIndex(s => s[0] !== 'ingest' && !done[s[0]]);
+    const target = idx >= 0 ? FLOW[idx] : FLOW[FLOW.length - 1];
+    const allDone = idx < 0 && !!(p.intakeAnswers || {}).exogenous;
+    return `<div class="card" style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;border-left:3px solid var(--brand)">
+      <div style="flex:1 1 260px">
+        <h3 style="margin:0">${allDone ? '流程已完成' : '建议下一步'}：${esc(target[1])}</h3>
+        <p style="margin:4px 0 0" class="mini">${esc(target[2])}</p>
+      </div>
+      <a class="btn" href="#${esc(target[0])}">${allDone ? '生成报告' : '进入'} →</a>
+    </div>`;
+  }
 
   /* ---------- 工作台 ---------- */
   PAGES.push({
@@ -157,6 +247,9 @@
         <h1>工作台 · 空间影响评估项目</h1>
         <p>${esc((T.workbench || {}).intro || '')}</p>
       </div>
+
+      ${refitBanner()}
+      ${nextStepCard()}
 
       <div class="card">
         <h3>项目信息</h3>
@@ -193,6 +286,8 @@
     bind() {
       const p = Store.load();
       const map = { pjName: 'name', pjClient: 'client', pjIndustry: 'industry', pjDecision: 'decision' };
+      const drop = document.getElementById('refitDrop');
+      if (drop) drop.addEventListener('click', () => { if (confirm('恢复到仓库入库产物（丢弃本次重估数据层）？')) Refit.clear(); });
       Object.keys(map).forEach(id => {
         const el = document.getElementById(id);
         if (!el) return;
@@ -221,6 +316,263 @@
         const fr = new FileReader();
         fr.onload = () => { try { Store.p = JSON.parse(fr.result); Store.save(); render('#' + current()); } catch (e) { alert('JSON 解析失败：' + e.message); } };
         fr.readAsText(f);
+      });
+    },
+  });
+
+  /* ---------- 数据接入（泛化：多源 / 任意字段 / 形态路由 / 现场重估） ---------- */
+  const ING_ROLES = [
+    ['entity', '实体 ID'], ['time', '时间（期）'], ['event_time', '事件时间'],
+    ['lat', '纬度'], ['lon', '经度'], ['value', '结果变量'], ['group', '分组 / 行业'],
+  ];
+  const REFIT_OPTIONS = [
+    ['treat_year_col', '处理年（实体开始受处理的年份列）'],
+    ['treat_col', '处理标记（0/1 列）'],
+    ['strength_col', '暴露强度（可选，数值列）'],
+    ['exit_col', '退出目标（0/1 列，用于风险归因）'],
+  ];
+  let ING = null;           // 最近一次接入结果
+  let ING_FILES = null;     // 上传的 File[]（重估时重发，服务端不落盘）
+  let ING_SRC = null;       // {mode:'upload'|'paths', paths:[]}
+  let ING_REFIT = null;     // 最近一次重估结果
+  let ING_TPLS = [];
+
+  function ingSel(id, cols, cur) {
+    return ['<option value="">（未选用）</option>'].concat(cols.map(c =>
+      `<option value="${esc(c)}" ${String(c) === String(cur == null ? '' : cur) ? 'selected' : ''}>${esc(c)}</option>`)).join('');
+  }
+  async function ingJSON(url, body) {
+    const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    return r.json();
+  }
+  async function ingFramed(url, files, query) {
+    const parts = [];
+    for (const f of files) { parts.push(`#FILE ${encodeURIComponent(f.name)} ${f.size}\n`, f, '\n'); }
+    parts.push('#END\n');
+    const r = await fetch(url + (query ? ('?' + query) : ''), { method: 'POST', body: new Blob(parts) });
+    return r.json();
+  }
+  function ingMappingFromUI() {
+    const m = {};
+    ING_ROLES.forEach(([k]) => { const el = document.getElementById('ing_' + k); m[k] = el ? (el.value || null) : null; });
+    return m;
+  }
+  function ingRefitFromUI() {
+    const o = {};
+    REFIT_OPTIONS.forEach(([k]) => { const el = document.getElementById('rf_' + k); if (el && el.value) o[k] = el.value; });
+    return o;
+  }
+  function ingHealthList() {
+    if (!ING) return '';
+    return (ING.health.checks || []).map(c => `<div style="padding:7px 0;border-bottom:1px solid var(--line,#e5e7eb)">
+      <span class="tag ${c.level === 'ok' ? 'ok' : c.level === 'warn' ? 'warn' : 'danger'}">${esc(c.level.toUpperCase())}</span>
+      <b>${esc(c.title)}</b>：${esc(c.value)}
+      ${c.note ? `<div class="mini">${esc(c.note)}</div>` : ''}
+      ${c.action ? `<div class="mini" style="color:#b45309">→ ${esc(c.action)}</div>` : ''}
+    </div>`).join('');
+  }
+
+  PAGES.push({
+    id: 'ingest', name: '数据接入', render() {
+      const cols = ING ? ING.dataset.columns : [];
+      const ds = ING ? ING.dataset : null;
+      const shapeTag = ING ? `<span class="tag brand">形态：${esc(ING.shape.kind)}</span>` : '';
+      const filesHtml = ds ? (ds.sources || []).map(s => `<tr>
+          <td><code>${esc(s.name)}</code></td><td>${nf(s.rows, 0)}</td><td>${s.cols}</td>
+          <td>${(s.bytes / 1048576).toFixed(1)} MB</td><td>${s.ok ? 'ok' : `<span style="color:#b91c1c">${esc(s.error || '失败')}</span>`}</td></tr>`).join('') : '';
+      const diff = ds ? (ds.schema_diff || {}).partial_columns || [] : [];
+      const refitCaps = ING_REFIT ? ING_REFIT.capabilities || {} : null;
+      const tplOpts = ['<option value="">（选择已存模板）</option>'].concat(
+        ING_TPLS.map((t, i) => `<option value="${i}">${esc(t.name)}</option>`)).join('');
+
+      return `
+      <div class="page-head"><div class="kicker">STEP 0 · INGEST</div>
+        <h1>数据接入（泛化）</h1>
+        <p>不假设列名、不假设形态：一次可导入<b>多份文件</b>（按列名并集拼接），角色由<b>内容</b>推断且可人工覆盖，
+          识别面板 / 事件流 / 横截面 / 边表后路由到不同体检规则；确认后用<b>你自己的数据</b>现场重估系数。</p></div>
+
+      <div class="note">需本地服务：<code>datakit/.venv/Scripts/python.exe portal/serve.py</code>。
+        上传文件在响应后立即删除；本机路径模式不复制数据。<span class="ro" id="ingState">检测服务…</span></div>
+
+      <div class="card">
+        <h3>① 数据来源</h3>
+        <div class="row" style="gap:8px;flex-wrap:wrap;align-items:center">
+          <input type="file" id="ingFiles" multiple accept=".csv,.tsv,.txt,.json,.jsonl,.xlsx,.gz">
+          <label class="btn ghost" style="cursor:pointer">选择文件夹<input type="file" id="ingDir" webkitdirectory directory multiple style="display:none"></label>
+          <button class="btn" id="ingParseUp">解析上传</button>
+        </div>
+        <div class="row" style="gap:8px;margin-top:10px;align-items:center">
+          <input type="text" id="ingPaths" style="flex:1;min-width:280px"
+            placeholder="本机路径 / 通配符，分号分隔。例：data_raw/fdic/*.csv ；data_raw/snap_brightkite">
+          <label class="mini" style="white-space:nowrap">文件上限
+            <input type="number" id="ingLimit" value="12" min="1" max="500" style="width:74px"></label>
+          <button class="btn" id="ingParsePath">解析本机路径</button>
+        </div>
+        <div class="mini" style="margin-top:6px">大数据走本机路径（不受 512MB 上传上限约束）；小数据直接上传，服务端不落盘。</div>
+      </div>
+
+      ${ds ? `
+      <div class="card">
+        <h3>② 数据集 <span class="mini">${ds.source_count} 个文件 → ${nf(ds.rows, 0)} 行 × ${cols.length} 列</span> ${shapeTag}</h3>
+        <table style="width:100%;font-size:12px"><thead><tr><th align="left">文件</th><th>行数</th><th>列数</th><th>大小</th><th>状态</th></tr></thead>
+          <tbody>${filesHtml}</tbody></table>
+        ${diff.length ? `<div class="note warn" style="margin-top:8px">各文件列不一致，已按列名并集拼接，缺失处留空：
+          ${diff.slice(0, 12).map(d => `<code>${esc(d.column)}</code>(${d.in_files}/${d.of_files})`).join('、')}
+          ${diff.length > 12 ? ` 等 ${diff.length} 列` : ''}</div>` : ''}
+        ${(ds.notes || []).length ? `<div class="mini">${ds.notes.map(esc).join('；')}</div>` : ''}
+      </div>
+
+      <div class="card">
+        <h3>③ 字段映射 <span class="mini">自动推断可覆盖；不是靠列名，而是靠取值分布</span></h3>
+        <div class="grid g2" style="gap:10px">
+          ${ING_ROLES.map(([k, label]) => `<label class="fld"><span>${esc(label)}</span>
+            <select id="ing_${k}">${ingSel('ing_' + k, cols, (ING.roles || {})[k])}</select></label>`).join('')}
+        </div>
+        <div class="row" style="gap:8px;margin-top:10px;flex-wrap:wrap;align-items:center">
+          <button class="btn ghost" id="ingRecheck">按当前映射重算</button>
+          <input type="text" id="ingTplName" placeholder="模板名（如：某客户·网点年）" style="min-width:200px">
+          <button class="btn ghost" id="ingTplSave">存为映射模板</button>
+          <select id="ingTplPick">${tplOpts}</select>
+          <button class="btn ghost" id="ingTplLoad">载入模板</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>④ 体检结果 <span class="mini">按形态路由：${esc(ING.shape.note || '')}</span></h3>
+        ${ingHealthList()}
+      </div>
+
+      <div class="card">
+        <h3>⑤ 用这份数据重估系数</h3>
+        <p>全部系数<b>现场拟合</b>（TWFE 双向固定效应 + 事件研究 + 空间 KNN/SLX/Moran + cloglog），
+          <b>不含任何上游硬编码系数</b>。拟合完成后可作为当前数据层直接进入四个模块。</p>
+        <div class="grid g2" style="gap:10px">
+          ${REFIT_OPTIONS.map(([k, label]) => `<label class="fld"><span>${esc(label)}</span>
+            <select id="rf_${k}">${ingSel('rf_' + k, cols, '')}</select></label>`).join('')}
+        </div>
+        <div class="mini" style="margin-top:6px">不选任何处理定义时：若数据有事件时间列，则自动以「首次事件年」为处理起点。</div>
+        <div class="row" style="gap:8px;margin-top:10px;flex-wrap:wrap;align-items:center">
+          <button class="btn" id="ingRefit">开始重估</button>
+          <span class="ro" id="ingRefitState"></span>
+        </div>
+        ${refitCaps ? `<div class="note" style="margin-top:10px">
+          能力判定：${Object.keys(refitCaps).map(k => `${esc(k)} ${refitCaps[k]
+        ? '<b style="color:#047857">✓</b>' : '<b style="color:#b91c1c">✗</b>'}`).join(' · ')}
+          ${(ING_REFIT.notes || []).length ? `<div class="mini">${ING_REFIT.notes.map(esc).join('；')}</div>` : ''}
+          ${ING_REFIT.artifact && ING_REFIT.artifact.impact ? `<div class="mini">TWFE：post = ${
+        fmtNum(ING_REFIT.artifact.impact.twfe.post, 4)}，post×强度 = ${
+        fmtNum(ING_REFIT.artifact.impact.twfe.post_x_strength, 4)}（n = ${
+        nf(ING_REFIT.artifact.impact.twfe.n_obs, 0)}）</div>` : ''}
+          <div class="row" style="margin-top:8px"><button class="btn" id="ingApply">载入为当前数据层</button></div>
+        </div>` : ''}
+      </div>` : ''}
+      <div id="ingPick" style="display:none"></div>`;
+    },
+    bind() {
+      const st = document.getElementById('ingState');
+      async function health() {
+        try {
+          const h = await (await fetch('/api/health')).json();
+          st.textContent = h.ingest_available ? '服务可用（接入 + 重估）' : ('服务不可用：' + (h.ingest_error || h.datakit_error || '未知'));
+        } catch (e) { st.textContent = '未启动本地服务（上传 / 重估不可用）'; }
+      }
+      health();
+      fetch('/api/templates').then(r => r.json()).then(r => { ING_TPLS = r.templates || []; }).catch(() => {});
+
+      const bindFile = (id, dir) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.addEventListener('change', async () => {
+          const files = Array.from(el.files || []);
+          if (!files.length) return;
+          st.textContent = `解析中：${files.length} 个文件…`;
+          const res = await ingFramed('/api/ingest', files, '');
+          if (!res.ok) { st.textContent = '失败：' + (res.error || '未知'); return; }
+          ING = res; ING_FILES = files; ING_SRC = { mode: 'upload', paths: files.map(f => f.name) }; ING_REFIT = null;
+          st.textContent = `已解析 ${files.length} 个文件`;
+          render('#ingest');
+        });
+      };
+      bindFile('ingFiles');
+      bindFile('ingDir', true);
+      const pu = document.getElementById('ingParseUp');
+      if (pu) pu.addEventListener('click', () => document.getElementById('ingFiles').click());
+
+      const pp = document.getElementById('ingParsePath');
+      if (pp) pp.addEventListener('click', async () => {
+        const raw = (document.getElementById('ingPaths').value || '').trim();
+        if (!raw) { alert('请填写本机路径或通配符'); return; }
+        const paths = raw.split(/[;\n]+/).map(s => s.trim()).filter(Boolean);
+        const limEl = document.getElementById('ingLimit');
+        const limit = limEl ? Math.max(1, Number(limEl.value) || 12) : 12;
+        st.textContent = '解析中：' + paths.join(' / ');
+        const res = await ingJSON('/api/ingest_paths', { paths, limit });
+        if (!res.ok) { st.textContent = '失败：' + (res.error || '未知'); return; }
+        ING = res; ING_FILES = null; ING_SRC = { mode: 'paths', paths, limit }; ING_REFIT = null;
+        st.textContent = '已解析本机路径';
+        render('#ingest');
+      });
+
+      const rk = document.getElementById('ingRecheck');
+      if (rk) rk.addEventListener('click', async () => {
+        const override = ingMappingFromUI();
+        const body = ING_SRC.mode === 'paths' ? { paths: ING_SRC.paths, override }
+          : { paths: ING_FILES ? ING_FILES.map(f => f.name) : [], override };
+        if (ING_SRC.mode === 'paths') {
+          const res = await ingJSON('/api/ingest_paths', body);
+          if (!res.ok) { alert('失败：' + (res.error || '')); return; }
+          ING = res; render('#ingest');
+        } else {
+          const res = await ingFramed('/api/ingest', ING_FILES || [], 'override=' + encodeURIComponent(JSON.stringify(override)));
+          if (!res.ok) { alert('失败：' + (res.error || '')); return; }
+          ING = res; render('#ingest');
+        }
+      });
+
+      const ts = document.getElementById('ingTplSave');
+      if (ts) ts.addEventListener('click', async () => {
+        const name = (document.getElementById('ingTplName').value || '').trim();
+        if (!name) { alert('请填写模板名'); return; }
+        const r = await ingJSON('/api/templates', { name, mapping: ingMappingFromUI(), shape: ING.shape.kind, columns: (ING.dataset.columns || []) });
+        if (!r.ok) { alert('保存失败：' + (r.error || '')); return; }
+        ING_TPLS = r.templates || []; alert('已保存模板：' + r.saved); render('#ingest');
+      });
+      const tl = document.getElementById('ingTplLoad');
+      if (tl) tl.addEventListener('click', () => {
+        const i = document.getElementById('ingTplPick').value;
+        if (i === '') { alert('请选择模板'); return; }
+        const t = ING_TPLS[Number(i)];
+        if (!t) return;
+        Object.keys(t.mapping || {}).forEach(k => {
+          const el = document.getElementById('ing_' + k);
+          if (el && t.mapping[k]) el.value = t.mapping[k];
+        });
+        alert('已套用模板「' + t.name + '」，可点「按当前映射重算」生效');
+      });
+
+      const rb = document.getElementById('ingRefit');
+      if (rb) rb.addEventListener('click', async () => {
+        const state = document.getElementById('ingRefitState');
+        const roles = ingMappingFromUI(), options = ingRefitFromUI();
+        state.textContent = '正在拟合（大数据可能几十秒）…';
+        let res;
+        if (ING_SRC.mode === 'paths') {
+          res = await ingJSON('/api/refit', { paths: ING_SRC.paths, limit: ING_SRC.limit, roles, options });
+        } else {
+          res = await ingFramed('/api/refit', ING_FILES || [],
+            'roles=' + encodeURIComponent(JSON.stringify(roles)) + '&options=' + encodeURIComponent(JSON.stringify(options)));
+        }
+        if (!res.ok) { state.textContent = '失败：' + (res.error || '未知'); return; }
+        ING_REFIT = res; state.textContent = '重估完成';
+        render('#ingest');
+      });
+      const ap = document.getElementById('ingApply');
+      if (ap) ap.addEventListener('click', () => {
+        if (!ING_REFIT || !ING_REFIT.artifact) return;
+        Refit.save({ artifact: ING_REFIT.artifact, capabilities: ING_REFIT.capabilities,
+          spec: ING_REFIT.spec, dataset: ING_REFIT.dataset, at: new Date().toISOString() });
+        alert('已载入为当前数据层。工作台 / 冲击评估 / 风险归因 / 评估报告 现在使用本次重估的系数。');
+        location.hash = '#workbench';
       });
     },
   });
@@ -543,7 +895,7 @@
         </div>
         <div class="mini" style="margin-top:8px">打印时会自动隐藏导航与表单，只输出报告正文。</div>
       </div>
-      <div class="card" id="rpOut"><div class="note">点击「生成 / 刷新报告」。</div></div>
+      <div class="card keep-print" id="rpOut"><div class="note">点击「生成 / 刷新报告」。</div></div>
       <pre id="rpMd" data-raw="" style="display:none"></pre>`;
     },
     bind() {
@@ -553,7 +905,7 @@
         const ans = {
           stableId: ia.stableId, idMatchRate: ia.idMatchRate, coordNullRate: ia.coordNullRate,
           outcomeLevel: ia.outcomeLevel, years: ia.years, eventDefined: ia.eventDefined,
-          exogenous: ia.exogenous === 'yes' ? true : (ia.exogenous === 'no' ? false : null),
+          exogenous: toExo(ia.exogenous),
         };
         const hasIntake = Object.keys(ia).length > 0;
         const proj = {
@@ -588,6 +940,136 @@
     },
   });
 
+  /* ---------- 帮助 ---------- */
+  PAGES.push({
+    id: 'help', name: '帮助', render() {
+      const hasRefit = !!Refit.raw();
+      const pathCard = (no, title, steps, cta) => `<div class="card hcard">
+        <div class="hno">${no}</div><h3>${esc(title)}</h3>
+        <ol class="hlist">${steps.map(s => `<li>${s}</li>`).join('')}</ol>
+        ${cta || ''}</div>`;
+
+      return `
+      <div class="page-head"><div class="kicker">HELP</div>
+        <h1>使用帮助</h1>
+        <p>三条使用路径、六步流程、常见问题与术语。看完这一页就能上手；
+           更细的边界与方法说明见「产品说明」与「证据与边界」。</p></div>
+
+      ${hasRefit ? `<div class="note warn">你当前正在使用<b>现场重估的数据层</b>（不是仓库自带产物）。
+        <a href="#ingest">回到数据接入</a> 或在工作台点「恢复仓库产物」。</div>` : ''}
+
+      <h2 class="sect">选择你的路径</h2>
+      <div class="grid g3">
+        ${pathCard('A', '只想看看它能做什么', [
+        '打开 <a href="#workbench">工作台</a>，在页面底部点一个<b>示例项目</b>',
+        '按 <a href="#impact">② 冲击评估</a> → <a href="#risk">③ 风险归因</a> → <a href="#report">⑤ 评估报告</a> 顺序点一遍',
+        '每个结果都自带「使用边界」，注意看那几行'],
+        '<a class="btn ghost" href="#workbench">去工作台</a>')}
+        ${pathCard('B', '要用我自己的数据', [
+        '先启动本地服务：<b>双击 <code>portal/start.bat</code></b>（自动找 Python、挑空闲端口、开浏览器；Git Bash 用 <code>bash portal/start.sh</code>）',
+        '打开 <a href="#ingest">数据接入</a>：上传多份文件，或填本机路径 / 通配符',
+        '核对<b>字段映射</b>（自动推断可改；不对就改，可存成模板）',
+        '点「<b>开始重估</b>」→ 看能力判定 → 点「<b>载入为当前数据层</b>」',
+        '之后四个模块就用你自己的系数工作了'],
+        '<a class="btn" href="#ingest">去数据接入</a>')}
+        ${pathCard('C', '要交付给别人', [
+        '走完 <a href="#ingest">数据接入</a> → <a href="#intake">准入体检</a> → 各分析模块',
+        '到 <a href="#report">⑤ 评估报告</a>，含结论强度、禁止用途、完整数据血缘',
+        '「打印 / 导出 PDF」只输出报告正文；也可下载 Markdown 与结果 JSON'],
+        '<a class="btn ghost" href="#report">去评估报告</a>')}
+      </div>
+
+      <h2 class="sect">六步流程：每步做什么、产出什么</h2>
+      <div class="card"><table>
+        <thead><tr><th style="width:34px">#</th><th style="width:110px">步骤</th><th>你要做的</th><th>你会得到</th></tr></thead>
+        <tbody>
+          <tr><td>0</td><td><a href="#ingest">数据接入</a></td>
+            <td>导入数据（多文件 / 本机路径），确认字段映射</td>
+            <td>数据集概览、形态判定、体检结果；可选：用你的数据重估系数</td></tr>
+          <tr><td>1</td><td><a href="#intake">准入体检</a></td>
+            <td>回答 7 个问题（或上传 CSV 自动预填）</td>
+            <td>能不能做（Go/No-Go）、结论强度上限 A/B/C、预计工期、补数清单</td></tr>
+          <tr><td>2</td><td><a href="#impact">冲击评估</a></td>
+            <td>拖两个滑杆：暴露强度、事件年份</td>
+            <td>逐年影响曲线 + 置信带、本地/邻域分解、均值处边际效应</td></tr>
+          <tr><td>3</td><td><a href="#risk">风险归因</a></td>
+            <td>填一个门店的参数（或点预设样本）</td>
+            <td>逐因子贡献瀑布、全特征 vs 剔除泄漏的保守版本</td></tr>
+          <tr><td>4</td><td><a href="#caliber">口径实验室</a></td>
+            <td>切换数据集，看不同口径下的差异</td>
+            <td>同一方法在不同数据/口径下的 Moran's I 对比</td></tr>
+          <tr><td>5</td><td><a href="#report">评估报告</a></td>
+            <td>点「生成 / 刷新报告」</td>
+            <td>可打印 PDF / 可复制 Markdown / 结果 JSON（带指纹与血缘）</td></tr>
+        </tbody></table></div>
+
+      <h2 class="sect">常见问题</h2>
+      <div class="card">
+        <details class="drill" open><summary>我的数据是很多份文件、字段还不一样，能直接用吗？</summary>
+          <div class="body"><p>可以。在<a href="#ingest">数据接入</a>里：</p>
+          <ul>
+            <li><b>多份文件</b>：多选或拖入整个文件夹，系统按<b>列名并集</b>纵向拼接成一个数据集，缺列留空并登记。</li>
+            <li><b>字段不同</b>：角色不靠列名认，而是靠<b>取值分布</b>（年份看值域、坐标看值域且成对、实体看"在期上是否重复"）。
+              自动推断只是起点，下面有下拉框可以改，改完点「按当前映射重算」。</li>
+            <li><b>想复用</b>：把映射存成模板，下次一键套用。</li>
+          </ul></div></details>
+        <details class="drill"><summary>我的数据会被上传到服务器吗？</summary>
+          <div class="body"><p>不会离开你的机器。服务只监听 <code>127.0.0.1</code>；上传的文件落在临时目录，
+            <b>响应结束后立即整目录删除</b>，不持久化。大数据建议直接用「本机路径」模式，连复制都不会发生。</p></div></details>
+        <details class="drill"><summary>为什么某个模块显示 ✗（不可用）？</summary>
+          <div class="body"><p>能力判定是<b>数据条件的函数</b>，不是开关。例如：</p>
+          <ul>
+            <li>只有单一年份 → 没有时间维，算不了 TWFE 与事件研究 → 冲击评估 ✗</li>
+            <li>没有二元退出/目标列 → 拟合不了 cloglog → 风险归因 ✗</li>
+            <li>没有经纬度 → 空间部分跳过（不是错误，是数据没有空间维度）</li>
+          </ul>
+          <p>产品不会硬套一套不适用的系数，而是<b>明说为什么做不了</b>。</p></div></details>
+        <details class="drill"><summary>「结论强度 A / B / C」是什么意思？</summary>
+          <div class="body"><p>它是<b>自动判定</b>的，不是手选：由外生性、事件前趋势的 |t|、前趋势与 post 的量级比、
+            敏感性是否跑过、是否有时序外推验证共同决定。等级越低，可对外主张的力度越弱。
+            工作台、冲击页、报告三处用的是同一个评级器，不会互相矛盾。</p></div></details>
+        <details class="drill"><summary>「支撑域」和「止损条件」是什么？</summary>
+          <div class="body"><p><b>支撑域</b>：模型只在观测到的暴露强度范围内可信。低于下界的取值是<b>外推</b>，
+            页面上会用颜色标出，并单独报「均值处的边际效应」。<br>
+            <b>止损条件</b>：写死在评级器里的红线（如事件前趋势已显著、无时序外推验证），
+            命中就自动降级或阻断，避免把结论用在它支撑不了的地方。</p></div></details>
+        <details class="drill"><summary>为什么模型反复强调「不能预测未来」？</summary>
+          <div class="body"><p>因为风险模型用的是随机划分，且存在时序泄漏特征；剔除泄漏后时序外推 AUC ≈ 0.53（接近随机）。
+            所以它被定位成<b>归因</b>（解释历史、做情景分析），不是预测器。这是模型的真实状态，不是免责话术。</p></div></details>
+        <details class="drill"><summary>怎么把结果交给别人？</summary>
+          <div class="body"><ul>
+            <li><b>报告</b>：<a href="#report">评估报告</a> →「打印 / 导出 PDF」只输出正文，或「下载 .md」。</li>
+            <li><b>数据</b>：同页「下载结果 JSON」，含所用系数与数据层指纹，可交给下游程序。</li>
+            <li><b>项目存档</b>：<a href="#workbench">工作台</a> →「导出项目 JSON」，下次「导入项目 JSON」即可恢复全部输入。</li>
+          </ul>
+          <p>注意：「导出项目 JSON」和「下载结果 JSON」不是一回事，前者才能被导入回来。</p></div></details>
+        <details class="drill"><summary>怎么恢复成仓库自带的数据？</summary>
+          <div class="body"><p>如果载入过现场重估的数据层，<a href="#workbench">工作台</a>顶部会出现横幅，
+            点<b>「恢复仓库产物」</b>即可；也可以回到<a href="#ingest">数据接入</a>重新解析。</p></div></details>
+        <details class="drill"><summary>顶部的搜索框能搜什么？</summary>
+          <div class="body"><p>搜的是全部页面正文（含帮助页）。试试「准入」「暴露强度」「泄漏」「结论强度」「再配置」。</p></div></details>
+      </div>
+
+      <h2 class="sect">术语速查</h2>
+      <div class="card"><table>
+        <thead><tr><th style="width:150px">术语</th><th>一句话解释</th></tr></thead>
+        <tbody>
+          <tr><td>暴露强度</td><td>门店被"事件"波及的程度（本项目中是周边同业关闭的环加权和）。</td></tr>
+          <tr><td>均值处边际效应</td><td>不引用强度为 0 的外推点，改在实测均值处报效应，避免高估。</td></tr>
+          <tr><td>平行趋势</td><td>事件发生前，处理组与对照组的走势是否已经不同；不同则因果主张要打折。</td></tr>
+          <tr><td>目标泄漏</td><td>特征里混入了未来信息（如用全期关闭率回填每一年），会让指标虚高。</td></tr>
+          <tr><td>口径</td><td>人为设定的定义（距离环、权重、栅格尺度）；换口径结论会不会翻，决定结论稳不稳。</td></tr>
+          <tr><td>数据集 / 形态</td><td>由多份文件拼成的一份表；形态指 panel / 事件流 / 横截面 / 边表等结构。</td></tr>
+      </tbody></table></div>
+
+      <div class="card">
+        <h3>还有问题？</h3>
+        <p>方法与边界的完整说明在 <a href="#product">产品说明</a>；
+          数据血缘、修补看板与可复现性真实状态在 <a href="#evidence">证据与边界</a>。</p>
+      </div>`;
+    },
+  });
+
   /* ---------- 产品说明 ---------- */
   PAGES.push({
     id: 'product', name: '产品说明', render() {
@@ -601,6 +1083,8 @@
         <div class="row" style="align-items:center;gap:8px;flex-wrap:wrap"><span class="tag brand">${esc(it.tag)}</span><h3 style="margin:0">${esc(it.name)}</h3><code>${esc(it.sub)}</code></div>
         <p style="margin-top:8px"><b>回答：</b>${esc(it.question)}</p>
         <p><b>使用者：</b>${esc(it.audience)}</p>
+        <p class="mini"><b>形态：</b>${esc(it.form || '')}</p>
+        ${(it.metrics || []).length ? `<div class="grid g4" style="margin:4px 0 10px">${it.metrics.map(m => stat(m.k, resolveMetric(m.p))).join('')}</div>` : ''}
         <details class="drill"><summary>核心做法</summary><div class="body"><ul>${(it.highlights || []).map(x => `<li>${esc(x)}</li>`).join('')}</ul></div></details>
         <details class="drill"><summary>护栏与限制</summary><div class="body"><ul>${(it.guardrails || []).map(x => `<li>${esc(x)}</li>`).join('')}</ul></div></details>
       </div>`).join('');
@@ -626,6 +1110,12 @@
 
       <div class="page-head" style="margin-top:20px"><h1 style="font-size:19px">为什么做</h1></div>
       <div class="grid g2">${(pr.whyBuild || []).map(x => `<div class="card" style="margin:0"><h3>${esc(x.title)}</h3><p>${esc(x.body)}</p></div>`).join('')}</div>
+
+      <div class="page-head" style="margin-top:20px"><h1 style="font-size:19px">产品给的四个不一样</h1>
+        <p>与"再写一份 BI 报告"的差别在哪 —— 每一条都对应页面里一个具体功能。</p></div>
+      <div class="grid g2">${(pr.valueProps || []).map(v => `<div class="card" style="margin:0">
+        <h3>${esc(v.h)} <span class="tag ${v.kind === '已验证' ? 'ok' : 'warn'}">${esc(v.kind || '')}</span></h3>
+        <p>${esc(v.p)}</p></div>`).join('')}</div>
 
       <div class="page-head" style="margin-top:20px"><h1 style="font-size:19px">产品矩阵（四个模块）</h1>
         <p>${esc((C.matrix || {}).intro || '')}</p></div>
@@ -661,6 +1151,8 @@
   PAGES.push({
     id: 'evidence', name: '证据与边界', render() {
       const es = (D.impact || {}).event_study || {};
+      const tm2e = (es.table || []).find(z => z.tau === -2) || {};
+      const preNoteE = (isFinite(tm2e.p) ? '（p=' + Number(tm2e.p).toExponential(2) + '）' : '');
       const pts = (es.table || []).map(r => ({ x: r.tau, y: r.effect, lo: r.effect - 1.96 * (r.se || 0), hi: r.effect + 1.96 * (r.se || 0) }));
       const tauSvg = pts.length ? CH.curve({ points: pts, w: 740, h: 270, marks: [{ x: 0, y: (es.table.find(z => z.tau === 0) || {}).effect, label: 'τ=0', color: 'var(--brand)' }], fmtY: v => (v * 100).toFixed(1) + 'pp', fmtX: v => 'τ=' + v, aria: '事件研究' }) : '<div class="note">数据缺失，已降级。</div>';
 
@@ -675,13 +1167,18 @@
         <div class="t"><span class="tag ${r.level === '高' ? 'danger' : r.level === '中' ? 'warn' : 'ok'}">${esc(r.cat)} · ${esc(r.level)}</span> ${esc(r.title)}</div>
         <div class="b">${esc(r.body)}</div><div class="m"><b>应对：</b>${esc(r.mitigate)}</div></div>`).join('');
 
+      const autoP = ((D.audit || {}).patches) || {};
+      const autoCls = (s) => /已修|已补跑|一致|已厘清/.test(s) ? 'ok'
+        : /部分/.test(s) ? 'warn' : 'danger';
       const patches = (T.patches || []).map(p => {
         const cls = p.status === '待修' ? 'danger' : p.status === '部分修' ? 'warn' : 'ok';
+        const a = autoP[p.id];
         return `<div class="risk-item" style="border-left-color:var(--${cls === 'danger' ? 'danger' : cls === 'warn' ? 'accent' : 'ok'})">
-          <div class="t"><code>${esc(p.id)}</code> <span class="tag ${cls}">${esc(p.status)}</span> ${esc(p.title)}</div>
-          <div class="b"><b>影响：</b>${esc(p.impact)}<br>${esc(p.detail)}</div>
-          <div class="m"><b>修复方案：</b>${esc(p.fix)}</div></div>`;
+          <div class="t"><code>${esc(p.id)}</code> <span class="tag ${cls}">看板：${esc(p.status)}</span> ${a ? `<span class="tag ${autoCls(a.auto_status)}">实检：${esc(a.auto_status)}</span>` : '<span class="tag warn">实检：无自动核对</span>'} ${esc(p.title)}</div>
+          <div class="b"><b>影响：</b>${esc(p.impact)}<br>${esc(p.detail)}${a ? `<br><b>自动核对（由产物反推，不采信文案）：</b>${esc(a.evidence)}` : ''}</div>
+          <div class="m"><b>修复方案：</b>${esc(p.fix)}${a ? `<br><span class="mini">核对来源：<code>${esc(a.source || '—')}</code></span>` : ''}</div></div>`;
       }).join('');
+      const wtc = ((D.audit || {}).wtreat_consistency) || null;
 
       const prov = ((D.meta || {}).provenance || []);
       const provRows = prov.slice(0, 14).map(x => `<tr><td class="mini"><code>${esc(x.file)}</code></td><td class="num mini">${nf(x.bytes / 1024, 1)} KB</td><td class="mini">${esc(String(x.mtime).replace('T', ' '))}</td></tr>`).join('');
@@ -706,15 +1203,47 @@
       </div>
 
       <div class="grid g2" style="margin-top:14px">
-        ${figure('事件研究：效应何时出现、逐年多深', 'τ=−2 显著为负（p=3.76e-05）→ 平行趋势不完美，故结论降格为关联级', tauSvg)}
+        ${figure('事件研究：效应何时出现、逐年多深', 'τ=−2 显著为负' + preNoteE + ' → 平行趋势不完美，故结论降格为关联级', tauSvg)}
         ${figure("跨数据集 Moran's I", '同一方法在稀疏与密集数据上相差数十倍 → 空间结论强依赖数据分布与口径', moranSvg)}
       </div>
       <div style="margin-top:14px">${figure('SHAP 特征重要性（风险模型）', 'year 与 bank_closed_rate 远超其余；age（网点年龄）排名最后 → 「老网点更容易死」在本数据上几乎不成立', shapSvg)}</div>
 
       <div class="page-head" style="margin-top:22px"><div class="kicker">PATCH BOARD</div>
         <h1 style="font-size:19px">已知缺陷与修补看板</h1>
-        <p>这些不是"以后再说"的待办，而是会影响结论解读的实质问题。产品选择公开它们，并在受影响的模块中强制披露。</p></div>
+        <p>这些不是"以后再说"的待办，而是会影响结论解读的实质问题。产品选择公开它们，并在受影响的模块中强制披露。</p>
+        <p class="mini">每条都带两个状态：<b>看板</b>是人工登记，<b>实检</b>由 <code>portal/audit/*.py</code> 重跑后的产物反推 —— 两者不一致时以实检为准，避免「看板说待修、实际已修」。</p></div>
       <div class="card">${patches}</div>
+
+      ${wtc ? `<div class="card" style="margin-top:14px">
+        <h3>上游产物内部一致性核对：${esc(wtc.quantity)}</h3>
+        <div class="note ${wtc.consistent ? '' : 'danger'}">${wtc.consistent
+          ? `<b>四处产物 + 正文取值一致：${wtc.authoritative}</b>（权威来源 <code>${esc(wtc.authoritative_source)}</code>）。`
+          : `<b>发现 ${(wtc.mismatches || []).length} 处不一致：</b>${esc((wtc.mismatches || []).map(m => m.where + ' = ' + m.value).join('、'))}，而权威值（${esc(wtc.authoritative_source)}）是 <b>${wtc.authoritative}</b>。`}</div>
+        ${wtc.consistent ? '' : `<p class="mini"><b>可能成因：</b>${esc(wtc.probable_cause || '')}</p>`}
+        <p class="mini">参照值：OLS 的 <code>treat_strength</code> = ${wtc.ols_treat_strength_for_reference}（混合值，与 SLX 邻域溢出不是同一个量）。</p>
+        <p class="mini">核对方式：每次重建数据层自动重扫这几处产物与正文字面值（正文容差 ±0.2%，因为印刷会四舍五入）。${esc(wtc.fix_note || '')}</p>
+      </div>` : ''}
+
+      ${((D.audit || {}).full_chain) ? `<div class="card" style="margin-top:14px">
+        <h3>原始数据全链路重建核对（P0-5）</h3>
+        <div class="note ${D.audit.full_chain.verdict === '通过' ? '' : 'danger'}"><b>${esc(D.audit.full_chain.verdict)}</b>：${esc(D.audit.full_chain.conclusion || '')}</div>
+        <div class="grid g4" style="margin-top:8px">
+          ${stat('对拍项通过', D.audit.full_chain.checks_passed + ' / ' + D.audit.full_chain.checks_total)}
+          ${stat('原始文件', nf((D.audit.full_chain.protocol || {}).raw_files, 0) + ' 个')}
+          ${stat('重建耗时', fmtNum((D.audit.full_chain.protocol || {}).elapsed_minutes, 1) + ' 分钟')}
+          ${stat('did_panel 行数差', nf(Math.abs(((((D.audit.full_chain.headline || {}).did_panel_rows) || {}).upstream || 0) - ((((D.audit.full_chain.headline || {}).did_panel_rows) || {}).sandbox || 0)), 0))}
+        </div>
+        <div class="mini">方式：把阶段入口复制到隔离沙箱、<code>source_root</code> 指向真实只读源数据，然后<b>真实执行上游 01→06 的代码</b> —— 逻辑与上游逐字一致，产物只落沙箱，<b>上游文件不被写入</b>。随后逐阶段对拍行数与关键数值列的最大绝对差。</div>
+        <table style="margin-top:8px"><thead><tr><th>对拍项</th><th class="num">上游行数</th><th class="num">沙箱行数</th><th class="num">最大绝对差</th><th>结论</th></tr></thead><tbody>
+        ${(D.audit.full_chain.checks || []).map(c => {
+          const r = c.rows || {};
+          const d = c.max_abs_diff || {};
+          const dv = Object.keys(d).length
+            ? Object.keys(d).map(k => k + '=' + (d[k] === null ? '—' : d[k])).join(' / ') : '—';
+          return `<tr><td>${esc(c.label)}</td><td class="num">${r.upstream != null ? nf(r.upstream, 0) : '—'}</td><td class="num">${r.sandbox != null ? nf(r.sandbox, 0) : '—'}</td><td class="num">${esc(dv)}</td><td>${c.ok ? '<span class="tag ok">通过</span>' : '<span class="tag danger">' + esc(c.error || '不通过') + '</span>'}</td></tr>`;
+        }).join('')}
+        </tbody></table>
+      </div>` : ''}
 
       <div class="page-head" style="margin-top:22px"><div class="kicker">RISKS</div><h1 style="font-size:19px">风险与限制清单</h1>
         <p>${esc(rs.lead || '')}</p></div>
@@ -734,7 +1263,7 @@
         <table><thead><tr><th>产物文件</th><th class="num">体积</th><th>修改时间</th></tr></thead><tbody>${provRows}</tbody></table>
         <h4>重建命令</h4>
         <pre class="code">./.venv/Scripts/python.exe portal/build_data.py     # 重建事实层
-node --test portal/tests/engines.test.js            # 26 项引擎单测
+node --test portal/tests/engines.test.js            # 引擎单测（数量以命令输出为准）
 ./.venv/Scripts/python.exe portal/serve.py          # 可选：本地服务（上传数据体检）</pre>
       </div>`;
     },
@@ -786,8 +1315,9 @@ node --test portal/tests/engines.test.js            # 26 项引擎单测
 
       <div class="card">
         <h3>引擎自检</h3>
-        <p>计算引擎共 26 项单元测试，覆盖数值正确性（正态近似、cloglog 链接、零交叉点）、
-          护栏行为（一票否决、适用域拒绝、退化类别拒绝）与报告生成（含降级路径）。</p>
+        <p>计算引擎自带单元测试，覆盖数值正确性（正态近似、cloglog 链接、零交叉点、边际效应标准误对拍）、
+          护栏行为（一票否决、适用域拒绝、退化类别拒绝、外生性三态）与报告生成（含缺章降级路径）。
+          数量以命令输出为准，不在页面上写死。</p>
         <pre class="code">node --test portal/tests/engines.test.js</pre>
       </div>`;
     },
@@ -821,7 +1351,7 @@ node --test portal/tests/engines.test.js            # 26 项引擎单测
         outcomeLevel: a.outcomeLevel,
         years: a.years,
         eventDefined: a.eventDefined,
-        exogenous: a.exogenous === 'yes' ? true : (a.exogenous === 'no' ? false : null),
+        exogenous: toExo(a.exogenous),
       };
       const untouched = Object.keys(a).length === 0;
       if (untouched) {
@@ -857,7 +1387,8 @@ node --test portal/tests/engines.test.js            # 26 项引擎单测
       const box = document.getElementById('impactResult');
       if (!box) return;
       const ip = p.impactInput || {};
-      const r = E.impact({ strength: ip.strength, eventYear: ip.eventYear }, D);
+      const r = E.impact({ strength: ip.strength, eventYear: ip.eventYear }, D,
+        { exogenous: toExo((p.intakeAnswers || {}).exogenous) });
       if (!r.ok) { box.innerHTML = `<div class="card"><div class="note danger">${esc(r.reason)}</div></div>`; return; }
 
       // τ 曲线
@@ -867,13 +1398,11 @@ node --test portal/tests/engines.test.js            # 26 项引擎单测
         fmtY: v => (v * 100).toFixed(1) + 'pp', fmtX: v => 'τ=' + v,
         xLabel: '事件相对年份 τ（基线 τ=−1）', yLabel: '对结果变量的影响', aria: '事件研究动态效应',
       });
-      // 强度曲线
-      const sPts = [];
-      for (let s = 0; s <= 5.0001; s += 0.125) {
-        const c = r.marginal.beta0 + r.marginal.beta1 * s;
-        const se = Math.sqrt(Math.pow(r.marginal.b0se, 2) + s * s * Math.pow(r.marginal.beta1se, 2));
-        sPts.push({ x: s, y: c, lo: c - 1.96 * se, hi: c + 1.96 * se });
-      }
+      const tm2row = r.byTau.find(z => z.tau === -2) || {};
+      const preNote = (isFinite(tm2row.p) ? 'τ=−2 显著为负（p=' + Number(tm2row.p).toExponential(2) + '）' : 'τ=−2 显著为负')
+        + ' → 平行趋势不完美，故结论降格为关联级';
+      // 强度曲线：由引擎生成，视图层不再复算 SE 公式（避免口径漂移）
+      const sPts = (r.curve || []).map(pt => ({ x: pt.x, y: pt.y, lo: pt.lo, hi: pt.hi }));
       const sSvg = CH.curve({
         points: sPts, w: 760, h: 290,
         bands: [{ from: r.supportLowerBound, to: 5, label: '观测支撑域（强度 ≥ ' + r.supportLowerBound.toFixed(2) + '）', color: 'var(--ok)' }],
@@ -898,15 +1427,18 @@ node --test portal/tests/engines.test.js            # 26 项引擎单测
             ${stat('τ=0 效应', fmtPct((r.byTau.find(z => z.tau === 0) || {}).effect), 'p = ' + fmtNum((r.byTau.find(z => z.tau === 0) || {}).p, 6))}
             ${stat('τ=4 效应', fmtPct((r.byTau.find(z => z.tau === 4) || {}).effect), '第 4 年最深')}
             ${stat('事件前最大 |t|', fmtNum(r.eventStudyMeta.preTrendMaxAbsT, 2), '< 1.96 才算平行趋势可接受', r.eventStudyMeta.preTrendMaxAbsT >= 1.96 ? 'neg' : 'pos')}
+            ${r.marginal.atMean ? stat('处理组均值强度 ' + nf((r.support.branch_level || {}).mean, 2) + ' 处效应', fmtPct(r.marginal.atMean.effect), '95% 近似区间 [' + fmtPct(r.marginal.atMean.ci.lo) + ', ' + fmtPct(r.marginal.atMean.ci.hi) + ']；这才是"典型网点"的效应', r.marginal.atMean.effect < 0 ? 'neg' : 'pos') : ''}
           </div>
-          <div style="margin-top:10px">${gradeBadge(r.grade)}</div>
+          <div style="margin-top:10px">${gradeBadge(computeGrade(p))}</div>
+          <div class="mini" style="margin-top:6px">该等级与工作台、评估报告同源（同一评级器 + 同一事件研究产物），三处必须一致。</div>
+          <div class="mini" style="margin-top:6px">区间为近似值（忽略 β_post 与交互项协方差）；同号最坏情况区间为 [${fmtPct(at.ciWorst.lo)}, ${fmtPct(at.ciWorst.hi)}]，对外引用时以更宽者为准。</div>
           ${ip.strength != null && ip.strength < r.supportLowerBound
-            ? `<div class="note danger"><b>你输入的强度落在外推区：</b>强度 ${nf(ip.strength, 2)} 小于训练样本处理组的下界 ${r.supportLowerBound.toFixed(2)}（= log1p(1)，即 1 起同业关闭事件）。该点未被观测，结果不可直接引用。</div>`
-            : `<div class="note"><b>你输入的强度位于观测支撑域内</b>（下界 ${r.supportLowerBound.toFixed(2)}）。</div>`}
+            ? `<div class="note danger"><b>你输入的强度落在外推区：</b>强度 ${nf(ip.strength, 2)} 小于实测处理组下界 ${r.supportLowerBound}（网点级 strength_t0 最小值，审计复算与上游逐网点一致）。该点未被观测，结果不可直接引用。</div>`
+            : `<div class="note"><b>你输入的强度位于观测支撑域内</b>（实测下界 ${r.supportLowerBound}${r.supportMeasured ? '，均值 ' + nf((r.support.branch_level || {}).mean, 3) + '，中位 ' + (r.support.branch_level || {}).median + '，最大 ' + (r.support.branch_level || {}).max : ''}）。</div>`}
         </div>
 
         <div class="grid g2" style="margin-top:14px">
-          ${figure('① 事件后逐年动态效应', '平均处理效应，阴影为 ±1.96·SE；τ=−2 显著为负 → 平行趋势不完美', tauSvg)}
+          ${figure('① 事件后逐年动态效应', '平均处理效应，阴影为 ±1.96·SE；' + preNote, tauSvg)}
           ${figure('② 效应随暴露强度的变化', '绿色为观测支撑域；请只在支撑域内解读。β_post 单独引用会高估效应', sSvg)}
         </div>
 
@@ -933,6 +1465,21 @@ node --test portal/tests/engines.test.js            # 26 项引擎单测
           <p><code>cell_growth = ${(r.cellEq.terms.find(t => t.name === 'const') || {}).coef.toFixed(6)}
             ${r.cellEq.terms.filter(t => t.name !== 'const').map(t => `+ (${t.coef.toFixed(6)}) × ${esc(t.name)}`).join(' ')}</code></p>
           <div class="mini">n = ${nf(r.cellEq.n, 0)}，R² = ${fmtNum(r.cellEq.r2, 4)}（空间截面样本）</div>
+          <div class="note warn"><b>口径提醒：</b>这里的 treat_strength 是 OLS 混合值（${fmtNum((r.cellEq.terms.find(t => t.name === 'treat_strength') || {}).coef, 6)}），与上方 SLX 拆出的本地效应（${fmtPct(r.spatial.direct)}）口径不同、符号可相反 —— 两者不可混用，也不可互相印证。</div>
+        </div>` : ''}
+
+        ${r.ringsSensitivity ? `<div class="card" style="margin-top:14px">
+          <h3>距离环口径敏感性（已重跑，替代此前「只有标签、没有系数」）</h3>
+          <p class="mini">同一套 DID 设定，只换距离环定义，检验结论是否依赖细环选择。细环 = 上游代码口径；两个合并环变体为本次审计新增。</p>
+          <table><thead><tr><th>口径</th><th>距离环（km）</th><th>β_int</th><th>SE</th><th>p</th></tr></thead><tbody>
+          ${[['fine', '细环（上游）'], ['coarse_rebin', '合并环 · 沿用权重值'], ['coarse_linear', '合并环 · 等差衰减']]
+            .filter(([k]) => r.ringsSensitivity[k]).map(([k, label]) => {
+              const v = r.ringsSensitivity[k];
+              return `<tr><td>${esc(label)}</td><td>${(v.rings || []).map(z => z[0] + '–' + z[1]).join(' / ')}</td><td>${fmtNum(v.coef, 6)}</td><td>${fmtNum(v.se, 6)}</td><td>${fmtNum(v.p, 3)}</td></tr>`;
+            }).join('')}
+          </tbody></table>
+          ${r.ringsCross ? `<div class="note"><b>跨口径可比性：</b>合并环改变了强度刻度（均值 ${nf((r.ringsSensitivity.fine || {}).strength_mean_treated, 3)} → ${nf((r.ringsSensitivity.coarse_rebin || {}).strength_mean_treated, 3)}），因此不能直接比 β_int。按「单位相对暴露的斜率」与「均值处效应」比较：斜率差异 ${fmtNum(r.ringsCross.slope_spread_pct, 1)}%、均值处效应差异 ${fmtNum(r.ringsCross.effect_at_mean_spread_pp, 2)}pp → ${esc(r.ringsCross.verdict || '')}</div>` : ''}
+          <div class="mini">来源：${esc(r.ringsSource || 'portal/audit/p1_strength_rings.json')}；复现校准：与上游 did_panel.parquet 逐网点最大绝对差 ${fmtNum((((D.impact.strength_disclosure || {}).replication_check) || {}).strength_t0_max_abs_diff, 0)}。</div>
         </div>` : ''}
 
         <div class="card" style="margin-top:14px">
@@ -990,6 +1537,20 @@ node --test portal/tests/engines.test.js            # 26 项引擎单测
             剔除后的保守值更接近"不含未来信息"的排序，但<b>它不是重新拟合的概率</b>，只能用于相对排序。</div>
           <div style="margin-top:8px">${gradeBadge(r.grade)}</div>
         </div>
+
+        ${(D.risk.out_of_time && D.risk.out_of_time.conclusion) ? `<div class="card" style="margin-top:14px">
+          <h3>时序外推验证（替代随机划分的乐观值）</h3>
+          <div class="grid g4">
+            ${stat('随机划分 AUC', fmtNum(D.risk.model_card.random_split_test_auc, 4), '原报告口径（测试集含训练期年份）')}
+            ${stat('时序外推 AUC · 含泄漏', fmtNum(D.risk.model_card.out_of_time_auc_with_leak, 4), '滚动一步外推的窗口均值')}
+            ${stat('时序外推 AUC · 剔泄漏', fmtNum(D.risk.model_card.out_of_time_auc_no_leak, 4), '≈随机 → 无时序判别力', 'neg')}
+            ${stat('覆盖窗口', nf(((D.risk.out_of_time.conclusion.windows || {}).n), 0) + ' 个', (((D.risk.out_of_time.conclusion.windows || {}).years) || []).join('–'))}
+          </div>
+          <div class="note danger"><b>${esc((D.risk.out_of_time.conclusion || {}).headline || '')}</b></div>
+          <div class="mini">协议：${esc(((D.risk.out_of_time.protocol || {}).type) || '')}；训练样本 ${esc(((D.risk.out_of_time.protocol || {}).train_sample) || '')}；测试 ${esc(((D.risk.out_of_time.protocol || {}).test_sample) || '')}</div>
+          <div class="mini">${esc(((D.risk.out_of_time.protocol || {}).year_dummies) || '')}</div>
+          <div class="mini">来源：<code>${esc(D.risk.audit_source || 'portal/audit/p2_out_of_time.json')}</code></div>
+        </div>` : ''}
 
         <div class="card" style="margin-top:14px">
           <h3>因子贡献（谁在推动风险）</h3>
@@ -1078,7 +1639,7 @@ node --test portal/tests/engines.test.js            # 26 项引擎单测
     const id = String(hash || '').replace(/^#/, '') || 'workbench';
     const page = PAGES.find(p => p.id === id) || PAGES[0];
     _cur = page.id;
-    viewEl.innerHTML = page.render();
+    viewEl.innerHTML = (FLOW_IDS.indexOf(page.id) >= 0 ? stepBar(page.id) : '') + page.render();
     [navEl, tocEl].forEach(box => $$('a', box).forEach(a => a.classList.toggle('on', a.dataset.id === _cur)));
     window.scrollTo({ top: 0, behavior: 'auto' });
     if (page.bind) page.bind();
@@ -1088,7 +1649,13 @@ node --test portal/tests/engines.test.js            # 26 项引擎单测
 
   function bindStatic() {
     $$('[data-goto]').forEach(b => b.addEventListener('click', () => { location.hash = '#' + b.dataset.goto; }));
-    $$('[data-print]').forEach(b => b.addEventListener('click', () => window.print()));
+    $$('[data-print]').forEach(b => b.addEventListener('click', () => {
+      document.body.classList.add('print-report');
+      const done = () => { document.body.classList.remove('print-report'); window.removeEventListener('afterprint', done); };
+      window.addEventListener('afterprint', done);
+      setTimeout(done, 30000);           // 兜底：不依赖 afterprint 的浏览器
+      window.print();
+    }));
     $$('[data-copy]').forEach(b => b.addEventListener('click', () => {
       const t = document.getElementById(b.dataset.copy);
       if (!t) return;
@@ -1119,15 +1686,17 @@ node --test portal/tests/engines.test.js            # 26 项引擎单测
   /* ---- 极简 Markdown → HTML（报告渲染用，先转义再处理） ---- */
   function md2html(md) {
     const lines = String(md).split('\n');
-    let out = '', inTbl = false, inList = false;
+    let out = '', inTbl = false, inList = false, tRowIdx = 0;
     const closeAll = () => { if (inTbl) { out += '</tbody></table>'; inTbl = false; } if (inList) { out += '</ul>'; inList = false; } };
     for (let raw of lines) {
       const line = raw.replace(/\r$/, '');
       if (/^\s*\|/.test(line)) {
         const cells = line.trim().replace(/^\||\|$/g, '').split('|').map(c => c.trim());
         if (/^[\s|:\-]+$/.test(line) && cells.every(c => /^:?-{2,}:?$/.test(c) || c === '')) continue;
-        if (!inTbl) { closeAll(); out += '<table><tbody>'; inTbl = true; }
-        out += '<tr>' + cells.map(c => `<td>${inline(c)}</td>`).join('') + '</tr>';
+        if (!inTbl) { closeAll(); out += '<table><tbody>'; inTbl = true; tRowIdx = 0; }
+        const head = tRowIdx === 0 ? 'th' : 'td';
+        out += '<tr>' + cells.map(c => `<${head}>${inline(c)}</${head}>`).join('') + '</tr>';
+        tRowIdx++;
         continue;
       }
       closeAll();
@@ -1235,8 +1804,30 @@ node --test portal/tests/engines.test.js            # 26 项引擎单测
   }
 
   /* ---- 启动 ---- */
-  navEl.innerHTML = PAGES.map(p => `<a href="#${p.id}" data-id="${p.id}">${esc(p.name)}</a>`).join('');
-  tocEl.innerHTML = PAGES.map(p => `<li><a href="#${p.id}" data-id="${p.id}">${esc(p.name)}</a></li>`).join('');
+  (function buildNav() {
+    const byId = {};
+    PAGES.forEach(p => { byId[p.id] = p; });
+    const listed = {};
+    const sections = NAV_SECTIONS.map(([, ids]) => {
+      const items = ids.filter(id => byId[id]);
+      if (!items.length) return '';
+      return items.map(id => {
+        listed[id] = 1;
+        return { id, name: byId[id].name };
+      });
+    }).filter(s => s.length);
+    // 兜底：未登记的页面追加到最后一组，避免"加了页面但导航里没有"
+    const rest = PAGES.filter(p => !listed[p.id]).map(p => ({ id: p.id, name: p.name }));
+    if (rest.length) sections.push(rest);
+
+    navEl.innerHTML = sections.map(sec => sec.map(x =>
+      `<a href="#${x.id}" data-id="${x.id}">${esc(x.name)}</a>`).join('')).join('<span class="sep"></span>');
+    tocEl.innerHTML = sections.map((sec, i) => {
+      const title = NAV_SECTIONS[i] ? NAV_SECTIONS[i][0] : '其他';
+      return `<li class="grp">${esc(title)}</li>` + sec.map(x =>
+        `<li><a href="#${x.id}" data-id="${x.id}">${esc(x.name)}</a></li>`).join('');
+    }).join('');
+  })();
 
   window.addEventListener('hashchange', () => render(location.hash));
 

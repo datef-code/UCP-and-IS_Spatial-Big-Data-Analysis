@@ -1,0 +1,208 @@
+{
+  "generated_at": "2026-09-11T13:17:53+08:00",
+  "generator": "portal/audit/rerun_p1_strength.py",
+  "policy": "只读上游产物；复现校准通过才输出系数；产物写 portal/audit/，不覆盖项目目录。",
+  "stage_docstring_conflict": {
+    "06_estimate_module_docstring_says": "treat_strength = log1p(n_same_ind_5km)（单环计数）",
+    "code_actually_does": "strength_t0 = Σ _ring_weight(dist_km)，权重 0–1km 1.0 / 1–3km 0.6 / 3–5km 0.3 / 5–10km 0.1（环加权）",
+    "readme_says": "环加权强度",
+    "verdict": "代码与 README 一致（环加权）；06_estimate.py 的模块 docstring 过时，需以代码为准。"
+  },
+  "strength_support": {
+    "n_treated_branches": 35785,
+    "n_treated_rows": 999452,
+    "branch_level": {
+      "min": 0.1,
+      "p01": 0.1,
+      "p05": 0.1,
+      "p25": 0.1,
+      "median": 0.5,
+      "mean": 0.684965767779796,
+      "p75": 1.0,
+      "p95": 2.0,
+      "p99": 4.1,
+      "max": 13.7,
+      "distinct_values": 148
+    },
+    "row_level_mean": 0.6960830535133253,
+    "note": "strength_t0 = 首次辐射年内 10km 内同业关闭事件的环加权和（权重 1.0/0.6/0.3/0.1），处理组恒 > 0；s=0 是外推点。"
+  },
+  "replication_check": {
+    "strength_t0_max_abs_diff": 0.0,
+    "first_event_year_mismatch": 0,
+    "post_mismatch": 0,
+    "rows_compared": 1814985
+  },
+  "twfe_variants": {
+    "fine": {
+      "rings": [
+        [
+          0,
+          1,
+          1.0
+        ],
+        [
+          1,
+          3,
+          0.6
+        ],
+        [
+          3,
+          5,
+          0.3
+        ],
+        [
+          5,
+          10,
+          0.1
+        ]
+      ],
+      "strength_mean_treated": 0.6960830535133253,
+      "coef": 0.013823280070386227,
+      "se": 0.00171193124972214,
+      "t": 8.074670097078872,
+      "p": 6.661338147750939e-16,
+      "post_coef": -0.05259387020663611,
+      "post_se": 0.0016430377821804692,
+      "post_p": 0.0,
+      "n_obs": 955025,
+      "n_entities": 73324,
+      "estimator": "PanelOLS_TWFE (linearmodels)",
+      "r2_within": 0.003054444836813941
+    },
+    "coarse_rebin": {
+      "rings": [
+        [
+          0,
+          2,
+          1.0
+        ],
+        [
+          2,
+          5,
+          0.6
+        ],
+        [
+          5,
+          10,
+          0.3
+        ]
+      ],
+      "strength_mean_treated": 1.1385146060040905,
+      "coef": 0.008018494092976714,
+      "se": 0.0011952421358875126,
+      "t": 6.708677557642058,
+      "p": 1.965139162507512e-11,
+      "post_coef": -0.05177326466686215,
+      "post_se": 0.0017003077380585748,
+      "post_p": 0.0,
+      "n_obs": 955025,
+      "n_entities": 73324,
+      "estimator": "PanelOLS_TWFE (linearmodels)",
+      "r2_within": 0.0030211750893516243
+    },
+    "coarse_linear": {
+      "rings": [
+        [
+          0,
+          2,
+          1.0
+        ],
+        [
+          2,
+          5,
+          0.6
+        ],
+        [
+          5,
+          10,
+          0.2
+        ]
+      ],
+      "strength_mean_treated": 1.0251573862476637,
+      "coef": 0.009102863499435749,
+      "se": 0.0012749097088241687,
+      "t": 7.140006414910113,
+      "p": 9.339196083146817e-13,
+      "post_coef": -0.05206620822680574,
+      "post_se": 0.0016826675849816058,
+      "post_p": 0.0,
+      "n_obs": 955025,
+      "n_entities": 73324,
+      "estimator": "PanelOLS_TWFE (linearmodels)",
+      "r2_within": 0.0030313365666816416
+    },
+    "_cross_ring": {
+      "fine": {
+        "strength_mean_treated": 0.6960830535133253,
+        "slope_per_relative_exposure": 0.009622151000964339,
+        "effect_at_treated_mean": -0.04297171920567178
+      },
+      "coarse_rebin": {
+        "strength_mean_treated": 1.1385146060040905,
+        "slope_per_relative_exposure": 0.00912917264301151,
+        "effect_at_treated_mean": -0.04264409202385064
+      },
+      "coarse_linear": {
+        "strength_mean_treated": 1.0251573862476637,
+        "slope_per_relative_exposure": 0.009331867752450814,
+        "effect_at_treated_mean": -0.042734340474354926
+      },
+      "slope_spread_pct": 5.123369586524074,
+      "effect_at_mean_spread_pp": 0.03276271818211385,
+      "verdict": "合并环只改变强度的刻度；按「单位相对暴露」与「均值处效应」比较，三种口径结果一致（差异在 5% 内）→ 结论不依赖细环选择。"
+    },
+    "_derived": {
+      "stored_model_used_for_marginal": {
+        "post": -0.05259387020663611,
+        "post_se": 0.0016430377821804692,
+        "post_x_strength": 0.013823280070386227,
+        "post_x_strength_se": 0.00171193124972214
+      },
+      "marginal_at_support": {
+        "at_min": {
+          "s": 0.1,
+          "effect": -0.05121154219959749,
+          "se": 0.0016519322745531268,
+          "ci_lo": -0.054449329457721615,
+          "ci_hi": -0.047973754941473365
+        },
+        "at_mean": {
+          "s": 0.684965767779796,
+          "effect": -0.04312539655998886,
+          "se": 0.0020185632159845654,
+          "ci_lo": -0.0470817804633186,
+          "ci_hi": -0.03916901265665911
+        },
+        "at_median": {
+          "s": 0.5,
+          "effect": -0.045682230171442996,
+          "se": 0.0018526333432755434,
+          "ci_lo": -0.04931339152426306,
+          "ci_hi": -0.04205106881862293
+        },
+        "at_p95": {
+          "s": 2.0,
+          "effect": -0.02494731006586366,
+          "se": 0.0037976845009523035,
+          "ci_lo": -0.03239077168773018,
+          "ci_hi": -0.017503848443997144
+        },
+        "at_default_slider": {
+          "s": 1.61,
+          "effect": -0.030338389293314286,
+          "se": 0.0032087790396844455,
+          "ci_lo": -0.0366275962110958,
+          "ci_hi": -0.024049182375532774
+        },
+        "at_zero_extrapolation": {
+          "s": 0.0,
+          "effect": -0.05259387020663611,
+          "se": 0.0016430377821804692,
+          "ci_lo": -0.05581422425970983,
+          "ci_hi": -0.04937351615356239
+        }
+      }
+    }
+  }
+}

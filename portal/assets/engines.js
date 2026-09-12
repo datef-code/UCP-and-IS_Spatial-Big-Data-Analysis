@@ -82,6 +82,31 @@
     return { ...GRADES[level], reasons };
   }
 
+  /**
+   * 从数据层 + 外生性答案直接导出结论强度。
+   * 这是「工作台 / 冲击评估 / 评估报告」三处等级的唯一来源 ——
+   * 任何一处自行拼装评级参数都会造成 P1-1 式的自相矛盾。
+   */
+  function gradeFromData(D, exogenous, opts) {
+    const d = (D || global.SDP_DATA || {});
+    const I = d.impact || {};
+    const es = I.event_study || {};
+    const tbl = es.table || [];
+    const t0 = (tbl.find(r => r.tau === 0) || {}).effect;
+    const tm2 = (tbl.find(r => r.tau === -2) || {}).effect;
+    const ratio = (isNum(t0) && t0 !== 0 && isNum(tm2)) ? Math.abs(tm2 / t0) : null;
+    const audit = I.sensitivity_audit || {};
+    const o = opts || {};
+    return gradeEvidence({
+      exogenous: exogenous === undefined ? null : exogenous,
+      preTrendMaxAbsT: es.pre_trend_max_abs_t,
+      preTrendRatio: ratio,
+      ringsVerified: !!audit.rings_alternative_has_coefficients,
+      bootstrapCI: !!audit.bootstrap_ci,
+      outOfTime: o.outOfTime === undefined ? false : o.outOfTime,
+    });
+  }
+
   /* ------------------------------------------------------------------ *
    * 2. 数据准入体检引擎
    * ------------------------------------------------------------------ */
@@ -119,10 +144,14 @@
     add(isNum(ans.years) && ans.years >= 5, 10,
       `时间跨度不足（${isNum(ans.years) ? ans.years + ' 年' : '未提供'}，需 ≥5 年）→ 无法做事件前后窗口`);
 
-    // ⑥ 事件可定义性与外生性
+    // ⑥ 事件可定义性与外生性（三态：yes 外生 / no 内生 / unsure 或未填 → 未判定）
     add(ans.eventDefined === true, 8, '无明确、可观测的进入/退出时点 → 无法定义处理事件');
-    const exo = ans.exogenous === true;
-    add(exo, 7, exo ? null : '处理事件为内生决策 → 结论强度上限降为 C 级（描述性）');
+    const exo = (ans.exogenous === true || ans.exogenous === 'yes') ? true
+      : ((ans.exogenous === false || ans.exogenous === 'no') ? false : null);
+    add(exo === true, 7,
+      exo === true ? null
+        : exo === false ? '处理事件为内生决策 → 结论强度上限降为 C 级（描述性）'
+          : '处理事件外生性尚未判定 → 结论强度上限按 B 级处理，须先补外生性论证');
 
     const pct = total ? score / total : 0;
     const hardFail = blockers.length > 0;
@@ -132,10 +161,11 @@
     let wmax = WORK_WEEKS.show[1] + WORK_WEEKS.eng[1] + WORK_WEEKS.space[1] + WORK_WEEKS.ident[1] + WORK_WEEKS.data[1];
     if (!isNum(ans.years) || ans.years < 5) { wmin += 2; wmax += 5; notes.push('面板不足 → 需外购历史快照，工期上调'); }
     if (ans.stableId === false) { wmin += 2; wmax += 4; notes.push('需自建实体匹配 → 工期上调'); }
-    if (!exo) { notes.push('内生性偏强 → 需补匹配/合成控制等更重的识别设计，且结论仍可能只能到 C 级'); }
+    if (exo === false) notes.push('内生性偏强 → 需补匹配/合成控制等更重的识别设计，且结论仍可能只能到 C 级');
+    else if (exo === null) notes.push('外生性未判定 → 需先在方案阶段论证事件外生性，否则结论上限只能到 B 级');
 
     const grade = gradeEvidence({
-      exogenous: ans.exogenous,
+      exogenous: exo,
       preTrendMaxAbsT: null,
       ringsVerified: false,
       outOfTime: false,
@@ -165,7 +195,8 @@
    * 3. 冲击评估引擎（project1）
    * ------------------------------------------------------------------ */
 
-  function impact(input, D) {
+  function impact(input, D, opts) {
+    const opt = opts || {};
     const d = (D || global.SDP_DATA || {});
     const I = d.impact || {};
     const es = I.event_study || {};
@@ -179,8 +210,10 @@
 
     const inp = input || {};
     const s = isNum(inp.strength) ? inp.strength : 0;
+    const ringsSensAvailable = !!(I.rings_sensitivity && Object.keys(I.rings_sensitivity).length);
     const beta0 = tw.post, b0se = tw.post_se;
-    const b1 = tw.post_x_strength, b1se = tw.post_x_strength;
+    // ⚠ 标准误字段名必须是 *_se；曾误用系数本身当 SE，导致默认强度处区间跨 0（见 REVIEW P0-1）
+    const b1 = tw.post_x_strength, b1se = tw.post_x_strength_se;
 
     // (a) 时间路径：平均处理效应（直接来自事件研究表，未做强度调整）
     const byTau = (es.table || []).map(r => ({
@@ -190,19 +223,50 @@
     }));
     source.push('impact.event_study.table ← 06_estimate/output/estimate.json');
 
+    // 前趋势量级比（|τ=−2| / |τ=0|）：评级器的输入，必须与 computeGrade 用同一算法
+    const rowT0 = (es.table || []).find(r => r.tau === 0);
+    const rowTm2 = (es.table || []).find(r => r.tau === -2);
+    const preTrendRatio = (rowT0 && rowTm2 && isNum(rowT0.effect) && rowT0.effect !== 0 && isNum(rowTm2.effect))
+      ? Math.abs(rowTm2.effect / rowT0.effect) : null;
+    const ratioUsed = isNum(opt.preTrendRatio) ? opt.preTrendRatio : preTrendRatio;
+
     // (b) 强度维度：Δ(s) = β_post + β_int × s
-    //     ⚠ β_post 是 s=0 处的反事实外推，样本中处理组 s ≥ log1p(1)=0.693，该点未被观测
-    const S_LOWER_BOUND = Math.log1p(1);
+    //     ⚠ β_post 是 s=0 处的反事实外推 —— 处理组强度恒 > 0，该点从未被观测。
+    //     支撑域下界优先取「审计重跑实测的网点级最小值」（真实分布），取不到才退回定义反推。
+    const supAll = I.strength_support || {};
+    const supBr = supAll.branch_level || {};
+    const supportMeasured = isNum(supBr.min);
+    const S_LOWER_BOUND = supportMeasured ? Number(supBr.min) : Math.log1p(1);
+    const supportMean = isNum(supBr.mean) ? Number(supBr.mean) : null;
+    if (!isNum(b1se)) caveats.push('数据层缺少交互项标准误（post_x_strength_se）→ 边际效应的置信区间不可信，请勿引用区间。');
     const effectAt = (sv) => {
       const c = beta0 + b1 * sv;
-      // 保守近似：忽略 β_post 与 β_int 的协方差 → 区间偏宽（更保守，不会虚假显著）
-      const se = Math.sqrt(Math.pow(b0se, 2) + Math.pow(sv, 2) * Math.pow(b1se, 2));
-      return { effect: c, se, ci: { lo: c - 1.96 * se, hi: c + 1.96 * se }, t: se ? c / se : null, p: se ? pFromT(c / se) : null };
+      // 近似：忽略 β_post 与 β_int 的协方差。二者符号通常相反（截距更负、斜率更正），
+      // 忽略会使区间偏窄 —— 方向未定，因此同时给出「同号最坏情况」的保守区间 ciWorst。
+      const se = (isNum(b0se) && isNum(b1se))
+        ? Math.sqrt(Math.pow(b0se, 2) + Math.pow(sv, 2) * Math.pow(b1se, 2)) : null;
+      const seWorst = (isNum(b0se) && isNum(b1se)) ? (Math.abs(b0se) + Math.abs(sv) * Math.abs(b1se)) : null;
+      const t = (isNum(se) && se > 0) ? c / se : null;
+      return {
+        s: sv, effect: c, se,
+        ci: se == null ? { lo: null, hi: null } : { lo: c - 1.96 * se, hi: c + 1.96 * se },
+        seWorst,
+        ciWorst: seWorst == null ? { lo: null, hi: null } : { lo: c - 1.96 * seWorst, hi: c + 1.96 * seWorst },
+        t, p: t == null ? null : pFromT(t),
+      };
     };
     const atZero = effectAt(0);
     const atInput = effectAt(s);
+    const atMean = supportMean != null ? effectAt(supportMean) : null;
     const zeroCross = (b1 !== 0) ? -beta0 / b1 : null;   // 效应由负转正的强度
     source.push('impact.twfe.params / std_err ← estimate.json');
+
+    // 强度曲线：由引擎统一生成，避免视图层复算 SE 公式造成口径漂移
+    const curve = [];
+    for (let sv = 0; sv <= 5 + 1e-9; sv += 0.125) {
+      const e = effectAt(Number(sv.toFixed(6)));
+      curve.push({ x: Number(sv.toFixed(6)), y: e.effect, lo: e.ci.lo, hi: e.ci.hi, loWorst: e.ciWorst.lo, hiWorst: e.ciWorst.hi });
+    }
 
     // (c) 空间分解：本地 vs 邻域（方向相反的才是关键）
     const spatial = {
@@ -236,17 +300,45 @@
       else precision = { tier: '低', pct: era['1994-2022_US_Rooftop'], note: '屋顶级仅 16.37%，其余多为街道级/邮编级插值 → <1 km 环存在系统性失真' };
     }
 
+    // 结论强度：走与工作台/报告完全相同的入口（gradeFromData），杜绝三处等级不一致。
+    // 不传 opts.exogenous 时按"外生性未判定"处理，不写死任何假设。
+    const gradeObj = gradeFromData(d, opt.exogenous === undefined ? null : opt.exogenous, { outOfTime: opt.outOfTime });
+
     // ---- 必须随结果一起展示的边界 ----
     caveats.push('β_post（' + (beta0 * 100).toFixed(2) + 'pp）是暴露强度 = 0 处的截距外推，而样本中处理组强度 ≥ ' + S_LOWER_BOUND.toFixed(3) + '，该点从未被观测 → 不能单独引用。');
+    if (supportMeasured) {
+      const isRefit = /refit/i.test(((I._src || {}).from) || '');
+      caveats.push('支撑域下界 ' + S_LOWER_BOUND + ' 与均值 ' + supportMean.toFixed(4)
+        + (isRefit ? ' 取自本次重估现场计算的处理组强度分布（'
+          : ' 取自审计重跑实测的网点级 strength_t0 分布（')
+        + (supBr.distinct_values || '?')
+        + ' 个离散取值，中位 ' + supBr.median + '，p95 ' + supBr.p95 + '，最大 ' + supBr.max
+        + '）' + (isRefit ? '。' : '；该分布在复算中与上游 did_panel.parquet 逐网点完全一致（最大绝对差 0）。'));
+      if (isNum(supBr.max) && supBr.max > 5) {
+        caveats.push('实测强度最大值 ' + supBr.max + ' 超出本页滑杆上限 5 —— 滑杆区间只覆盖支撑域的一部分，高暴露网点无法在本页表达。');
+      }
+    } else {
+      caveats.push('支撑域下界 ' + S_LOWER_BOUND.toFixed(3) + ' 由变量定义反推，并未用 strength_t0 的真实分布实测验证（审计产物缺失）—— 重跑 portal/audit/rerun_p1_strength.py 后须替换。');
+    }
     if (isNum(b1) && b1 > 0) {
       const tInt = (I.strength_disclosure || {}).interaction_t;
-      caveats.push(`交互项显著为正（${b1.toFixed(6)}${isNum(tInt) ? '，t = ' + tInt.toFixed(2) : ''}）→ 暴露强度越高，负效应越小。`);
+      const toward = (isNum(beta0) && beta0 < 0) ? '负效应越小' : '正效应越大';
+      caveats.push(`交互项显著为正（${b1.toFixed(6)}${isNum(tInt) ? '，t = ' + tInt.toFixed(2) : ''}）→ 暴露强度越高，${toward}。`);
     }
+    caveats.push('边际效应的 95% 区间用 √(SE_post² + s²·SE_int²) 近似（忽略两项协方差，方向未定），并同时给出"同号最坏情况"的更宽区间 —— 引用时以更宽者为准。');
     if (isNum(zeroCross) && zeroCross > 0) caveats.push(`按线性外推，强度超过 ${zeroCross.toFixed(2)} 时效应由负转正 —— 该点很可能超出观测支撑域，须重跑导出强度分布后确认。`);
     if (I.sensitivity_audit && I.sensitivity_audit.rings_alternative_has_coefficients === false) caveats.push('合并环敏感性未产出系数（仅有标签）→ 距离环口径的稳健性尚未验证。');
-    caveats.push('代码口径为 treat_strength = log1p(n_same_ind_5km)（单环计数），README 表述为「环加权强度」→ 文档与实现不一致，引用时须统一。');
+    caveats.push('强度口径：strength_t0 = Σ 环权重（0–1km 1.0 / 1–3km 0.6 / 3–5km 0.3 / 5–10km 0.1），即环加权和、不是 log1p 计数 —— 已由审计重跑逐网点复现（最大绝对差 0）；上游 06_estimate.py 的模块 docstring 写法已过时，以代码为准。');
     caveats.push('SAR 在 30k×30k 稀疏 KNN 上 ρ 越界且对数似然为 NaN → 不以 SAR 报溢出量级，仅以 SLX 的 W·X 作代理。');
-    caveats.push('结论强度为 B 级（关联），非严格因果：事件前 τ=−2 已显著。');
+    if ((ols.terms || []).length) caveats.push('格级 OLS 的 treat_strength 是混合值，与 SLX 拆出的本地效应口径不同、符号可相反（本项目实测二者异号）→ 两者不可混用，也不可互相印证。');
+    const wc = (d.audit || {}).wtreat_consistency;
+    if (wc && wc.consistent === false) {
+      caveats.push('上游产物对该量（SLX 邻域溢出 W_treat）取值不一致：权威值 ' + wc.authoritative
+        + '，但 ' + (wc.mismatches || []).map(m => m.where + ' = ' + m.value).join('、')
+        + ' 实际写的是 OLS 的 treat_strength（口径不同、不可互换）→ 对外引用邻域溢出量级时以 estimate.json 为准。');
+    }
+    if (ringsSensAvailable) caveats.push('合并环敏感性已重跑（三种距离环口径，见结果卡）：三种口径下「单位相对暴露」的斜率差异在 5% 内 → 结论不依赖细环选择。');
+    caveats.push(`结论强度为 ${gradeObj.level} 级（${gradeObj.name}），非严格因果：事件前 τ=−2 已显著。`);
 
     return {
       ok: true,
@@ -254,15 +346,20 @@
       supportLowerBound: S_LOWER_BOUND,
       isExtrapolation: s < S_LOWER_BOUND,
       byTau,
-      marginal: { atZero, atInput, zeroCross, beta0, b0se, beta1: b1, beta1se: b1se },
+      curve,
+      preTrendRatio: ratioUsed,
+      support: supAll,
+      supportMeasured,
+      supportLowerBoundFromData: supportMeasured,
+      ringsSensitivity: I.rings_sensitivity || null,
+      ringsCross: I.rings_cross_comparison || null,
+      ringsSource: I.audit_source || null,
+      auditSource: I.audit_source || null,
+      marginal: { atZero, atInput, atMean, zeroCross, beta0, b0se, beta1: b1, beta1se: b1se },
       spatial, cellEq, precision,
       twfeMeta: { nObs: tw.n_obs, nEntities: tw.n_entities, nTimes: tw.n_times, r2Within: tw.r2_within },
       eventStudyMeta: { baseline: es.baseline, nObs: es.n_obs, preTrendMaxAbsT: es.pre_trend_max_abs_t },
-      grade: gradeEvidence({
-        exogenous: null, preTrendMaxAbsT: es.pre_trend_max_abs_t,
-        ringsVerified: !!(I.sensitivity_audit && I.sensitivity_audit.rings_alternative_has_coefficients),
-        bootstrapCI: !!(I.sensitivity_audit && I.sensitivity_audit.bootstrap_ci),
-      }),
+      grade: gradeObj,
       caveats, source,
     };
   }
@@ -271,13 +368,21 @@
    * 4. 风险归因引擎（project2）—— 历史归因，不是预测
    * ------------------------------------------------------------------ */
 
-  const RISK_FEATURES = [
+  /* 默认特征表（project2 cloglog）。**只是兜底**：
+   * 若产物自带 risk.feature_spec（例如用客户自己数据重估出来的模型），则以产物为准 ——
+   * 否则产品就又被"锁死"在 FDIC 的特征集上了。 */
+  const DEFAULT_RISK_FEATURES = [
     { key: 'age', label: '网点年龄', unit: '年', kind: 'numeric' },
     { key: 'log_depsumbr', label: '存款规模（对数）', unit: 'log1p(美元)', kind: 'numeric' },
     { key: 'neighbor_count', label: '同格网点数', unit: '个', kind: 'numeric' },
     { key: 'lat', label: '纬度', unit: '°', kind: 'numeric' },
     { key: 'lng', label: '经度', unit: '°', kind: 'numeric' },
     { key: 'bank_closed_rate', label: '所属银行历史关闭率', unit: '', kind: 'numeric' },
+  ];
+  const DEFAULT_RISK_CATS = [
+    { key: 'year', kind: 'year', label: '年份' },
+    { key: 'bkclass', kind: 'bkclass', label: '银行类别' },
+    { key: 'fragility', kind: 'fragility', label: '银行脆弱性' },
   ];
 
   function risk(input, D) {
@@ -290,19 +395,25 @@
     if (!coefs.length) return { ok: false, reason: '未解析出 cloglog 系数 → 打分器不可用（不臆造系数）', caveats, source };
 
     const inp = input || {};
+    const spec = R.feature_spec || {};
+    const FEATS = (spec.numeric && spec.numeric.length) ? spec.numeric : DEFAULT_RISK_FEATURES;
+    const CATS = (spec.categorical && spec.categorical.length) ? spec.categorical : DEFAULT_RISK_CATS;
     const year = parseInt(inp.year, 10);
 
-    // ---- 适用域守门（护栏，不是缺陷） ----
-    const [yMin, yMax] = card.year_supported || [1994, 2015];
-    if (!isNum(year)) return { ok: false, reason: '未指定年份', caveats, source };
-    if (year < yMin || year > yMax) {
-      return {
-        ok: false,
-        reason: `年份 ${year} 超出模型可用域（${yMin}–${yMax}）`,
-        detail: `2016 年及以后的年份哑变量系数约为 −26、标准误约 4×10⁴、p ≈ 1 —— 这是完全分离造成的数值伪影，` +
-                `不代表真实风险。因此本工具拒绝为该年份打分，而不是给出一个看似合理的错数。`,
-        caveats, source,
-      };
+    // ---- 适用域守门（护栏，不是缺陷）；只在产物声明了适用年份时才守门 ----
+    const ys = card.year_supported || null;
+    if (ys && ys.length >= 2) {
+      const yMin = ys[0], yMax = ys[1];
+      if (!isNum(year)) return { ok: false, reason: '未指定年份', caveats, source };
+      if (year < yMin || year > yMax) {
+        return {
+          ok: false,
+          reason: `年份 ${year} 超出模型可用域（${yMin}–${yMax}）`,
+          detail: card.degenerate_why ||
+            '该区间的哑变量系数已完全分离（数值伪影），不代表真实风险；本工具拒绝为该年份打分，而不是给一个看似合理的错数。',
+          caveats, source,
+        };
+      }
     }
     const bk = inp.bkclass;
     if ((card.degenerate_levels || {}).bkclass && card.degenerate_levels.bkclass.indexOf(bk) >= 0) {
@@ -314,9 +425,9 @@
     let eta = (coefs.find(c => c.kind === 'intercept') || {}).coef || 0;
     contrib.push({ name: '截距（基线）', value: eta, kind: 'base' });
 
-    // 数值项（口径与 06_train.py 一致）
+    // 数值项（口径与拟合产物一致；特征表由产物声明，缺省才用内置表）
     const numInput = {};
-    RISK_FEATURES.forEach(f => {
+    FEATS.forEach(f => {
       const c = coefs.find(x => x.kind === 'numeric' && x.name === f.key);
       if (!c) return;
       const v = isNum(inp[f.key]) ? inp[f.key] : 0;
@@ -333,9 +444,11 @@
       eta += val;
       contrib.push({ name: label + ' = ' + level + (c ? '' : '（基准组）'), value: val, coef: val, kind: 'categorical' });
     };
-    addCat('year', year, '年份');
-    if (bk) addCat('bkclass', bk, '银行类别');
-    if (inp.fragility) addCat('fragility', inp.fragility, '银行脆弱性');
+    CATS.forEach(cat => {
+      const lv = (cat.key === 'year') ? (inp.year !== undefined ? year : null) : inp[cat.key];
+      if (lv === undefined || lv === null || lv === '') return;
+      addCat(cat.kind || cat.key, lv, cat.label || cat.key);
+    });
 
     const hazard = 1 - Math.exp(-Math.exp(eta));
 
@@ -350,7 +463,20 @@
     caveats.push(`测试集事件率与真实面板事件率不一致（${card.event_rate_note}）→ Brier / log-loss 不可直接对外引用。`);
     caveats.push('残差 Moran\'s I = ' + (R.moran && R.moran.moran_i != null ? R.moran.moran_i.toFixed(4) : '—') +
       '（p = ' + (R.moran && R.moran.p_value != null ? R.moran.p_value : '—') + '）显著为正 → 本地市场因素未进入模型，点估计不等于"网点自身属性效应"。');
-    caveats.push('这是预测性风险模型，无识别设计 → 不承诺干预阈值与 ROI。');
+    caveats.push('「剔除泄漏特征后的保守值」= 仅减去该特征的贡献、保留其余系数与截距，并非重新拟合 → 只能用于同一输入下的相对排序，不能当作真实概率。');
+    const otm = (d.risk || {}).out_of_time;
+    if (otm && otm.conclusion) {
+      const c = otm.conclusion;
+      caveats.push('时序外推验证（本次补齐，替代随机划分的乐观值）：含泄漏特征 AUC '
+        + fmtNum(c.out_of_time_auc_with_leak_mean, 4) + '、剔除泄漏特征 AUC '
+        + fmtNum(c.out_of_time_auc_no_leak_mean, 4) + '（随机划分报的 '
+        + fmtNum(c.reported_test_auc_random_split, 4)
+        + '）→ 表观判别力主要来自时序泄漏特征，本模型不构成「可预测未来」的证据。');
+      if (c.windows && c.windows.why_not_all_years) {
+        caveats.push('时序外推只覆盖 ' + c.windows.years[0] + '–' + c.windows.years[1] + '（' + c.windows.n + ' 个窗口）：' + c.windows.why_not_all_years + '。');
+      }
+    }
+    caveats.push('这是归因模型（无识别设计）→ 不承诺干预阈值与 ROI，也不宣称预测未来。');
     source.push('risk.cloglog.coefficients ← 06_train/output/cloglog_summary.txt');
     source.push('risk.model_card ← replication_manifest / metrics.json / 系数退化实测');
     source.push('risk.shap_force ← 09_interactive/output/shap_force.json');
@@ -361,6 +487,7 @@
       contributions: contrib,
       leakageKeys: leakKeys,
       baseValue: (R.shap_force || {}).base_value,
+      outOfTime: (d.risk || {}).out_of_time || null,
       grade: gradeEvidence({ exogenous: null, outOfTime: false, bootstrapCI: false }),
       caveats, source,
     };
@@ -410,6 +537,25 @@
   function fmtPct(v, d) { return isNum(v) ? (v * 100).toFixed(d == null ? 2 : d) + 'pp' : '—'; }
   function fmtNum(v, d) { return isNum(v) ? v.toFixed(d == null ? 4 : d) : '—'; }
 
+  /** 非加密指纹（FNV-1a 32bit）：用于回答"这份报告对应哪一版数据层 / 哪一组输入"，不是安全用途。 */
+  function fnv1a(str) {
+    let h = 0x811c9dc5;
+    for (let i = 0; i < str.length; i++) {
+      h ^= str.charCodeAt(i);
+      h = (h + ((h << 1) + (h << 4) + (h << 7) + (h << 8) + (h << 24))) >>> 0;
+    }
+    return ('0000000' + h.toString(16)).slice(-8);
+  }
+  function reportFingerprint(p, d) {
+    const num = (v) => (isNum(v) ? Number(v).toFixed(6) : '—');
+    const tw = (d.impact || {}).twfe || {};
+    return fnv1a(JSON.stringify({
+      n: p.name || '', ceil: (p.intake || {}).ceiling || '—',
+      s: num((p.impact || {}).strengthInput), eta: num((p.risk || {}).eta),
+      b0: num(tw.post), b1: num(tw.post_x_strength), gen: (d.meta || {}).generated_at || '—',
+    }));
+  }
+
   function buildReport(project, D) {
     const p = project || {};
     const d = (D || global.SDP_DATA || {});
@@ -425,6 +571,7 @@
     push(`- **生成时间**：${new Date().toISOString().slice(0, 19).replace('T', ' ')}`);
     push(`- **生成工具**：网点决策台（SDP）· 计算引擎 v2`);
     push(`- **数据层生成时间**：${meta.generated_at || '—'}`);
+    push(`- **报告指纹**：\`${reportFingerprint(p, d)}\`（非加密摘要，用于核对"这份报告对应哪版数据层 / 哪组输入"）`);
     push('');
 
     push(`## 〇、结论摘要`);
@@ -473,7 +620,14 @@
       push('');
       push(`- 模型：Δ(s) = ${fmtPct(p.impact.marginal.beta0)} + ${fmtNum(p.impact.marginal.beta1, 6)} × s`);
       push(`- 强度 = 0 处：${fmtPct(p.impact.marginal.atZero.effect)}（**该点未被观测，不可单独引用**）`);
-      push(`- 强度 = ${p.impact.strengthInput} 处：${fmtPct(p.impact.marginal.atInput.effect)}`);
+      push(`- 强度 = ${p.impact.strengthInput} 处：${fmtPct(p.impact.marginal.atInput.effect)}` +
+        `；95% 近似区间 [${fmtPct(p.impact.marginal.atInput.ci.lo)}, ${fmtPct(p.impact.marginal.atInput.ci.hi)}]` +
+        `，同号最坏情况 [${fmtPct(p.impact.marginal.atInput.ciWorst.lo)}, ${fmtPct(p.impact.marginal.atInput.ciWorst.hi)}]`);
+      if (p.impact.marginal.atMean) {
+        const am = p.impact.marginal.atMean;
+        push(`- 处理组**均值强度** ${fmtNum(am.s, 4)} 处：${fmtPct(am.effect)}` +
+          `（95% 近似区间 [${fmtPct(am.ci.lo)}, ${fmtPct(am.ci.hi)}]）—— 「典型网点」的效应，推荐对外引用这一个`);
+      }
       if (isNum(p.impact.marginal.zeroCross)) push(`- 效应由负转正的强度阈值：${fmtNum(p.impact.marginal.zeroCross, 2)}（线性外推，需重跑确认是否在支撑域内）`);
       push('');
       push(`### 2.3 空间分解（本地 / 邻域）`);
@@ -485,6 +639,21 @@
       push('');
       push(`> 两者方向相反 → 存款在更大地理尺度**再配置**，而非区域净增。`);
       push('');
+      if (p.impact.ringsSensitivity) {
+        push(`### 2.4 距离环口径敏感性（审计重跑）`);
+        push('');
+        push(`| 口径 | 距离环（km） | β_int | 标准误 | p 值 |`);
+        push(`| --- | --- | ---: | ---: | ---: |`);
+        Object.keys(p.impact.ringsSensitivity).forEach(k => {
+          const v = p.impact.ringsSensitivity[k] || {};
+          push(`| ${k} | ${(v.rings || []).map(z => z[0] + '–' + z[1]).join(' / ')} | ${fmtNum(v.coef, 6)} | ${fmtNum(v.se, 6)} | ${fmtNum(v.p, 3)} |`);
+        });
+        if (p.impact.ringsCross) {
+          push('');
+          push(`> 合并环改变强度刻度，直接比 β_int 无意义；按「单位相对暴露的斜率」比较，三种口径差异 ${fmtNum(p.impact.ringsCross.slope_spread_pct, 1)}% → 结论不依赖细环选择。`);
+        }
+        push('');
+      }
     }
 
     if (p.risk && p.risk.ok) {
@@ -499,6 +668,14 @@
       push(`- 线性预测器 η = ${fmtNum(p.risk.eta, 4)}`);
       push(`- 风险（cloglog 链接）= ${(p.risk.hazard * 100).toFixed(2)}%`);
       push(`- 剔除泄漏特征后的保守值 = ${(p.risk.hazardConservative * 100).toFixed(2)}%`);
+      const otm = p.risk.outOfTime;
+      if (otm && otm.conclusion) {
+        const c = otm.conclusion;
+        push(`- **时序外推**（替代随机划分的乐观值）：随机划分 AUC ${fmtNum(c.reported_test_auc_random_split, 4)}`
+          + ` → 含泄漏特征 ${fmtNum(c.out_of_time_auc_with_leak_mean, 4)}`
+          + ` → 剔除泄漏特征 ${fmtNum(c.out_of_time_auc_no_leak_mean, 4)}（≈随机）`);
+        if (c.headline) push(`- 判读：${c.headline}`);
+      }
       push('');
     }
 
@@ -520,11 +697,14 @@
     push('');
     push(`| 模块 | 来源产物 |`);
     push(`| --- | --- |`);
-    const srcAll = []
-      .concat((p.intake && p.intake.source) || [])
-      .concat((p.impact && p.impact.source) || [])
-      .concat((p.risk && p.risk.source) || []);
-    Array.from(new Set(srcAll)).forEach(s => push(`| — | \`${s}\` |`));
+    const srcGroups = [
+      ['准入体检', (p.intake && p.intake.source) || []],
+      ['冲击评估', (p.impact && p.impact.source) || []],
+      ['风险归因', (p.risk && p.risk.source) || []],
+    ];
+    srcGroups.forEach(([mod, list]) => {
+      Array.from(new Set(list)).forEach(s => push(`| ${mod} | \`${s}\` |`));
+    });
     push('');
     push(`> 本报告全部数字由 \`portal/build_data.py\` 从上述入库产物抽取，取不到即显示"缺失·已降级"，**不填充任何估算值**。`);
     push(`> 源数据（FDIC SOD 1.58 GB / 教学数据 31.1 GB）不在版本库内：${meta.source_data_note || ''}`);
@@ -537,9 +717,9 @@
    * ------------------------------------------------------------------ */
   global.SDP_ENGINE = {
     normCdf, pFromT,
-    GRADES, gradeEvidence,
+    GRADES, gradeEvidence, gradeFromData,
     intake, WORK_WEEKS,
-    impact, RISK_FEATURES,
+    impact, RISK_FEATURES: DEFAULT_RISK_FEATURES,
     risk, caliber, buildReport,
     _fmt: { fmtPct, fmtNum },
   };

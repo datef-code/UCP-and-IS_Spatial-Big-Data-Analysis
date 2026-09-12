@@ -188,7 +188,8 @@ treated 网点在 rel ∈ [−3,+4] 窗口内，对照组全样本。
 
 **关键的不确定性（必须如实交代）**
 
-    ① 事件研究 pre 期并非完全零（τ=-2 轻微负），且被辐射区域本身可能
+    ① 事件研究 pre 期并非完全零（τ=-2 **显著为负**，|t|≈4.1，已触发本项目
+      「前趋势显著 → 降一级」的止损阈值），且被辐射区域本身可能
        处于衰退走廊——**共同区域冲击**可能贡献部分 post 下降；
        TWFE/事件研究点估计是"关闭与周边网点存款衰退"的关联证据，
        严格因果仍需 IV/匹配或 Callaway–Sant'Anna 类估计。
@@ -204,7 +205,7 @@ treated 网点在 rel ∈ [−3,+4] 窗口内，对照组全样本。
 > {es_t0 * 100:.3g} pp，至 τ=4 加深到 {es_t4 * 100:.3g} pp）；TWFE 平均
 > post 效应 {post_beta * 100:.3g} pp。聚合 cell 层 SLX 给出正 spillover，
 > 提示存款在**更广地理尺度上再配置**，而非留在关闭事件原邻域。两套识别
-> 均**不可读成严格因果或 ROI**（τ=-2 轻微趋势 + 区域共同冲击 +
+> 均**不可读成严格因果或 ROI**（τ=-2 显著为负（τ=-2） + 区域共同冲击 +
 > 成本参数缺失），仅供方向性结论。
 """
 
@@ -283,6 +284,7 @@ def write_technical_report(est: dict, manifest: dict) -> Path:
             key = f"lambda={m.get('lambda', 'n/a'):.4g}"
         elif label == "slx":
             w_treat = m.get("params", {}).get("W_treat_strength", float("nan"))
+            w_treat_p = m.get("pvalues", {}).get("W_treat_strength", float("nan"))
             key = f"W_treat={w_treat:.4g}"
         sdm_table += f"{name} | {r2:.4g} | {n} | {key} |\n"
 
@@ -314,7 +316,7 @@ def write_technical_report(est: dict, manifest: dict) -> Path:
 加深（事件研究 τ=0 约 -4.4pp → τ=4 约 -10.1pp；TWFE post ≈ -0.053，
 p<0.001）；post × strength 交互为正（+0.014），提示处理强度更高的网点
 负效应更缓和。聚合 H3 cell 层 SLX 的 W_treat 为正 → 存款在更广地理尺度
-再配置。事件前 τ=-2 轻微为负 + 区域共同冲击未排除 → 关联证据而非严格因果。**
+再配置。事件前 τ=-2 显著为负 + 区域共同冲击未排除 → 关联证据而非严格因果。**
 
 ## 1. 模型总览
 
@@ -328,7 +330,7 @@ p<0.001）；post × strength 交互为正（+0.014），提示处理强度更�
 
 **双向固定效应（UNINUMBR + YEAR）+ 聚类稳健 SE（cluster on UNINUMBR）。
 y = dep_chg_rate（clip ±50pp）；回归量 post × strength。**
-**Caution：平行趋势近似通过但 τ=-2 轻微为负，共同区域冲击未完全排除
+**Caution：平行趋势近似通过但 τ=-2 显著为负，共同区域冲击未完全排除
 → 该 β 为关联证据，见 2.3。**
 
 | 参数 | 系数 | SE | t | p |
@@ -360,7 +362,7 @@ n_obs = {twfe.get('n_obs', '?')}, n_entities = {twfe.get('n_entities', '?')}, n_
 ### 2.3 事件研究的平行趋势诊断
 
 **pre-trend max|t| = {event.get('pre_trend_max_abs_t', 0):.2f}：τ=-3 不显著
-（-0.0019, p=0.33），τ=-2 轻微为负（-0.0069，约为 post 效应的 1/8）——
+（-0.0019, p=0.33），τ=-2 显著为负（-0.0069，约为 post 效应的 1/8）——
 平行趋势近似成立，无正向预期。残余的 τ=-2 负值若反映"被辐射区域处于衰退
 走廊"，则共同区域冲击会贡献部分 post 下行；因此把点估计读作**关联证据**，
 严格因果留给 IV/匹配 / Callaway–Sant'Anna 类设计。**
@@ -404,7 +406,7 @@ I = {mi.get('I', 'n/a'):.4g}, E[I] = {mi.get('E_I', 'n/a'):.4g}, z_sim = {mi.get
 
     report += f"""
 
-**SAR ρ 异常说明**：spreg.GM_Lag 在 30k×30k KNN 稀疏网络上数值不稳（ρ 常不在 (0,1)）。本研究的 SAR 给出 ρ = {spatial.get('sar', {}).get('rho', 'n/a'):.4g}（pseudo-R² = {spatial.get('sar', {}).get('r2', 'n/a'):.4g}），其一阶近似的溢出项（spill≈-0.002）也不稳健；**本研究仅把 SLX 的 W_treat = 0.0073 (p=0.009) 作为邻 cell 溢出的代理（正）**。
+**SAR ρ 异常说明**：spreg.GM_Lag 在 30k×30k KNN 稀疏网络上数值不稳（ρ 常不在 (0,1)）。本研究的 SAR 给出 ρ = {spatial.get('sar', {}).get('rho', 'n/a'):.4g}（pseudo-R² = {spatial.get('sar', {}).get('r2', 'n/a'):.4g}），其一阶近似的溢出项（spill≈-0.002）也不稳健；**本研究仅把 SLX 的 W_treat = {w_treat:.4g}（p={w_treat_p:.3g}）作为邻 cell 溢出的代理（正）**。注意：`estimate.json` 里另有 OLS 的 `treat_strength`（≈0.00731，混合值），两者口径不同、不可互换 —— 早期版本曾把该 OLS 系数误写成本行的 SLX W_treat，现已改为从 `spatial_fits.slx.params` 直接取值。
 
 ## 4. 距离带敏感性
 
@@ -438,7 +440,7 @@ Kepler.gl 自包含 HTML（关闭事件 + H3 R8 cells）：{kepler_path.as_posix
 """.strip() + "\n"
 
     report += dedent("""
-    ① **事件前 τ=-2 轻微为负（-0.0069, p<0.001；τ=-3 不显著）**：平行趋势
+    ① **事件前 τ=-2 显著为负（-0.0069, p<0.001；τ=-3 不显著）**：平行趋势
        近似通过但非理想。若被辐射区域本身处于衰退走廊，共同区域冲击会贡献
        部分 post 下行 → TWFE/事件研究点估计为**关联证据**而非严格因果。
        修正方向：事件前窗口、IV/匹配、或 Callaway–Sant'Anna 类 staggered 估计。
@@ -512,7 +514,7 @@ def write_replication_manifest(est: dict) -> Path:
 # 4) conclusion.md —— 结论 + 已知限制 / 止损条件（规范 §8.5）
 # --------------------------------------------------------------------------- #
 KNOWN_LIMITS = [
-    "事件前 τ<0 存在轻微负向系数 → 平行趋势近似但非理想；区域共同冲击可能贡献 post 下行，"
+    "事件前 τ<0 存在显著为负的系数（量级远小于 post）→ 平行趋势未通过；区域共同冲击可能贡献 post 下行，"
     "点估计属**关联证据**而非严格因果。",
     "存款转移 ≠ 区域净增：网点层负效应 + 聚合层正 spillover → 存款在更广尺度再配置，"
     "不据此报区域增长红利或 ROI。",
@@ -548,7 +550,7 @@ def write_conclusion(est: dict, manifest: dict) -> tuple[Path, Path]:
     headline = (f"10 km 内同业关闭事件后，被辐射存活网点存款增速显著下行并逐年加深"
                 f"（τ=0 {tau0 * 100:+.3g} pp → τ=4 {tau4 * 100:+.3g} pp；TWFE post {post * 100:+.3g} pp）；"
                 f"聚合层 SLX 的 W_treat {w_treat:+.4g} 为正 → 存款在更广尺度**再配置**而非区域净增。"
-                f"事件前轻微趋势 + 区域共同冲击 → **关联证据，非严格因果**。")
+                f"事件前显著为负（τ=-2） + 区域共同冲击 → **关联证据，非严格因果**。")
 
     md = dedent(f"""
 # ⑧ 结论 · project1_fdic_spatial

@@ -9,7 +9,7 @@ window.SDP_CONTENT = {
   product: {
     name: "网点决策台",
     codename: "SDP · Spatial Decision Platform",
-    version: "v1.0（对应仓库 2026-09-11 状态）",
+    version: "v2.1（对应仓库 2026-09-11 状态）",
     tagline: "把「关一家店，周边会发生什么」从拍脑袋，变成可计算、可解释、可审计的答案。",
     oneLiner: "面向银行与连锁网络的「开关店」决策，提供事前风险排序 + 事后影响评估 + 客户可自证的证据链。",
     category: "B 端决策支持 / 空间数据分析产品",
@@ -37,11 +37,11 @@ window.SDP_CONTENT = {
     valueProps: [
       {
         h: "给出「三个数字」而不是一个",
-        p: "同样是「有影响」，本产品输出：效应有多大（−4.4pp → −10.1pp）、传多远（0–1 / 1–3 / 3–5 / 5–10 km 距离衰减）、第几年最深（τ=0 → τ=4）。这三个维度才构成可执行的决策依据。",
+        p: "同样是「有影响」，本产品同时输出三个维度：效应有多大、传多远（0–1 / 1–3 / 3–5 / 5–10 km 距离衰减）、第几年最深（事件后逐年动态）。这三个维度才构成可执行的决策依据（具体数值见「冲击评估」模块的实时结果）。",
         kind: "已验证"
       },
       {
-        h: "本地与邻域分开报价",
+        h: "本地与邻域分开报",
         p: "空间 SLX 把效应拆成「本地效应」与「邻域效应」两项：本地被吸走、邻域补回，两者方向相反。这直接决定了结论是「再配置」还是「净增/净损」——普通回归只能看到一个混合值。",
         kind: "已验证"
       },
@@ -51,7 +51,7 @@ window.SDP_CONTENT = {
         kind: "已验证"
       },
       {
-        h: "26 分钟一键重跑，每个数字可追到具体产物",
+        h: "一键重跑，每个数字可追到具体产物",
         p: "每个阶段产出机读 JSON + 人读 Markdown 双报告与决策日志；建模阶段强制携带复现清单（版本 / 参数 / 随机种子 / 输入指纹）。被质疑时不用翻代码，直接指文件。",
         kind: "已验证"
       }
@@ -65,11 +65,11 @@ window.SDP_CONTENT = {
       {
         id: "risk",
         tag: "事前",
-        name: "网点风险预测台",
+        name: "网点风险归因台",
         sub: "project2_fdic_survival",
         question: "哪些网点最可能关闭？主要由什么决定？",
         audience: "网络规划 / 风控 / 并购整合",
-        form: "打分台 demo（拖滑块 → 实时风险 + SHAP 贡献分解）+ 护栏页 + 6 张报告图 + 7 个离线交互件",
+        form: "网页工作台（拖滑块 → 实时归因 + 因子贡献分解）+ 模型卡 + 适用域守门与护栏",
         metrics: [
           { k: "测试 AUC", p: "risk.test.auc" },
           { k: "C-index", p: "risk.test.c_index" },
@@ -83,8 +83,8 @@ window.SDP_CONTENT = {
           "可解释性是一等公民：SHAP 显示「谁家的网点」与「什么时候」比网点自身年龄更能解释生死"
         ],
         guardrails: [
-          "这是预测模型，无识别设计 → 不承诺干预阈值与 ROI",
-          "残差 Moran's I 0.141（p=0.005）显著为正 → 本地市场因素尚未进入模型，点估计不等于「网点自身属性效应」"
+          "这是归因模型（无识别设计）→ 不承诺干预阈值与 ROI，也不宣称预测未来",
+          "残差 Moran's I 显著为正（数值见「证据与边界」页）→ 本地市场因素尚未进入模型，点估计不等于「网点自身属性效应」"
         ]
       },
       {
@@ -94,13 +94,13 @@ window.SDP_CONTENT = {
         sub: "project1_fdic_spatial",
         question: "同业关闭后，我的网点受多大影响？传多远？第几年最深？",
         audience: "战略 / 选址 / 竞争情报 / 政策评估",
-        form: "证据链交互叙事（可 hover / 可切口径 / 可播放时空演化）+ Kepler 地图 + 技术报告与短论",
+        form: "网页工作台（暴露强度 / 事件年份输入 → 事件研究曲线 + 空间分解 + 精度折扣）+ 报告导出",
         metrics: [
           { k: "TWFE 平均效应", p: "impact.twfe.post" },
-          { k: "事件研究 τ=0", p: "impact.event_study.table" },
+          { k: "事件研究 τ=0", p: "#impact.tau0" },
           { k: "邻域效应 W·X", p: "impact.spatial.slx.spillover" },
           { k: "回归样本", p: "impact.twfe.n_obs" },
-          { k: "H3 R8 网格", p: "impact.stages" }
+          { k: "阶段实例", p: "impact.stage_count" }
         ],
         highlights: [
           "把「周边」从形容词变成口径：H3 R8 网格 + 0–1 / 1–3 / 3–5 / 5–10 km 距离环，0/1 的「是否相邻」升级为连续暴露强度",
@@ -119,12 +119,12 @@ window.SDP_CONTENT = {
         sub: "project6_spatial_teaching",
         question: "凭什么相信这个结论？换一种定义会不会变？",
         audience: "客户方数据团队 / 新人 / 招聘与品牌建设",
-        form: "15 页可翻页电子书 + 权重/尺度实时探索器 + L0→L3 演化动图 + 自测题",
+        form: "口径实验室（切数据集 / 权重 / 尺度 → 实时对比）+ L0→L3 阶梯 + 可复现清单",
         metrics: [
-          { k: "数据集", p: "teaching.dataset_count" },
-          { k: "L0 总格数", p: "teaching.cells_total" },
-          { k: "断言", p: "teaching.checks" },
-          { k: "Moran's I 跨度", p: "teaching.moran_range" }
+          { k: "数据集", p: "#teaching.dataset_count" },
+          { k: "L0 总格数", p: "#teaching.cells_total" },
+          { k: "Moran's I 跨度", p: "#teaching.moran_range" },
+          { k: "阶段实例", p: "teaching.stage_count" }
         ],
         highlights: [
           "把「邻居怎么定义，决定你能看到什么结论」做成能亲手拨的开关——这既是教学，也是售前信任工具",
@@ -288,7 +288,7 @@ window.SDP_CONTENT = {
         { g: "B · 关联", cond: "平行趋势近似但存在前趋势，或有区域共同冲击", use: "可用于内部决策参考，不得对外宣称因果", price: "中" },
         { g: "C · 描述性", cond: "内生性过强，事件前趋势与 post 量级相当", use: "只报差异，停止因果解读", price: "低 / 或建议终止" }
       ],
-      current: "本项目 self-rating：B 级（关联证据）—— 前 τ 轻微为负 + 存在区域共同冲击。"
+      current: "本项目 self-rating：B 级（关联证据）—— 事件前 τ=−2 显著为负（平行趋势不完美）+ 存在区域共同冲击；由引擎评级器按可执行阈值自动判定。"
     }
   },
 

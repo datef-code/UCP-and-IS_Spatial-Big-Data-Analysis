@@ -1,5 +1,7 @@
 /* 产品工具层内容（手写）。
- * 只放"文案 / 表单定义 / 选项"，**不放任何数字**——数字一律来自 portal_data.js。 */
+ * 只放"文案 / 表单定义 / 选项 / 示例 / 缺陷看板"；
+ * **结论性的模型统计数字一律在运行时从 portal_data.js 取**（或由引擎计算），不写死。
+ * 例外：缺陷看板为描述具体缺陷，会原样引用该缺陷涉及的数字（它们是问题的一部分）。 */
 window.SDP_TOOLS = {
 
   /* ---------------- 工作台：评估项目向导 ---------------- */
@@ -23,7 +25,7 @@ window.SDP_TOOLS = {
           decision: '竞对破产清算后，我方 3 km 内门店的销售额影响有多大、传多远',
           intakeAnswers: {
             stableId: true, idMatchRate: 0.94, coordNullRate: 0.03, outcomeLevel: 'store',
-            years: 10, eventDefined: true, exogenous: true,
+            years: 10, eventDefined: true, exogenous: 'yes',
           },
           impactInput: { strength: 1.2, eventYear: 2018 },
           riskInput: { age: 25, deposit: 39360, neighbor: 5, lat: 38.9, lng: -86.22, bankClosedRate: 0.25, year: 2012, bkclass: 'N', fragility: 'L0_单网点' },
@@ -40,7 +42,7 @@ window.SDP_TOOLS = {
           decision: '并购后重叠网点如何取舍、关掉 A 点会不会伤到 3 km 外的自家 B 点',
           intakeAnswers: {
             stableId: true, idMatchRate: 0.72, coordNullRate: 0.28, outcomeLevel: 'company',
-            years: 4, eventDefined: true, exogenous: false,
+            years: 4, eventDefined: true, exogenous: 'no',
           },
           impactInput: { strength: 1.0, eventYear: 2012 },
           riskInput: { age: 40, deposit: 120000, neighbor: 12, lat: 39.1, lng: -94.6, bankClosedRate: 0.5, year: 2009, bkclass: 'NM', fragility: 'L2_多网点地理分散' },
@@ -117,15 +119,15 @@ window.SDP_TOOLS = {
     lead: '把 cloglog 完整系数表还原成一个可交互的归因器：每一项贡献 = 系数 × 输入值，加总即线性预测器 η，再经 cloglog 链接得到风险概率。',
     notice: '本模块被刻意命名为「归因」而非「预测」：模型没有时序外推验证，且测试集为随机划分——它只能解释历史，不能预测未来。',
     presets: [
-      { name: '低风险样本（SDP 真实 SHAP 样本档位）', note: '对应文档中真实样本档位 0.01%', v: { age: 5, deposit: 25000, neighbor: 1, lat: 40.7, lng: -74.0, bankClosedRate: 0.02, year: 1995, bkclass: 'N', fragility: 'L0_单网点' } },
-      { name: '中位样本', note: '对应真实样本档位 2.86%', v: { age: 25, deposit: 39360, neighbor: 5, lat: 38.9, lng: -86.22, bankClosedRate: 0.15, year: 2003, bkclass: 'NM', fragility: 'L0_单网点' } },
-      { name: '高风险样本（已被关闭）', note: '对应真实样本档位 82.71%', v: { age: 60, deposit: 8000, neighbor: 60, lat: 33.5, lng: -112.1, bankClosedRate: 0.95, year: 2010, bkclass: 'SM', fragility: 'L2_多网点地理分散' } },
+      { name: '低风险样本', note: '取自真实 SHAP 分解样本（低风险档）', v: { age: 5, deposit: 25000, neighbor: 1, lat: 40.7, lng: -74.0, bankClosedRate: 0.02, year: 1995, bkclass: 'N', fragility: 'L0_单网点' } },
+      { name: '中位样本', note: '取自真实 SHAP 分解样本（中位档）', v: { age: 25, deposit: 39360, neighbor: 5, lat: 38.9, lng: -86.22, bankClosedRate: 0.15, year: 2003, bkclass: 'NM', fragility: 'L0_单网点' } },
+      { name: '高风险样本（已被关闭）', note: '取自真实 SHAP 分解样本（高风险档）', v: { age: 60, deposit: 8000, neighbor: 60, lat: 33.5, lng: -112.1, bankClosedRate: 0.95, year: 2010, bkclass: 'SM', fragility: 'L2_多网点地理分散' } },
     ],
     fields: [
-      { key: 'bankClosedRate', label: '所属银行历史关闭率', unit: '', input: 'rate', hint: '本模型的第一主导因子（系数 3.8156，SHAP 排名第 2）——「谁家的网点」比「网点多老」重要得多。但请注意：该特征存在目标泄漏。' },
-      { key: 'deposit', label: '存款规模', unit: '美元', input: 'logAmount', hint: '内部按 log1p 转换。规模是护城河：存款越大越长寿（系数 −0.0305）。' },
-      { key: 'neighbor', label: '同格网点数（竞争强度）', unit: '个', input: 'int', hint: '同一 H3 R7 网格内网点数（含自身）。系数 +0.0004，影响极弱（SHAP 排名第 7）。' },
-      { key: 'age', label: '网点年龄', unit: '年', input: 'int', hint: '系数 1.898e−05，SHAP 排名最后（0.0030）—— 「老网点更容易死」在本数据上几乎不成立。' },
+      { key: 'bankClosedRate', label: '所属银行历史关闭率', unit: '', input: 'rate', hint: '本模型的第一主导因子（SHAP 排名靠前）——「谁家的网点」比「网点多老」重要得多。但请注意：该特征存在目标泄漏，系数与排名见下方因子贡献表（运行时取值）。' },
+      { key: 'deposit', label: '存款规模', unit: '美元', input: 'logAmount', hint: '内部按 log1p 转换。规模是护城河：存款越大越长寿（系数为负，见下方结果表）。' },
+      { key: 'neighbor', label: '同格网点数（竞争强度）', unit: '个', input: 'int', hint: '同一 H3 R7 网格内网点数（含自身）。影响很弱（SHAP 排名靠后）。' },
+      { key: 'age', label: '网点年龄', unit: '年', input: 'int', hint: '「老网点更容易死」在本数据上几乎不成立（SHAP 排名最后）。' },
       { key: 'lat', label: '纬度', unit: '°', input: 'float', hint: '仅作地理基线；模型未含本地市场变量。' },
       { key: 'lng', label: '经度', unit: '°', input: 'float', hint: '仅作地理基线；模型未含本地市场变量。' },
     ],
@@ -133,34 +135,62 @@ window.SDP_TOOLS = {
 
   /* ---------------- P0 修补看板（把"已知限制"变成可追踪的工程项） ---------------- */
   patches: [
-    { id: 'P0-1', title: 'TWFE 主系数是零强度处的外推', status: '待修',
+    { id: 'P0-1', title: 'TWFE 主系数是零强度处的外推', status: '已修（展示层）',
       impact: '影响「冲击评估」的引用方式',
-      detail: 'post 的系数（−5.26pp）是 treat_strength = 0 处的反事实外推；而训练样本中处理组 strength ≥ log1p(1) = 0.693，该点从未被观测。且交互项 +0.0138（t = 8.07）显著为正——强度越高负效应越小。',
-      fix: '重跑 06 阶段导出 strength_t0 的均值与分位数 → 报均值处的边际效应与置信区间。本模块已用显式披露替代（标注支撑域下界与零交叉点）。' },
-    { id: 'P0-2', title: '合并环敏感性实际未跑', status: '待修',
+      detail: 'post 的系数（−5.26pp）是 treat_strength = 0 处的反事实外推。审计重跑实测处理组 strength_t0 ∈ [0.1, 13.7]（网点级均值 0.685、中位 0.5、148 个离散取值），0 从未被观测；交互项 +0.0138（t = 8.07）显著为正——强度越高负效应越小。',
+      fix: '已用 portal/audit/rerun_p1_strength.py 重算：支撑域改报实测分位数，并在均值处报出边际效应（−4.31pp，95% CI [−4.71, −3.92]），同时给「同号最坏情况」更宽区间。复现校准：与上游 did_panel.parquet 逐网点最大绝对差 0。' },
+    { id: 'P0-2', title: '合并环敏感性实际未跑', status: '已补跑',
       impact: '影响口径稳健性结论',
-      detail: 'sensitivity.rings_alternative 只有两个标签数组（fine / coarse），没有任何系数、标准误或 p 值——即"写了敏感性要求但没跑"。',
-      fix: '补跑合并环（0–2/2–5/5–10 km）并写入 estimate.json。本模块已在每次结果中强制披露"未验证"。' },
-    { id: 'P0-3', title: '风险模型存在目标泄漏且无时序外推验证', status: '待修',
+      detail: 'sensitivity.rings_alternative 原本只有两个标签数组（fine / coarse），没有任何系数、标准误或 p 值——即"写了敏感性要求但没跑"。',
+      fix: '已用同一套 DID 设定重跑三种距离环口径：细环 β_int=+0.013823、合并环（沿用权重值）+0.008018、合并环（等差衰减）+0.009103，三者同号且显著。按「单位相对暴露的斜率」比较差异在 5% 内 → 结论不依赖细环选择。' },
+    { id: 'P0-3', title: '风险模型存在目标泄漏且无时序外推验证', status: '已补跑',
       impact: '影响「风险归因」的数值解释',
-      detail: 'bank_closed_rate 按 CERT 对全期 1994–2025 聚合后 join 回每一年，早年样本使用了未来信息；测试集为随机划分，事件率经分层下采样富集。',
-      fix: '改为 expanding-window 重算并补 hold-out 末 5 年验证。本模块已提供"剔除泄漏特征后的保守值"作为过渡。' },
-    { id: 'P0-4', title: 'SLX 溢出系数在不同产物中取值不一致', status: '待修',
+      detail: 'bank_closed_rate 按 CERT 对全期聚合后 join 回每一年、DEPSUMBR_last 是终期值却用于每一年；原测试集为随机划分，含训练期年份。',
+      fix: '已补齐时序外推（21 个滚动窗口 + 单次留出）：随机划分 AUC 0.8814 → 时序外推（含泄漏）0.8096 → 剔除泄漏 0.5322（≈随机）。结论：表观判别力主要来自泄漏特征，模型不构成「可预测未来」的证据，只能做同期归因。' },
+    { id: 'P0-4', title: 'SLX 溢出系数在不同产物中取值不一致', status: '已修（上游模板已改）',
       impact: '影响核心卖点数字',
-      detail: 'estimate.json 为 0.008986（p ≈ 0.0013），而 technical_report.md 写作 0.0073（p = 0.009）。',
-      fix: '统一为 estimate.json 并修订结论文档。本产品全程以 estimate.json 为准。' },
-    { id: 'P0-5', title: '可复现承诺当前不可验证', status: '部分修',
+      detail: '根因：08_conclude.py 的 SAR 说明段硬编码了 0.0073，而 0.007313 正是 OLS 的 treat_strength（混合值）——把 OLS 系数误标成了 SLX 的 W_treat；权威值 estimate.json = 0.008986（p = 0.00126）。',
+      fix: '已改上游 08_conclude.py：该段改为从 spatial_fits.slx.params/pvalues 取值（现渲染为 0.008986/p=0.00126），并加注说明两者口径不同、不可互换；同时把「轻微为负」等与实测矛盾的措辞统一为「显著为负（量级远小于 post）」。重跑 ⑧ 后四处产物 + 正文取值已一致（数据层每次构建自动核对，见「数据层」页）。' },
+    { id: 'P0-5', title: '可复现承诺当前不可验证', status: '已修（全链路重建通过）',
       impact: '影响交付信任',
-      detail: '仓库无 .git；replication_manifest 记录的是绝对路径 E:\\...；logit_pipeline.pkl 与样本级 CSV 受 .gitignore 约束不入库。',
-      fix: 'manifest 改相对路径 + 明确"完整复现需自备源数据"；本产品已新增「可复现性」看板，把真实状态（含缺陷）公开。' },
-    { id: 'P0-6', title: '平行趋势口径表述不一致', status: '待修',
+      detail: 'replication_manifest 记录的是绝对路径；logit_pipeline.pkl 与样本级 CSV 受 .gitignore 约束不入库（.git 现已初始化）。核心问题不是路径，而是「从未有人从原始数据重跑一遍」。',
+      fix: '已写 portal/audit/rerun_p5_full_chain.py：把阶段入口复制到隔离沙箱、source_root 指向真实只读源数据，真实执行上游 01→06，再逐阶段对拍。实测从 32 个原始 SOD CSV 起步 4.1 分钟重建完成：raw_long 2,822,977 行 / cleaned 2,702,716 行 / panel 2,702,716 行 / did_panel 1,814,985 行全部一致，strength_t0、dep_chg_rate、post、treated 最大绝对差均为 0，estimate.json 头条系数（含 SE）最大绝对差 0。' },
+    { id: 'P0-6', title: '平行趋势口径表述不一致', status: '已修',
       impact: '直接决定结论是 B 级还是 C 级',
-      detail: 'README 表述为"轻微为负"，实测 τ=−2 的 p = 3.76e-05、|t| = 4.12（显著）。按结论文档自己的止损条件（显著**且**量级接近 post → 停止因果解读），等级应重新判定。',
-      fix: '定一个可执行的阈值并写死。本产品已把该规则实现为可执行的评级器（见「结论强度」）。' },
+      detail: 'README 曾表述为"轻微为负"，实测 τ=−2 的 p = 3.76e-05、|t| = 4.12（显著）。按结论文档自己的止损条件，等级应重新判定。',
+      fix: '阈值已写死在评级器（gradeEvidence / gradeFromData），三处等级同源；示例与回归单测锁定该口径。' },
   ],
 
   /* ---------------- 变更日志 ---------------- */
   changelog: [
+    { v: 'v2.4', d: '2026-09-11', items: [
+      '新增「帮助」页：三条使用路径（看看 / 用自己的数据 / 交付）· 六步流程表 · 9 条常见问题 · 术语速查；顶栏加「?」入口。',
+      '新增六步「流程指示器」：分析类页面顶部显示所在步骤（已完成/当前），一眼知道到哪了、下一步去哪。',
+      '导航由 10 个平铺入口收敛为三组（分析流程 / 了解与帮助 / 可信度），侧边目录同步分组。',
+      '工作台首页新增「建议下一步」卡：只把当前最该做的一步前置，其余流程收进折叠区。',
+      '版式收紧：卡片内边距、页头字号与行距下调，正文宽度收到 1120px，减少空转与滚动。',
+    ] },
+    { v: 'v2.2', d: '2026-09-11', items: [
+      'P0-1/2/3 底层真实重跑（数据源在本机）：实测 strength_t0 支撑域 [0.1, 13.7]，均值处边际效应 −4.31pp（95% CI [−4.71, −3.92]）。',
+      '合并环敏感性补跑完成：三种距离环口径同号显著，按「单位相对暴露斜率」比较差异 <5% → 结论不依赖细环选择。',
+      '时序外推验证完成：随机划分 AUC 0.8814 → 含泄漏 0.8096 → 剔泄漏 0.5322（≈随机）；模型不构成「可预测未来」的证据。',
+      '复现校准：重算的 strength_t0 与上游 did_panel.parquet 逐网点最大绝对差 0，细环 TWFE 系数与 estimate.json 完全一致。',
+      '看板升级：修补看板同时显示人工登记状态与由产物反推的「实检」状态；P0-4 定位到 technical_report.md 误用 OLS 系数。',
+      'serve.py 体检新增两条本项目沉淀的规则：⑦ 疑似时序泄漏特征（实体级常量 + 聚合/终值命名）；⑧ 空间口径稳健性（换 k / 换尺度重算 Moran\'s I）。',
+      'P0-4 修复落地到上游：08_conclude.py 的 SAR 说明段不再硬编码 0.0073，改为读 spatial_fits.slx.params/pvalues；重跑 ⑧ 后四处产物与正文取值一致（数据层自动核对）。',
+      'P0-5 修复：新增 rerun_p5_full_chain.py —— 隔离沙箱里真实重跑上游 01→06，从 32 个原始 SOD CSV 起步 4.1 分钟重建，逐阶段对拍行数与数值最大绝对差全部为 0（did_panel 1,814,985 行逐网点一致）。',
+      '新增 test_serve.py（6 项体检规则单测）与 5 项引擎回归（实测支撑域、环敏感性、时序外推、看板核对、口径核对）。',
+    ] },
+    { v: 'v2.1', d: '2026-09-11', items: [
+      '修复 P0：冲击评估的边际效应标准误误用了交互项系数（导致默认强度处置信区间跨 0）→ 改用数据层的 post_x_strength_se，并补「同号最坏情况」保守区间。',
+      '修复 P1：结论强度在「工作台 / 冲击页 / 报告」三处不一致（冲击页曾把外生性写死为未判定）→ 统一由同一评级器判定。',
+      '修复 P1：示例项目的外生性字段由布尔改为问卷枚举（yes/no），并做三态归一与向后兼容（旧项目 JSON 仍可导入）。',
+      '产品页补齐此前从未渲染的「价值主张」与「模块指标」；指标在运行时从数据层解析，取不到即显式降级。',
+      '报告数据血缘表按模块归组（此前模块列恒为空）；打印样式真正生效（只输出报告正文）。',
+      '披露补全：支撑域下界系定义反推、保守风险值非重新拟合、格级 OLS 混合值与 SLX 本地效应异号不可混用。',
+      '新增报告指纹（非加密摘要）：报告的每个版本可核对「对应哪版数据层 / 哪组输入」，同输入同指纹。',
+      '新增回归单测：边际效应 SE 对拍、结论强度一致性（含 gradeFromData 单一来源）、示例期望等级、报告缺章降级、指纹稳定性。',
+    ] },
     { v: 'v2.0', d: '2026-09-11', items: [
       '从"介绍型门户"改为"计算型工作台"：新增输入 → 计算 → 可交付输出的完整闭环。',
       '新增计算引擎层（engines.js）与 26 项单元测试；系数全部来自入库产物，引擎内无硬编码模型系数。',

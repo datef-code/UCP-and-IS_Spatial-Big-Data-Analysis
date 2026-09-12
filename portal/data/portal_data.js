@@ -1,183 +1,197 @@
 /* 自动生成，请勿手改。重建：./.venv/Scripts/python.exe portal/build_data.py */
 window.SDP_DATA = {
   "meta": {
-    "generated_at": "2026-09-11T01:30:03+08:00",
+    "schema_version": 2,
+    "required_keys": [
+      "meta",
+      "datakit",
+      "impact",
+      "risk",
+      "teaching",
+      "missing"
+    ],
+    "generated_at": "2026-09-11T14:02:59+08:00",
     "generator": "portal/build_data.py",
-    "root": "D:\\software_work\\workspace\\codebuddy\\project\\UCP-and-IS_Spatial-Big-Data-Analysis",
+    "root": "E:\\workspace\\workbuddy\\project\\data_use",
     "policy": "所有数字来自仓库入库产物；抽取失败一律置 null 并在 missing 中登记，前端显式降级，不编造。",
     "stage_instance_total": 26,
-    "source_data_present": false,
-    "source_data_note": "源数据（1.58 GB FDIC / 31.1 GB 教学数据）不在版本库内；本数据层仅覆盖已入库的聚合产物。",
+    "source_data_present": true,
+    "source_data_note": "源数据目录 data_raw/ 在本机存在（FDIC 1994–2025 逐年 SOD + 教学数据），但只有聚合产物入库；重建本数据层不需要原始数据，重跑审计脚本需要中间产物（见 audit_sources）。",
+    "audit_sources": [
+      "portal/audit/p1_strength_rings.json",
+      "portal/audit/p2_out_of_time.json",
+      "portal/audit/p5_full_chain.json"
+    ],
     "provenance": [
       {
         "file": "project1_fdic_spatial/06_estimate/output/estimate.json",
         "bytes": 9051,
-        "mtime": "2026-09-09T11:44:53"
+        "mtime": "2026-09-08T09:56:29"
       },
       {
         "file": "project1_fdic_spatial/06_estimate/output/metrics.json",
         "bytes": 1765,
-        "mtime": "2026-09-08T00:30:46"
+        "mtime": "2026-09-06T19:23:31"
       },
       {
         "file": "project1_fdic_spatial/06_estimate/output/replication_manifest.json",
         "bytes": 1371,
-        "mtime": "2026-09-08T00:30:46"
+        "mtime": "2026-09-06T19:23:31"
       },
       {
         "file": "project1_fdic_spatial/07_visualize/output/manifest.json",
         "bytes": 3395,
-        "mtime": "2026-09-08T00:30:47"
+        "mtime": "2026-09-09T21:18:40"
       },
       {
         "file": "project1_fdic_spatial/08_conclude/output/conclusion_report.json",
-        "bytes": 2872,
-        "mtime": "2026-09-09T11:44:53"
+        "bytes": 2901,
+        "mtime": "2026-09-11T13:33:35"
       },
       {
         "file": "project1_fdic_spatial/08_conclude/output/replication_manifest.json",
         "bytes": 2153,
-        "mtime": "2026-09-08T00:30:47"
+        "mtime": "2026-09-11T13:33:35"
       },
       {
         "file": "project1_fdic_spatial/09_interactive/output/kepler_timeline_config.json",
         "bytes": 4836,
-        "mtime": "2026-09-10T10:31:27"
+        "mtime": "2026-09-09T21:28:04"
       },
       {
         "file": "project1_fdic_spatial/09_interactive/output/manifest.json",
         "bytes": 3370,
-        "mtime": "2026-09-10T09:24:58"
+        "mtime": "2026-09-09T21:28:04"
       },
       {
         "file": "project2_fdic_survival/06_train/output/metrics.json",
         "bytes": 448,
-        "mtime": "2026-09-08T00:30:47"
+        "mtime": "2026-09-06T19:59:18"
       },
       {
         "file": "project2_fdic_survival/06_train/output/moran_i.json",
         "bytes": 120,
-        "mtime": "2026-09-08T00:30:47"
+        "mtime": "2026-09-06T19:59:31"
       },
       {
         "file": "project2_fdic_survival/06_train/output/replication_manifest.json",
         "bytes": 1577,
-        "mtime": "2026-09-08T00:30:47"
+        "mtime": "2026-09-06T19:59:31"
       },
       {
         "file": "project2_fdic_survival/07_visualize/output/manifest.json",
         "bytes": 4573,
-        "mtime": "2026-09-08T00:30:47"
+        "mtime": "2026-09-06T19:59:34"
       },
       {
         "file": "project2_fdic_survival/08_conclude/output/conclusion_report.json",
         "bytes": 4558,
-        "mtime": "2026-09-08T00:30:47"
+        "mtime": "2026-09-06T19:59:34"
       },
       {
         "file": "project2_fdic_survival/09_interactive/output/manifest.json",
         "bytes": 4854,
-        "mtime": "2026-09-10T13:43:51"
+        "mtime": "2026-09-10T19:44:24"
       },
       {
         "file": "project2_fdic_survival/09_interactive/output/shap_force.json",
         "bytes": 1479,
-        "mtime": "2026-09-10T09:24:59"
+        "mtime": "2026-09-09T21:38:30"
       },
       {
         "file": "project6_spatial_teaching/04_validate/output/fdic/version_lock.json",
         "bytes": 1013,
-        "mtime": "2026-09-08T00:30:47"
+        "mtime": "2026-09-06T20:55:19"
       },
       {
         "file": "project6_spatial_teaching/04_validate/output/snap_brightkite/version_lock.json",
         "bytes": 1133,
-        "mtime": "2026-09-08T00:30:47"
+        "mtime": "2026-09-06T20:55:26"
       },
       {
         "file": "project6_spatial_teaching/04_validate/output/snap_gowalla/version_lock.json",
         "bytes": 1095,
-        "mtime": "2026-09-08T00:30:47"
+        "mtime": "2026-09-06T20:55:29"
       },
       {
         "file": "project6_spatial_teaching/04_validate/output/sz_bike/version_lock.json",
         "bytes": 1391,
-        "mtime": "2026-09-08T00:30:47"
+        "mtime": "2026-09-06T20:55:21"
       },
       {
         "file": "project6_spatial_teaching/05_map/output/fdic/ladder_report.json",
         "bytes": 2201,
-        "mtime": "2026-09-08T00:30:47"
+        "mtime": "2026-09-06T21:00:22"
       },
       {
         "file": "project6_spatial_teaching/05_map/output/snap_brightkite/ladder_report.json",
         "bytes": 2260,
-        "mtime": "2026-09-08T00:30:47"
+        "mtime": "2026-09-06T21:00:56"
       },
       {
         "file": "project6_spatial_teaching/05_map/output/snap_gowalla/ladder_report.json",
         "bytes": 2253,
-        "mtime": "2026-09-08T00:30:47"
+        "mtime": "2026-09-06T21:01:23"
       },
       {
         "file": "project6_spatial_teaching/05_map/output/sz_bike/ladder_report.json",
         "bytes": 2246,
-        "mtime": "2026-09-08T00:30:47"
+        "mtime": "2026-09-06T21:00:34"
       },
       {
         "file": "project6_spatial_teaching/06_visualize/output/fdic/manifest.json",
         "bytes": 2555,
-        "mtime": "2026-09-08T00:30:47"
+        "mtime": "2026-09-06T21:01:25"
       },
       {
         "file": "project6_spatial_teaching/06_visualize/output/global_visual_report.json",
         "bytes": 1014,
-        "mtime": "2026-09-08T00:30:47"
+        "mtime": "2026-09-06T21:01:30"
       },
       {
         "file": "project6_spatial_teaching/06_visualize/output/manifest.json",
         "bytes": 1101,
-        "mtime": "2026-09-08T00:30:47"
+        "mtime": "2026-09-06T21:01:30"
       },
       {
         "file": "project6_spatial_teaching/06_visualize/output/snap_brightkite/manifest.json",
         "bytes": 2600,
-        "mtime": "2026-09-08T00:30:47"
+        "mtime": "2026-09-06T21:01:28"
       },
       {
         "file": "project6_spatial_teaching/06_visualize/output/snap_gowalla/manifest.json",
         "bytes": 2582,
-        "mtime": "2026-09-08T00:30:47"
+        "mtime": "2026-09-06T21:01:29"
       },
       {
         "file": "project6_spatial_teaching/06_visualize/output/sz_bike/manifest.json",
         "bytes": 2516,
-        "mtime": "2026-09-08T00:30:47"
+        "mtime": "2026-09-06T21:01:26"
       },
       {
         "file": "project6_spatial_teaching/07_conclude/output/conclusion_report.json",
         "bytes": 8988,
-        "mtime": "2026-09-08T00:30:47"
+        "mtime": "2026-09-06T21:01:31"
       },
       {
         "file": "project6_spatial_teaching/08_interactive/output/manifest.json",
         "bytes": 5640,
-        "mtime": "2026-09-10T12:35:03"
+        "mtime": "2026-09-10T19:44:24"
       },
       {
         "file": "project1_fdic_spatial/logs/stage_summaries.json",
         "bytes": 2894,
-        "mtime": "2026-09-10T09:24:58"
+        "mtime": "2026-09-09T21:28:04"
       },
       {
         "file": "project2_fdic_survival/logs/stage_summaries.json",
         "bytes": 3214,
-        "mtime": "2026-09-10T13:43:51"
+        "mtime": "2026-09-10T19:44:24"
       },
       {
         "file": "project6_spatial_teaching/logs/stage_summaries.json",
         "bytes": 2374,
-        "mtime": "2026-09-10T12:35:03"
+        "mtime": "2026-09-10T19:44:24"
       }
     ]
   },
@@ -609,8 +623,9 @@ window.SDP_DATA = {
           "5_10"
         ]
       },
-      "rings_alternative_has_coefficients": false,
-      "rings_alternative_status": "仅标签，无系数/SE/p —— 合并环敏感性实际未跑",
+      "rings_alternative_has_coefficients": true,
+      "rings_alternative_status": "已重跑产出系数（portal/audit/p1_strength_rings.json，三种口径）",
+      "rings_source": "portal/audit/p1_strength_rings.json",
       "weights_compared": false,
       "bootstrap_ci": false,
       "callaway_santanna": false,
@@ -618,13 +633,204 @@ window.SDP_DATA = {
     },
     "strength_disclosure": {
       "post_is_intercept_extrapolation": true,
-      "explain": "post 的系数是 strength_t0 = 0 处的反事实外推；处理组 strength_t0 ≥ log1p(1) = 0.693，该点未被观测。",
+      "explain": "post 的系数是 strength_t0 = 0 处的反事实外推；实测处理组 strength_t0 ∈ [0.1, 13.7]（网点级），均值 0.6850，该点从未被观测。",
       "interaction_coef": 0.013823280070386227,
       "interaction_t": 8.074670097078872,
-      "strength_def_in_code": "treat_strength = log1p(n_same_ind_5km)（单环计数）",
-      "doc_mismatch": "README 表述为「环加权强度」→ 文档口径与实现不一致",
-      "action_required": "需重跑 06 阶段导出 strength_t0 的均值与分位数，才能报均值处边际效应"
+      "strength_def_in_code": "strength_t0 = Σ _ring_weight(dist_km)，权重 0–1km 1.0 / 1–3km 0.6 / 3–5km 0.3 / 5–10km 0.1（环加权和）；treat_strength = treated × strength_t0",
+      "doc_mismatch": "06_estimate.py 的模块 docstring 写「treat_strength = log1p(n_same_ind_5km)（单环计数）」与代码不符；README 的「环加权强度」才是对的。以代码为准。",
+      "doc_mismatch_actor": "project1_fdic_spatial/06_estimate/06_estimate.py（模块 docstring，上游待改）",
+      "action_required": "已解决：支撑域改为实测分位数，边际效应在均值处报出（见 marginal_at_support）",
+      "replication_check": {
+        "strength_t0_max_abs_diff": 0.0,
+        "first_event_year_mismatch": 0,
+        "post_mismatch": 0,
+        "rows_compared": 1814985
+      }
     },
+    "strength_support": {
+      "n_treated_branches": 35785,
+      "n_treated_rows": 999452,
+      "branch_level": {
+        "min": 0.1,
+        "p01": 0.1,
+        "p05": 0.1,
+        "p25": 0.1,
+        "median": 0.5,
+        "mean": 0.684965767779796,
+        "p75": 1.0,
+        "p95": 2.0,
+        "p99": 4.1,
+        "max": 13.7,
+        "distinct_values": 148
+      },
+      "row_level_mean": 0.6960830535133253,
+      "note": "strength_t0 = 首次辐射年内 10km 内同业关闭事件的环加权和（权重 1.0/0.6/0.3/0.1），处理组恒 > 0；s=0 是外推点。"
+    },
+    "rings_sensitivity": {
+      "fine": {
+        "rings": [
+          [
+            0,
+            1,
+            1.0
+          ],
+          [
+            1,
+            3,
+            0.6
+          ],
+          [
+            3,
+            5,
+            0.3
+          ],
+          [
+            5,
+            10,
+            0.1
+          ]
+        ],
+        "strength_mean_treated": 0.6960830535133253,
+        "coef": 0.013823280070386227,
+        "se": 0.00171193124972214,
+        "t": 8.074670097078872,
+        "p": 6.661338147750939e-16,
+        "post_coef": -0.05259387020663611,
+        "post_se": 0.0016430377821804692,
+        "post_p": 0.0,
+        "n_obs": 955025,
+        "n_entities": 73324,
+        "estimator": "PanelOLS_TWFE (linearmodels)",
+        "r2_within": 0.003054444836813941
+      },
+      "coarse_rebin": {
+        "rings": [
+          [
+            0,
+            2,
+            1.0
+          ],
+          [
+            2,
+            5,
+            0.6
+          ],
+          [
+            5,
+            10,
+            0.3
+          ]
+        ],
+        "strength_mean_treated": 1.1385146060040905,
+        "coef": 0.008018494092976714,
+        "se": 0.0011952421358875126,
+        "t": 6.708677557642058,
+        "p": 1.965139162507512e-11,
+        "post_coef": -0.05177326466686215,
+        "post_se": 0.0017003077380585748,
+        "post_p": 0.0,
+        "n_obs": 955025,
+        "n_entities": 73324,
+        "estimator": "PanelOLS_TWFE (linearmodels)",
+        "r2_within": 0.0030211750893516243
+      },
+      "coarse_linear": {
+        "rings": [
+          [
+            0,
+            2,
+            1.0
+          ],
+          [
+            2,
+            5,
+            0.6
+          ],
+          [
+            5,
+            10,
+            0.2
+          ]
+        ],
+        "strength_mean_treated": 1.0251573862476637,
+        "coef": 0.009102863499435749,
+        "se": 0.0012749097088241687,
+        "t": 7.140006414910113,
+        "p": 9.339196083146817e-13,
+        "post_coef": -0.05206620822680574,
+        "post_se": 0.0016826675849816058,
+        "post_p": 0.0,
+        "n_obs": 955025,
+        "n_entities": 73324,
+        "estimator": "PanelOLS_TWFE (linearmodels)",
+        "r2_within": 0.0030313365666816416
+      }
+    },
+    "rings_cross_comparison": {
+      "fine": {
+        "strength_mean_treated": 0.6960830535133253,
+        "slope_per_relative_exposure": 0.009622151000964339,
+        "effect_at_treated_mean": -0.04297171920567178
+      },
+      "coarse_rebin": {
+        "strength_mean_treated": 1.1385146060040905,
+        "slope_per_relative_exposure": 0.00912917264301151,
+        "effect_at_treated_mean": -0.04264409202385064
+      },
+      "coarse_linear": {
+        "strength_mean_treated": 1.0251573862476637,
+        "slope_per_relative_exposure": 0.009331867752450814,
+        "effect_at_treated_mean": -0.042734340474354926
+      },
+      "slope_spread_pct": 5.123369586524074,
+      "effect_at_mean_spread_pp": 0.03276271818211385,
+      "verdict": "合并环只改变强度的刻度；按「单位相对暴露」与「均值处效应」比较，三种口径结果一致（差异在 5% 内）→ 结论不依赖细环选择。"
+    },
+    "marginal_at_support": {
+      "at_min": {
+        "s": 0.1,
+        "effect": -0.05121154219959749,
+        "se": 0.0016519322745531268,
+        "ci_lo": -0.054449329457721615,
+        "ci_hi": -0.047973754941473365
+      },
+      "at_mean": {
+        "s": 0.684965767779796,
+        "effect": -0.04312539655998886,
+        "se": 0.0020185632159845654,
+        "ci_lo": -0.0470817804633186,
+        "ci_hi": -0.03916901265665911
+      },
+      "at_median": {
+        "s": 0.5,
+        "effect": -0.045682230171442996,
+        "se": 0.0018526333432755434,
+        "ci_lo": -0.04931339152426306,
+        "ci_hi": -0.04205106881862293
+      },
+      "at_p95": {
+        "s": 2.0,
+        "effect": -0.02494731006586366,
+        "se": 0.0037976845009523035,
+        "ci_lo": -0.03239077168773018,
+        "ci_hi": -0.017503848443997144
+      },
+      "at_default_slider": {
+        "s": 1.61,
+        "effect": -0.030338389293314286,
+        "se": 0.0032087790396844455,
+        "ci_lo": -0.0366275962110958,
+        "ci_hi": -0.024049182375532774
+      },
+      "at_zero_extrapolation": {
+        "s": 0.0,
+        "effect": -0.05259387020663611,
+        "se": 0.0016430377821804692,
+        "ci_lo": -0.05581422425970983,
+        "ci_hi": -0.04937351615356239
+      }
+    },
+    "audit_source": "portal/audit/p1_strength_rings.json",
     "metrics_flat": {
       "stage": "06_estimate",
       "generated_at": "2026-09-06T19:23:31",
@@ -1724,8 +1930,11 @@ window.SDP_DATA = {
     },
     "model_card": {
       "split": "随机行划分（分层下采样 50 万，训练 40 万 / 测试 10 万）",
-      "out_of_time_validated": false,
-      "out_of_time_note": "无时序外推验证；测试集包含训练期年份 → 指标偏乐观",
+      "out_of_time_validated": true,
+      "out_of_time_note": "表观判别力主要来自时序泄漏特征（bank_closed_rate 全期聚合 + DEPSUMBR_last 终期值）。剔除后时序外推 AUC ≈ 0.53（≈随机）→ 本模型不构成「可预测未来」的证据，只能做同期归因，与「风险归因台」的定位一致。",
+      "random_split_test_auc": 0.8814362464286707,
+      "out_of_time_auc_with_leak": 0.8095865376409905,
+      "out_of_time_auc_no_leak": 0.5321670934393111,
       "leakage_flags": [
         {
           "feature": "bank_closed_rate",
@@ -1807,6 +2016,593 @@ window.SDP_DATA = {
         "value": 0.003
       }
     ],
+    "out_of_time": {
+      "variants": {
+        "with_leak": {
+          "rolling": [
+            {
+              "auc": 0.6952633921207991,
+              "brier": 0.11434152134677689,
+              "log_loss": 0.391739508971258,
+              "n": 65092,
+              "events": 1620,
+              "event_rate": 0.024887851041602654,
+              "mean_pred": 0.2948306349622132,
+              "year": 1995,
+              "n_dropped_unseen_level": 0
+            },
+            {
+              "auc": 0.6624279238628606,
+              "brier": 0.11897062533493519,
+              "log_loss": 0.39408916550693635,
+              "n": 65893,
+              "events": 3103,
+              "event_rate": 0.047091496820603096,
+              "mean_pred": 0.2877775798002467,
+              "year": 1996,
+              "n_dropped_unseen_level": 0
+            },
+            {
+              "auc": 0.7332337882175022,
+              "brier": 0.12020743427290673,
+              "log_loss": 0.3876802695891834,
+              "n": 66029,
+              "events": 4134,
+              "event_rate": 0.06260885368550183,
+              "mean_pred": 0.2834312950950042,
+              "year": 1997,
+              "n_dropped_unseen_level": 0
+            },
+            {
+              "auc": 0.7267425887861957,
+              "brier": 0.11443360901915635,
+              "log_loss": 0.3703650816289634,
+              "n": 65243,
+              "events": 3268,
+              "event_rate": 0.05008966479162515,
+              "mean_pred": 0.2717868282555658,
+              "year": 1998,
+              "n_dropped_unseen_level": 0
+            },
+            {
+              "auc": 0.7559555129256179,
+              "brier": 0.11484672988007877,
+              "log_loss": 0.36827713819503827,
+              "n": 65168,
+              "events": 4637,
+              "event_rate": 0.07115455438251903,
+              "mean_pred": 0.26622091712628654,
+              "year": 1999,
+              "n_dropped_unseen_level": 0
+            },
+            {
+              "auc": 0.7523037149125082,
+              "brier": 0.10886804292875267,
+              "log_loss": 0.35044377554679756,
+              "n": 63210,
+              "events": 4058,
+              "event_rate": 0.06419870273690871,
+              "mean_pred": 0.25064007005695066,
+              "year": 2000,
+              "n_dropped_unseen_level": 0
+            },
+            {
+              "auc": 0.692970024476547,
+              "brier": 0.10696893724374378,
+              "log_loss": 0.34298519374567155,
+              "n": 61332,
+              "events": 3249,
+              "event_rate": 0.05297397769516728,
+              "mean_pred": 0.24408654719019462,
+              "year": 2001,
+              "n_dropped_unseen_level": 0
+            },
+            {
+              "auc": 0.7404482631207927,
+              "brier": 0.09891094804203017,
+              "log_loss": 0.3241107966716626,
+              "n": 60026,
+              "events": 1877,
+              "event_rate": 0.0312697830939926,
+              "mean_pred": 0.24195893855155085,
+              "year": 2002,
+              "n_dropped_unseen_level": 0
+            },
+            {
+              "auc": 0.765008866954669,
+              "brier": 0.09845325693310708,
+              "log_loss": 0.3213280246589169,
+              "n": 59931,
+              "events": 2091,
+              "event_rate": 0.03489012364218852,
+              "mean_pred": 0.23938301015578745,
+              "year": 2003,
+              "n_dropped_unseen_level": 0
+            },
+            {
+              "auc": 0.7832025162984478,
+              "brier": 0.1048330060641099,
+              "log_loss": 0.33439051103594924,
+              "n": 60512,
+              "events": 4793,
+              "event_rate": 0.0792074299312533,
+              "mean_pred": 0.23438217337856745,
+              "year": 2004,
+              "n_dropped_unseen_level": 0
+            },
+            {
+              "auc": 0.7694989095023406,
+              "brier": 0.09922745975020171,
+              "log_loss": 0.3166372880610881,
+              "n": 58608,
+              "events": 4429,
+              "event_rate": 0.07556988806988807,
+              "mean_pred": 0.21804000684280175,
+              "year": 2005,
+              "n_dropped_unseen_level": 0
+            },
+            {
+              "auc": 0.7997711359473795,
+              "brier": 0.09039152785915121,
+              "log_loss": 0.2932204133814896,
+              "n": 57368,
+              "events": 3629,
+              "event_rate": 0.0632582624459629,
+              "mean_pred": 0.2073121243061094,
+              "year": 2006,
+              "n_dropped_unseen_level": 0
+            },
+            {
+              "auc": 0.7752397558902462,
+              "brier": 0.08627228721013547,
+              "log_loss": 0.2792461553827309,
+              "n": 57024,
+              "events": 3030,
+              "event_rate": 0.05313552188552188,
+              "mean_pred": 0.1956122356585831,
+              "year": 2007,
+              "n_dropped_unseen_level": 0
+            },
+            {
+              "auc": 0.8262427702851648,
+              "brier": 0.0819102946004461,
+              "log_loss": 0.26622754166915097,
+              "n": 56891,
+              "events": 3738,
+              "event_rate": 0.06570459299361937,
+              "mean_pred": 0.1866311203282281,
+              "year": 2008,
+              "n_dropped_unseen_level": 0
+            },
+            {
+              "auc": 0.8674961678145067,
+              "brier": 0.07630189949117272,
+              "log_loss": 0.24859809409250402,
+              "n": 54837,
+              "events": 4545,
+              "event_rate": 0.08288199573280813,
+              "mean_pred": 0.17094503093090735,
+              "year": 2009,
+              "n_dropped_unseen_level": 0
+            },
+            {
+              "auc": 0.9117135415841736,
+              "brier": 0.06921417797510339,
+              "log_loss": 0.2264783920604751,
+              "n": 50927,
+              "events": 5438,
+              "event_rate": 0.10678029336108548,
+              "mean_pred": 0.1488437273502852,
+              "year": 2010,
+              "n_dropped_unseen_level": 0
+            },
+            {
+              "auc": 0.8909588926858031,
+              "brier": 0.050170991660118985,
+              "log_loss": 0.17982123264970948,
+              "n": 49292,
+              "events": 2498,
+              "event_rate": 0.05067759474154021,
+              "mean_pred": 0.1169052596978015,
+              "year": 2011,
+              "n_dropped_unseen_level": 0
+            },
+            {
+              "auc": 0.9328914312052051,
+              "brier": 0.03895714250563414,
+              "log_loss": 0.15010375193889777,
+              "n": 47254,
+              "events": 2048,
+              "event_rate": 0.043340246328353156,
+              "mean_pred": 0.10721494519299718,
+              "year": 2012,
+              "n_dropped_unseen_level": 2
+            },
+            {
+              "auc": 0.9499155028853561,
+              "brier": 0.03234311832055202,
+              "log_loss": 0.13163934581175224,
+              "n": 45689,
+              "events": 1788,
+              "event_rate": 0.03913414607454748,
+              "mean_pred": 0.09444287792861393,
+              "year": 2013,
+              "n_dropped_unseen_level": 3
+            },
+            {
+              "auc": 0.9777299421649783,
+              "brier": 0.025845521330037615,
+              "log_loss": 0.11401007042373996,
+              "n": 44053,
+              "events": 2109,
+              "event_rate": 0.047874151590130073,
+              "mean_pred": 0.08223481303196307,
+              "year": 2014,
+              "n_dropped_unseen_level": 5
+            },
+            {
+              "auc": 0.992302648819706,
+              "brier": 0.013669852007799254,
+              "log_loss": 0.0817631536034112,
+              "n": 42034,
+              "events": 1089,
+              "event_rate": 0.025907598610648522,
+              "mean_pred": 0.06520389700975732,
+              "year": 2015,
+              "n_dropped_unseen_level": 0
+            }
+          ],
+          "rolling_agg": {
+            "n_windows": 21,
+            "auc_mean": 0.8095865376409905,
+            "auc_median": 0.7752397558902462,
+            "auc_min": 0.6624279238628606,
+            "auc_max": 0.992302648819706,
+            "auc_std": 0.09630255062717509,
+            "brier_weighted": 0.08825338754924789,
+            "year_min": 1995,
+            "year_max": 2015
+          },
+          "holdout": {
+            "auc": 0.9928477926356374,
+            "brier": 0.0050742724021158436,
+            "log_loss": 0.059276499231772944,
+            "n": 448103,
+            "events": 1089,
+            "event_rate": 0.0024302448321033335,
+            "mean_pred": 0.05562688296690155,
+            "train_years": [
+              1994,
+              2014
+            ],
+            "test_years": [
+              2015,
+              2025
+            ],
+            "n_dropped_unseen_level": 0
+          }
+        },
+        "no_leak": {
+          "rolling": [
+            {
+              "auc": 0.6096448185960097,
+              "brier": 0.11605239087846755,
+              "log_loss": 0.40405020388645857,
+              "n": 65092,
+              "events": 1620,
+              "event_rate": 0.024887851041602654,
+              "mean_pred": 0.30387709563492404,
+              "year": 1995,
+              "n_dropped_unseen_level": 0
+            },
+            {
+              "auc": 0.5299101886871086,
+              "brier": 0.12473775931205976,
+              "log_loss": 0.4264064296072282,
+              "n": 65893,
+              "events": 3103,
+              "event_rate": 0.047091496820603096,
+              "mean_pred": 0.31027797872640733,
+              "year": 1996,
+              "n_dropped_unseen_level": 0
+            },
+            {
+              "auc": 0.5452351495910506,
+              "brier": 0.12920775886094021,
+              "log_loss": 0.4364610857009344,
+              "n": 66029,
+              "events": 4134,
+              "event_rate": 0.06260885368550183,
+              "mean_pred": 0.3174827261134794,
+              "year": 1997,
+              "n_dropped_unseen_level": 0
+            },
+            {
+              "auc": 0.5447085357887528,
+              "brier": 0.1264260443288298,
+              "log_loss": 0.43134173234266615,
+              "n": 65243,
+              "events": 3268,
+              "event_rate": 0.05008966479162515,
+              "mean_pred": 0.3212764029738856,
+              "year": 1998,
+              "n_dropped_unseen_level": 0
+            },
+            {
+              "auc": 0.598167336176413,
+              "brier": 0.13103209116341302,
+              "log_loss": 0.4424668318516467,
+              "n": 65168,
+              "events": 4637,
+              "event_rate": 0.07115455438251903,
+              "mean_pred": 0.3222863444748866,
+              "year": 1999,
+              "n_dropped_unseen_level": 0
+            },
+            {
+              "auc": 0.5967472944042517,
+              "brier": 0.12711609990423745,
+              "log_loss": 0.4318669397466334,
+              "n": 63210,
+              "events": 4058,
+              "event_rate": 0.06419870273690871,
+              "mean_pred": 0.3167749999187703,
+              "year": 2000,
+              "n_dropped_unseen_level": 0
+            },
+            {
+              "auc": 0.5057486668272608,
+              "brier": 0.12615849442520627,
+              "log_loss": 0.4302362895767733,
+              "n": 61332,
+              "events": 3249,
+              "event_rate": 0.05297397769516728,
+              "mean_pred": 0.3174005110914414,
+              "year": 2001,
+              "n_dropped_unseen_level": 0
+            },
+            {
+              "auc": 0.5373356257558648,
+              "brier": 0.11852938901131806,
+              "log_loss": 0.41477283102970725,
+              "n": 60026,
+              "events": 1877,
+              "event_rate": 0.0312697830939926,
+              "mean_pred": 0.3198147968821868,
+              "year": 2002,
+              "n_dropped_unseen_level": 0
+            },
+            {
+              "auc": 0.5380243360036724,
+              "brier": 0.12025686033989738,
+              "log_loss": 0.4189070203147877,
+              "n": 59931,
+              "events": 2091,
+              "event_rate": 0.03489012364218852,
+              "mean_pred": 0.3212292511703429,
+              "year": 2003,
+              "n_dropped_unseen_level": 0
+            },
+            {
+              "auc": 0.6215969879289863,
+              "brier": 0.13333055213203573,
+              "log_loss": 0.44657421567210887,
+              "n": 60512,
+              "events": 4793,
+              "event_rate": 0.0792074299312533,
+              "mean_pred": 0.3232330497099332,
+              "year": 2004,
+              "n_dropped_unseen_level": 0
+            },
+            {
+              "auc": 0.5320786851272309,
+              "brier": 0.13355217157489288,
+              "log_loss": 0.4467797353498647,
+              "n": 58608,
+              "events": 4429,
+              "event_rate": 0.07556988806988807,
+              "mean_pred": 0.3193868529517416,
+              "year": 2005,
+              "n_dropped_unseen_level": 0
+            },
+            {
+              "auc": 0.5175730234994589,
+              "brier": 0.12935623932982887,
+              "log_loss": 0.43864771820128456,
+              "n": 57368,
+              "events": 3629,
+              "event_rate": 0.0632582624459629,
+              "mean_pred": 0.3205519010260662,
+              "year": 2006,
+              "n_dropped_unseen_level": 0
+            },
+            {
+              "auc": 0.40979468321318185,
+              "brier": 0.12917659431820006,
+              "log_loss": 0.4389682671017192,
+              "n": 57024,
+              "events": 3030,
+              "event_rate": 0.05313552188552188,
+              "mean_pred": 0.32227285159416286,
+              "year": 2007,
+              "n_dropped_unseen_level": 0
+            },
+            {
+              "auc": 0.4553986499516015,
+              "brier": 0.13254604969865239,
+              "log_loss": 0.44698105777801134,
+              "n": 56891,
+              "events": 3738,
+              "event_rate": 0.06570459299361937,
+              "mean_pred": 0.32409330959063803,
+              "year": 2008,
+              "n_dropped_unseen_level": 0
+            },
+            {
+              "auc": 0.5835635138316981,
+              "brier": 0.13491527583164895,
+              "log_loss": 0.451635583470398,
+              "n": 54837,
+              "events": 4545,
+              "event_rate": 0.08288199573280813,
+              "mean_pred": 0.3243821786628919,
+              "year": 2009,
+              "n_dropped_unseen_level": 0
+            },
+            {
+              "auc": 0.6181725983958666,
+              "brier": 0.14110029537078395,
+              "log_loss": 0.4643999791997131,
+              "n": 50927,
+              "events": 5438,
+              "event_rate": 0.10678029336108548,
+              "mean_pred": 0.32324719840440735,
+              "year": 2010,
+              "n_dropped_unseen_level": 0
+            },
+            {
+              "auc": 0.4850461811514434,
+              "brier": 0.12492059154498482,
+              "log_loss": 0.43073435221254147,
+              "n": 49292,
+              "events": 2498,
+              "event_rate": 0.05067759474154021,
+              "mean_pred": 0.32174364276990436,
+              "year": 2011,
+              "n_dropped_unseen_level": 0
+            },
+            {
+              "auc": 0.5420004180515308,
+              "brier": 0.1221033379591878,
+              "log_loss": 0.42484799285828795,
+              "n": 47254,
+              "events": 2048,
+              "event_rate": 0.043340246328353156,
+              "mean_pred": 0.3233570525242539,
+              "year": 2012,
+              "n_dropped_unseen_level": 2
+            },
+            {
+              "auc": 0.452494126121785,
+              "brier": 0.1218086888033677,
+              "log_loss": 0.4245813047872995,
+              "n": 45689,
+              "events": 1788,
+              "event_rate": 0.03913414607454748,
+              "mean_pred": 0.3234200845900072,
+              "year": 2013,
+              "n_dropped_unseen_level": 3
+            },
+            {
+              "auc": 0.47302634178995645,
+              "brier": 0.12484193632926104,
+              "log_loss": 0.4312011561402817,
+              "n": 44053,
+              "events": 2109,
+              "event_rate": 0.047874151590130073,
+              "mean_pred": 0.32393831068849654,
+              "year": 2014,
+              "n_dropped_unseen_level": 5
+            },
+            {
+              "auc": 0.4792418013324107,
+              "brier": 0.1169103998737472,
+              "log_loss": 0.4144529239213503,
+              "n": 42034,
+              "events": 1089,
+              "event_rate": 0.025907598610648522,
+              "mean_pred": 0.3243391325315382,
+              "year": 2015,
+              "n_dropped_unseen_level": 0
+            }
+          ],
+          "rolling_agg": {
+            "n_windows": 21,
+            "auc_mean": 0.5321670934393111,
+            "auc_median": 0.5373356257558648,
+            "auc_min": 0.40979468321318185,
+            "auc_max": 0.6215969879289863,
+            "auc_std": 0.057612314248692474,
+            "brier_weighted": 0.12696352205197206,
+            "year_min": 1995,
+            "year_max": 2015
+          },
+          "holdout": {
+            "auc": 0.47766342609213097,
+            "brier": 0.10876442204041575,
+            "log_loss": 0.3971667491611138,
+            "n": 448103,
+            "events": 1089,
+            "event_rate": 0.0024302448321033335,
+            "mean_pred": 0.32466780408848,
+            "train_years": [
+              1994,
+              2014
+            ],
+            "test_years": [
+              2015,
+              2025
+            ],
+            "n_dropped_unseen_level": 0
+          }
+        }
+      },
+      "conclusion": {
+        "reported_test_auc_random_split": 0.8814362464286707,
+        "out_of_time_auc_with_leak_mean": 0.8095865376409905,
+        "out_of_time_auc_no_leak_mean": 0.5321670934393111,
+        "windows": {
+          "n": 21,
+          "years": [
+            1995,
+            2015
+          ],
+          "why_not_all_years": "2016 年起每年事件数 < 20，不足以评估"
+        },
+        "holdout_2015_2025": {
+          "with_leak": {
+            "auc": 0.9928477926356374,
+            "event_rate": 0.0024302448321033335,
+            "n": 448103
+          },
+          "no_leak": {
+            "auc": 0.47766342609213097,
+            "event_rate": 0.0024302448321033335,
+            "n": 448103
+          },
+          "warning": "含泄漏特征时 AUC≈0.99 是**排序伪影**：该特征对 CERT 恒定且编码全期信息，而留出窗事件率仅 0.24% → 看似完美，不是技能。剔泄漏后同一留出 AUC≈0.48。"
+        },
+        "headline": "表观判别力主要来自时序泄漏特征（bank_closed_rate 全期聚合 + DEPSUMBR_last 终期值）。剔除后时序外推 AUC ≈ 0.53（≈随机）→ 本模型不构成「可预测未来」的证据，只能做同期归因，与「风险归因台」的定位一致。",
+        "auc_penalty_vs_random_split": 0.07184970878768016,
+        "note": "随机划分的测试集里含训练期年份 → 指标偏乐观；时序外推才是上线口径。两者之差即「乐观幅度」。"
+      },
+      "protocol": {
+        "type": "expanding-window one-step-ahead + single clean holdout",
+        "train_sample": "全部事件行 + 2×非事件行（沿用上游 cloglog 分层口径）",
+        "test_sample": "测试年份的**整年全量行**（未下采样）→ Brier 在真实事件率下计算",
+        "year_dummies": "已移除（C(year) 无法外推到新年份；这是时序验证的硬约束）",
+        "leakage_note": "bank_closed_rate 按 CERT 对全期聚合后 join 回逐年、DEPSUMBR_last 是终期值却用于每一年 → 训练期内亦含未来信息。含泄漏变体是**上界**，剔泄漏变体是**下界**（唯一可信的口径）。"
+      },
+      "random_split_reported": {
+        "train": {
+          "auc": 0.8807698387191127,
+          "brier": 0.1615931343787856,
+          "log_loss": 0.4602542887306612,
+          "c_index": 0.8101249843703864,
+          "event_rate": 0.137815,
+          "n": 400000
+        },
+        "test": {
+          "auc": 0.8814362464286707,
+          "brier": 0.16085599031578277,
+          "log_loss": 0.45838984267349764,
+          "c_index": 0.8095709471683596,
+          "event_rate": 0.13782,
+          "n": 100000
+        }
+      }
+    },
+    "audit_source": "portal/audit/p2_out_of_time.json",
     "ranges": {
       "DEPSUMBR": {
         "min": 0.0,
@@ -2059,6 +2855,292 @@ window.SDP_DATA = {
         "note": "环内格数随距离增加，求和口径不衰减；按环内格均摊（溢出密度）才反映距离衰减——聚合口径影响结论，对应 L1→L2→L3 认知阶梯"
       }
     ]
+  },
+  "audit": {
+    "patches": {
+      "P0-1": {
+        "auto_status": "已修（展示层）",
+        "evidence": "支撑域改为实测网点级分位数（min=0.1，mean=0.685，max=13.7，148 个离散值）；边际效应在均值处报出；口径已厘清为环加权和（审计逐网点复现，最大绝对差 0.0）。",
+        "source": "portal/audit/p1_strength_rings.json"
+      },
+      "P0-2": {
+        "auto_status": "已补跑",
+        "evidence": "合并环已产出真实系数：fine β_int=0.013823（p=6.7e-16）、coarse_rebin β_int=0.008018（p=2e-11）、coarse_linear β_int=0.009103（p=9.3e-13）",
+        "source": "portal/audit/p1_strength_rings.json"
+      },
+      "P0-3": {
+        "auto_status": "已补跑",
+        "evidence": "时序外推（21 个窗口，[1995, 2015]）：含泄漏 AUC=0.8095865376409905、剔除泄漏 AUC=0.5321670934393111；随机划分=0.8814362464286707",
+        "source": "portal/audit/p2_out_of_time.json"
+      },
+      "P0-4": {
+        "auto_status": "一致",
+        "evidence": "四处产物取值一致",
+        "source": "portal/audit（只读核对）"
+      },
+      "P0-5": {
+        "auto_status": "已修（全链路重建通过）",
+        "evidence": "从 data_raw 的 32 个原始 SOD CSV 起步，在隔离沙箱里真实重跑 01→06（4.12 分钟，不覆盖上游任何文件），逐阶段与入库产物对拍：02 raw_long 2,822,977 行、03 cleaned 2,702,716 行、05 panel 2,702,716 行、06 did_panel 1,814,985 行全部一致；strength_t0 / dep_chg_rate / post / treated 最大绝对差均为 0.0；estimate.json 头条系数（含 SE）最大绝对差 0。",
+        "source": "portal/audit/p5_full_chain.json"
+      },
+      "P0-6": {
+        "auto_status": "已修（口径统一 + 回归单测）",
+        "evidence": "结论等级三处统一由 gradeFromData 判定，阈值写死在评级器里，并有回归单测锁定。",
+        "source": "portal/assets/engines.js"
+      }
+    },
+    "wtreat_consistency": {
+      "quantity": "SLX W_treat_strength（聚合层邻 cell 溢出代理）",
+      "authoritative": 0.008986047028245209,
+      "authoritative_source": "project1_fdic_spatial/06_estimate/output/estimate.json",
+      "ols_treat_strength_for_reference": 0.0073134452273349556,
+      "observed": [
+        {
+          "where": "estimate.json · spatial_fits.slx.params.W_treat_strength",
+          "value": 0.008986047028245209,
+          "kind": "json"
+        },
+        {
+          "where": "estimate.json · spatial_fits.ols.params.treat_strength（OLS 混合值，非溢出代理）",
+          "value": 0.0073134452273349556,
+          "kind": "json"
+        },
+        {
+          "where": "metrics.json · slx_w_treat_strength",
+          "value": 0.008986047028245209,
+          "kind": "json"
+        },
+        {
+          "where": "conclusion_report.json · slx_w_treat_strength",
+          "value": 0.008986047028245209,
+          "kind": "json"
+        },
+        {
+          "where": "08_conclude/replication_manifest.json · slx_w_treat",
+          "value": 0.008986047028245209,
+          "kind": "json"
+        },
+        {
+          "where": "08_conclude/output/technical_report.md",
+          "value": 0.008986,
+          "kind": "text",
+          "tolerance": "±2e-3 相对（印刷四舍五入）"
+        },
+        {
+          "where": "08_conclude/output/technical_report.md",
+          "value": 0.008986,
+          "kind": "text",
+          "tolerance": "±2e-3 相对（印刷四舍五入）"
+        }
+      ],
+      "mismatches": [],
+      "probable_cause": "需人工核对",
+      "fix_note": "修正需改上游 08_conclude.py（生成 technical_report.md 的模板）；本数据层只做只读核对与定位，不代改。",
+      "consistent": true
+    },
+    "full_chain": {
+      "verdict": "通过",
+      "protocol": {
+        "goal": "从 data_raw 原始 SOD CSV 起步，独立重建到 06 估计，并与上游入库产物逐阶段对拍",
+        "sandbox": "portal/audit/_sandbox/project1_fdic_spatial",
+        "upstream_root": "project1_fdic_spatial",
+        "source_root_used": "data_raw/fdic",
+        "raw_files": 32,
+        "stages": [
+          "01_discover",
+          "02_profile",
+          "03_clean",
+          "04_validate",
+          "05_map",
+          "06_estimate"
+        ],
+        "elapsed_minutes": 4.12,
+        "verify_only": false,
+        "isolation": "复制阶段入口 .py + datakit.yaml + config/ 到沙箱；__file__ 推导的输出目录因此指向沙箱，上游文件不被写入",
+        "count_rows_disabled": true
+      },
+      "headline": {
+        "did_panel_rows": {
+          "upstream": 1814985,
+          "sandbox": 1814985
+        },
+        "strength_t0_max_abs_diff": 0.0,
+        "dep_chg_rate_max_abs_diff": 0.0,
+        "estimate_ok": true,
+        "estimate_twfe_post_x_strength": {
+          "upstream": 0.013823280070386227,
+          "sandbox": 0.013823280070386227
+        }
+      },
+      "conclusion": "从 32 个原始 CSV 起步重建：通过。 did_panel 行数 上游1814985 / 沙箱1814985，strength_t0 最大绝对差 0.0；头条系数对拍 一致。",
+      "checks_passed": 9,
+      "checks_total": 9,
+      "checks": [
+        {
+          "label": "01_discover · catalog.yaml",
+          "ok": true,
+          "upstream": "project1_fdic_spatial/01_discover/output/catalog.yaml",
+          "sandbox": "portal/audit/_sandbox/project1_fdic_spatial/01_discover/output/catalog.yaml",
+          "note": "文件存在性对拍（内容含时间戳，不做字节比较）"
+        },
+        {
+          "label": "01_discover · catalog.md",
+          "ok": true,
+          "upstream": "project1_fdic_spatial/01_discover/output/catalog.md",
+          "sandbox": "portal/audit/_sandbox/project1_fdic_spatial/01_discover/output/catalog.md",
+          "note": "文件存在性对拍（内容含时间戳，不做字节比较）"
+        },
+        {
+          "label": "02_profile · raw_long.parquet",
+          "upstream": "project1_fdic_spatial/02_profile/output/raw_long.parquet",
+          "sandbox": "portal/audit/_sandbox/project1_fdic_spatial/02_profile/output/raw_long.parquet",
+          "ok": true,
+          "rows": {
+            "upstream": 2822977,
+            "sandbox": 2822977
+          },
+          "cols": {
+            "upstream": 13,
+            "sandbox": 13
+          },
+          "max_abs_diff": {}
+        },
+        {
+          "label": "03_clean · cleaned.parquet",
+          "upstream": "project1_fdic_spatial/03_clean/output/cleaned.parquet",
+          "sandbox": "portal/audit/_sandbox/project1_fdic_spatial/03_clean/output/cleaned.parquet",
+          "ok": true,
+          "rows": {
+            "upstream": 2702716,
+            "sandbox": 2702716
+          },
+          "cols": {
+            "upstream": 13,
+            "sandbox": 13
+          },
+          "max_abs_diff": {}
+        },
+        {
+          "label": "05_map · branch_dim.csv",
+          "upstream": "project1_fdic_spatial/05_map/output/data/branch_dim.csv",
+          "sandbox": "portal/audit/_sandbox/project1_fdic_spatial/05_map/output/data/branch_dim.csv",
+          "ok": true,
+          "rows": {
+            "upstream": 152538,
+            "sandbox": 152538
+          },
+          "cols": {
+            "upstream": 18,
+            "sandbox": 18
+          },
+          "max_abs_diff": {
+            "lat": 0.0,
+            "lng": 0.0
+          }
+        },
+        {
+          "label": "05_map · closure_exposure.csv",
+          "upstream": "project1_fdic_spatial/05_map/output/data/closure_exposure.csv",
+          "sandbox": "portal/audit/_sandbox/project1_fdic_spatial/05_map/output/data/closure_exposure.csv",
+          "ok": true,
+          "rows": {
+            "upstream": 27018,
+            "sandbox": 27018
+          },
+          "cols": {
+            "upstream": 15,
+            "sandbox": 15
+          },
+          "max_abs_diff": {
+            "lat": 0.0,
+            "lng": 0.0
+          }
+        },
+        {
+          "label": "05_map · branch_year_panel.parquet",
+          "upstream": "project1_fdic_spatial/05_map/output/data/branch_year_panel.parquet",
+          "sandbox": "portal/audit/_sandbox/project1_fdic_spatial/05_map/output/data/branch_year_panel.parquet",
+          "ok": true,
+          "rows": {
+            "upstream": 2702716,
+            "sandbox": 2702716
+          },
+          "cols": {
+            "upstream": 9,
+            "sandbox": 9
+          },
+          "max_abs_diff": {}
+        },
+        {
+          "label": "06_estimate · did_panel.parquet",
+          "upstream": "project1_fdic_spatial/06_estimate/output/data/did_panel.parquet",
+          "sandbox": "portal/audit/_sandbox/project1_fdic_spatial/06_estimate/output/data/did_panel.parquet",
+          "ok": true,
+          "rows": {
+            "upstream": 1814985,
+            "sandbox": 1814985
+          },
+          "cols": {
+            "upstream": 12,
+            "sandbox": 12
+          },
+          "max_abs_diff": {
+            "strength_t0": 0.0,
+            "dep_chg_rate": 0.0,
+            "post": 0.0,
+            "treated": 0.0
+          }
+        },
+        {
+          "label": "06_estimate · estimate.json 头条系数",
+          "ok": true,
+          "compare": {
+            "twfe.post": {
+              "upstream": -0.05259387020663611,
+              "sandbox": -0.05259387020663611
+            },
+            "twfe.post_x_strength": {
+              "upstream": 0.013823280070386227,
+              "sandbox": 0.013823280070386227
+            },
+            "twfe.se.post": {
+              "upstream": 0.0016430377821804692,
+              "sandbox": 0.0016430377821804692
+            },
+            "twfe.se.post_x_strength": {
+              "upstream": 0.00171193124972214,
+              "sandbox": 0.00171193124972214
+            },
+            "twfe.n_obs": {
+              "upstream": 955025,
+              "sandbox": 955025
+            },
+            "event_study.tau0": {
+              "upstream": -0.04379581109171783,
+              "sandbox": -0.04379581109171783
+            },
+            "event_study.tau-2": {
+              "upstream": -0.006881715596122951,
+              "sandbox": -0.006881715596122951
+            },
+            "event_study.tau4": {
+              "upstream": -0.10067675352931099,
+              "sandbox": -0.10067675352931099
+            }
+          },
+          "max_abs_diff": {
+            "twfe.post": 0.0,
+            "twfe.post_x_strength": 0.0,
+            "twfe.se.post": 0.0,
+            "twfe.se.post_x_strength": 0.0,
+            "twfe.n_obs": 0.0,
+            "event_study.tau0": 0.0,
+            "event_study.tau-2": 0.0,
+            "event_study.tau4": 0.0
+          }
+        }
+      ]
+    }
   },
   "missing": []
 };

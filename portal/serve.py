@@ -11,6 +11,12 @@
                           并自动预填「数据准入体检」问卷（ID 稳定性 / 坐标可用性 / 缺失是否随机 /
                           时间跨度 / 面板平衡度）。
 
+体检项共 8 条，其中两条是本项目踩过的坑固化成的规则（相对通用报告的增量）：
+    ⑦ 疑似时序泄漏特征 —— 实体级常量列 + 名字像聚合/终值（对位 project2：
+       全期关闭率 join 回逐年、期末存款用于每一年）。
+    ⑧ 空间口径稳健性 —— 换权重个数（k=4/8）与换聚合尺度（≈1km/5km）后 Moran's I 是否翻转
+       （对位 project6：同一方法在不同数据上差数十倍）。
+
 安全与合规边界（刻意设计）：
     * 仅监听 127.0.0.1，不对外暴露；
     * 上传文件落在 portal/.tmp/<uuid>/，**响应结束后立刻整目录删除**（不持久化客户数据）；
@@ -51,6 +57,17 @@ try:
     DK_OK, DK_ERR = True, ""
 except Exception as e:  # pragma: no cover
     DK_OK, DK_ERR = False, f"{type(e).__name__}: {e}"
+
+# ---------------- 泛化接入 / 重估内核（本目录新增，与具体数据集解耦） ----------------
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+try:
+    import ingest as ing
+    import refit as rf
+    ING_OK, ING_ERR = True, ""
+except Exception as e:  # pragma: no cover
+    ING_OK, ING_ERR = False, f"{type(e).__name__}: {e}"
+
+MAX_BATCH_BODY = 512 * 1024 * 1024      # 批量上传上限（本机目录模式不受此限）
 
 
 # --------------------------------------------------------------------------- #
@@ -203,8 +220,125 @@ def health_check(df: "pd.DataFrame", cols: dict, dataset_report: dict) -> dict:
             f"字段：{val}。结果变量必须是**门店级连续指标**——只有公司级汇总则无法构造门店级 outcome。",
             "")
 
+    # ⑦ 目标泄漏体检（对位 project2 的坑：全期聚合特征 join 回逐年）
+    leak_note, leak_rows = _leakage_check(df, cols)
+    if leak_note:
+        add("leakage", "疑似时序泄漏特征", leak_note["value"], leak_note["level"],
+            leak_note["note"], leak_note["action"])
+        checks[-1]["detail"] = leak_rows
+
+    # ⑧ 空间口径稳健性（对位 project6 的坑：换权重/换尺度 Moran's I 翻转）
+    sp = _spatial_robustness_check(df, cols)
+    if sp:
+        add("spatial_robust", "空间口径稳健性", sp["value"], sp["level"], sp["note"], sp["action"])
+        if sp.get("detail"):
+            checks[-1]["detail"] = sp["detail"]
+
     return {"rows": n_rows, "checks": checks, "entity_stats": ent_stats,
             "years": {"min": years[0], "max": years[-1], "n": len(years)} if years else None}
+
+
+# 名字里带这些语义的实体级常量列，最可能是「全期聚合后回填」的泄漏特征
+_LEAK_HINT = re.compile(r"(rate|ratio|closed|closure|exit|churn|lifetime|total|n_|count|"
+                        r"last|final|future|surviv|tenure|dur)", re.I)
+
+
+def _leakage_check(df, cols) -> tuple[dict | None, list]:
+    """① 实体级常量 + ② 名字像聚合/终值 → 疑似把未来信息回填到每一年。
+
+    这就是 project2 上真实踩过的坑：bank_closed_rate 按 CERT 对全期聚合后 join 回逐年、
+    DEPSUMBR_last 是终期值却用于每一年。此处只做「可疑度排序」，不下结论。
+    """
+    ent, yr = cols.get("id"), cols.get("year")
+    if not ent or not yr or len(df) < 50:
+        return None, []
+    rows = []
+    num_cols = [c for c in df.columns
+                if c not in (ent, yr) and pd.api.types.is_numeric_dtype(df[c])]
+    for c in num_cols:
+        try:
+            g = df.groupby(ent)[c].nunique(dropna=True)
+        except Exception:
+            continue
+        if len(g) < 10:
+            continue
+        const_rate = float((g <= 1).mean())
+        if const_rate < 0.95:
+            continue
+        hinted = bool(_LEAK_HINT.search(str(c)))
+        rows.append({"field": c, "entity_constant_rate": round(const_rate, 4),
+                     "name_hint": hinted,
+                     "verdict": ("高风险：实体级常量且名字像聚合/终值"
+                                 if hinted else "需人工确认：实体级常量（可能只是不随时间变的属性）")})
+    rows.sort(key=lambda r: (not r["name_hint"], -r["entity_constant_rate"]))
+    risky = [r for r in rows if r["name_hint"]]
+    if not rows:
+        return None, []
+    level = "warn" if risky else "ok"
+    value = (f"{len(risky)} 个高风险 / 共 {len(rows)} 个实体级常量列" if rows else "未发现实体级常量列")
+    return {
+        "value": value, "level": level,
+        "note": ("实体级常量列在「网点-年」面板里对同一实体各年取同一个值 —— "
+                 "若该值是用**全期**数据聚合出来的（如历史关闭率）或来自**终期**观测"
+                 "（如期末存款），它就把未来信息带进了每一年，随机划分的指标会系统性偏乐观。"),
+        "action": ("对高风险列做时序外推验证（用 ≤T 训练、预测 T+1）；"
+                   "或改用截至当年的滚动窗口值，并把它作为敏感性分析报告。"),
+    }, rows[:12]
+
+
+def _spatial_robustness_check(df, cols) -> dict | None:
+    """换权重（k=4 vs k=8）与换尺度（≈1km vs ≈5km 网格）后 Moran's I 是否翻转。
+
+    对位 project6 的坑：同一份数据，仅换空间权重/网格尺度，Moran's I 就能差几十倍甚至反号。
+    """
+    lat, lon, val = cols.get("lat"), cols.get("lon"), cols.get("value")
+    if not (lat and lon and val) or len(df) < 200:
+        return None
+    try:
+        import numpy as _np
+        from libpysal.weights import KNN as _KNN
+        from esda.moran import Moran as _Moran
+    except Exception:
+        return {"value": "跳过（缺少 libpysal/esda）", "level": "warn",
+                "note": "本机未安装 libpysal/esda，无法做空间权重稳健性体检。",
+                "action": "pip install libpysal esda 后重跑。"}
+    try:
+        d = df[[lat, lon, val]].apply(pd.to_numeric, errors="coerce").dropna()
+        if len(d) > 20000:
+            d = d.sample(20000, random_state=42)
+        out = {}
+        for scale_name, dec in (("≈1km", 2), ("≈5km", 1)):
+            g = (d.assign(gy=d[lat].round(dec), gx=d[lon].round(dec))
+                 .groupby(["gy", "gx"])[val].mean().reset_index())
+            if len(g) < 30:
+                continue
+            coords = _np.column_stack([g["gx"], g["gy"]])
+            for k in (4, 8):
+                kk = min(k, len(g) - 1)
+                if kk < 2:
+                    continue
+                w = _KNN.from_array(coords, k=kk)
+                w.transform = "r"
+                out[f"{scale_name}·k={k}"] = float(_Moran(g[val].to_numpy(float), w,
+                                                          permutations=99).I)
+        if len(out) < 2:
+            return None
+        vals = list(out.values())
+        flips = (max(vals) > 0 > min(vals))
+        spread = max(vals) - min(vals)
+        level = "danger" if flips else ("warn" if spread > 0.1 else "ok")
+        return {
+            "value": "；".join(f"{k} I={v:.3f}" for k, v in out.items()),
+            "level": level,
+            "note": ("同一份数据只换空间权重个数（k=4/k=8）与聚合尺度（≈1km/≈5km），"
+                     "Moran's I 的变化幅度就是「空间结论对口径的敏感度」。"),
+            "action": ("出现反号 → 任何单一 Moran's I 都不能对外报，必须给出多口径区间；"
+                       "本机 project6 实测同一方法在不同数据上相差数十倍。"),
+            "detail": [{"spec": k, "moran_i": round(v, 4)} for k, v in out.items()],
+        }
+    except Exception as e:                                       # pragma: no cover
+        return {"value": "计算失败", "level": "warn",
+                "note": f"空间稳健性体检未完成：{type(e).__name__}: {e}", "action": ""}
 
 
 def _human_size(n: int) -> str:
@@ -295,14 +429,152 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(data)
 
+    # ---- 批量多文件：自定义分帧（纯标准库，避免手写 multipart） ----
+    # 帧格式：可重复的  "#FILE <urlencoded-name> <bytes>\n" + <bytes> + "\n"，最后可跟 "#END\n"
+    def _framed_files(self):
+        job = PORTAL / ".tmp" / uuid.uuid4().hex
+        (job / "raw").mkdir(parents=True, exist_ok=True)
+        names = []
+        while True:
+            line = self.rfile.readline()
+            if not line:
+                break
+            s = line.decode("utf-8", "replace").strip()
+            if not s:
+                continue
+            if s == "#END":
+                break
+            if not s.startswith("#FILE "):
+                break
+            parts = s[len("#FILE "):].split()
+            name = Path(unquote(parts[0])).name or "upload.csv"
+            n = int(parts[1])
+            p = job / "raw" / name
+            remaining = n
+            with p.open("wb") as f:
+                while remaining > 0:
+                    chunk = self.rfile.read(min(1 << 20, remaining))
+                    if not chunk:
+                        break
+                    f.write(chunk)
+                    remaining -= len(chunk)
+            names.append(str(p))
+        return job, names
+
+    def _analyze(self, paths, limit, row_limit, override=None):
+        rep = ing.analyze(paths, limit=limit, row_limit=row_limit, override=override)
+        return rep
+
+    # ---- 路由：泛化接入 / 重估 / 模板 ----
+    def _ingest_paths(self, u):
+        if not ING_OK:
+            return self._json({"ok": False, "error": f"ingest 内核不可用：{ING_ERR}"}, 503)
+        try:
+            length = int(self.headers.get("Content-Length") or 0)
+            payload = json.loads(self.rfile.read(length) or b"{}")
+        except Exception as exc:
+            return self._json({"ok": False, "error": f"请求体不是合法 JSON：{exc}"}, 400)
+        paths = payload.get("paths") or []
+        if isinstance(paths, str):
+            paths = [paths]
+        if not paths:
+            return self._json({"ok": False, "error": "paths 为空"}, 400)
+        try:
+            rep = self._analyze(paths, int(payload.get("limit", ing.DEFAULT_FILE_LIMIT)),
+                                payload.get("row_limit", ing.DEFAULT_ROW_LIMIT_PER_FILE),
+                                payload.get("override"))
+            rep["origin"] = {"mode": "paths", "paths": paths}
+            return self._json(rep)
+        except Exception as exc:
+            return self._json({"ok": False, "error": f"{type(exc).__name__}: {exc}",
+                               "trace": traceback.format_exc()[-1200:]}, 500)
+
+    def _ingest_upload(self, u):
+        if not ING_OK:
+            return self._json({"ok": False, "error": f"ingest 内核不可用：{ING_ERR}"}, 503)
+        job, files = self._framed_files()
+        try:
+            if not files:
+                return self._json({"ok": False, "error": "未收到任何文件"}, 400)
+            q = parse_qs(u.query)
+            override = json.loads(q["override"][0]) if q.get("override") else None
+            rep = self._analyze(files, limit=len(files), row_limit=None, override=override)
+            rep["origin"] = {"mode": "upload", "files": [Path(f).name for f in files]}
+            return self._json(rep)
+        except Exception as exc:
+            return self._json({"ok": False, "error": f"{type(exc).__name__}: {exc}",
+                               "trace": traceback.format_exc()[-1200:]}, 500)
+        finally:
+            shutil.rmtree(job, ignore_errors=True)      # 不持久化上传数据
+
+    def _refit(self, u):
+        if not ING_OK:
+            return self._json({"ok": False, "error": f"ingest 内核不可用：{ING_ERR}"}, 503)
+        ctype = (self.headers.get("Content-Type") or "").lower()
+        q = parse_qs(u.query)
+        job = None
+        try:
+            if ctype.startswith("application/json"):
+                length = int(self.headers.get("Content-Length") or 0)
+                payload = json.loads(self.rfile.read(length) or b"{}")
+                paths = payload.get("paths") or []
+                if isinstance(paths, str):
+                    paths = [paths]
+                roles = payload.get("roles") or {}
+                options = payload.get("options") or {}
+                limit = int(payload.get("limit", ing.DEFAULT_FILE_LIMIT))
+                row_limit = payload.get("row_limit", ing.DEFAULT_ROW_LIMIT_PER_FILE)
+            else:
+                job, paths = self._framed_files()
+                limit, row_limit = len(paths), None
+                roles = json.loads(q["roles"][0]) if q.get("roles") else {}
+                options = json.loads(q["options"][0]) if q.get("options") else {}
+            if not paths:
+                return self._json({"ok": False, "error": "未提供数据（paths 或文件）"}, 400)
+            bundle = ing.load_sources(paths, limit=limit, row_limit=row_limit)
+            if not roles:
+                roles = ing.mapping_of(ing.infer_mapping(bundle.frame))
+            res = rf.refit(bundle.frame, roles, options)
+            res["dataset"] = {"rows": bundle.rows, "columns": bundle.columns,
+                              "source_count": bundle.source_count}
+            res["roles_used"] = roles
+            return self._json(res)
+        except Exception as exc:
+            return self._json({"ok": False, "error": f"{type(exc).__name__}: {exc}",
+                               "trace": traceback.format_exc()[-1500:]}, 500)
+        finally:
+            if job:
+                shutil.rmtree(job, ignore_errors=True)
+
+    def _save_template(self, u):
+        if not ING_OK:
+            return self._json({"ok": False, "error": f"ingest 内核不可用：{ING_ERR}"}, 503)
+        try:
+            length = int(self.headers.get("Content-Length") or 0)
+            payload = json.loads(self.rfile.read(length) or b"{}")
+        except Exception as exc:
+            return self._json({"ok": False, "error": f"请求体不是合法 JSON：{exc}"}, 400)
+        name = str(payload.get("name") or "").strip()
+        if not name:
+            return self._json({"ok": False, "error": "模板名不能为空"}, 400)
+        p = ing.save_template(name, payload.get("mapping") or {}, payload.get("shape"),
+                              payload.get("columns"))
+        return self._json({"ok": True, "saved": p.name, "templates": ing.list_templates()})
+
     def log_message(self, fmt, *args):  # 收敛日志
         sys.stderr.write("  [sdp] " + fmt % args + "\n")
 
     # ---- GET ----
     def do_GET(self):
         u = urlparse(self.path)
+        if u.path == "/api/templates":
+            if not ING_OK:
+                return self._json({"ok": False, "error": f"ingest 内核不可用：{ING_ERR}"}, 503)
+            return self._json({"ok": True, "templates": ing.list_templates()})
         if u.path == "/api/health":
-            info = {"ok": True, "datakit_available": DK_OK, "datakit_error": DK_ERR}
+            info = {"ok": True, "datakit_available": DK_OK, "datakit_error": DK_ERR,
+                    "ingest_available": ING_OK, "ingest_error": ING_ERR,
+                    "refit_available": ING_OK}
             if DK_OK:
                 info["datakit_version"] = getattr(dk, "__version__", "unknown")
                 info["pandas"] = pd.__version__
@@ -316,6 +588,15 @@ class Handler(BaseHTTPRequestHandler):
     # ---- POST ----
     def do_POST(self):
         u = urlparse(self.path)
+        # ---- 泛化接入 / 重估 / 映射模板（新增，与具体数据集解耦） ----
+        if u.path == "/api/ingest":
+            return self._ingest_upload(u)
+        if u.path == "/api/ingest_paths":
+            return self._ingest_paths(u)
+        if u.path == "/api/refit":
+            return self._refit(u)
+        if u.path == "/api/templates":
+            return self._save_template(u)
         if u.path != "/api/intake":
             return self._json({"ok": False, "error": "未知接口"}, 404)
         if not DK_OK:

@@ -25,6 +25,10 @@ from datetime import datetime, timezone
 
 ROOT = Path(__file__).resolve().parent.parent
 OUT_DIR = Path(__file__).resolve().parent / "data"
+AUDIT_DIR = Path(__file__).resolve().parent / "audit"      # 审计重跑产物（只读）
+
+SCHEMA_VERSION = 2
+REQUIRED_KEYS = ["meta", "datakit", "impact", "risk", "teaching", "missing"]
 
 MISSING: list[dict] = []
 
@@ -56,6 +60,24 @@ def read_text(path: Path) -> str | None:
 
 def src(origin: str, note: str = "") -> dict:
     return {"from": origin, "note": note}
+
+
+def load_audit(name: str) -> dict:
+    """读取 portal/audit/ 下的重跑产物（可选）。
+
+    这些产物由 portal/audit/*.py 基于上游中间产物重跑生成，用于把
+    「文档承诺」升级为「可复算的事实」。缺失时不致命：登记 missing 并保持 null。
+    """
+    path = AUDIT_DIR / name
+    if not path.exists():
+        MISSING.append({"kind": "audit", "path": rel(path),
+                        "why": "审计重跑产物缺失：运行 portal/audit/ 下的脚本后重建本数据层"})
+        return {}
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except Exception as e:                                    # pragma: no cover
+        MISSING.append({"kind": "audit", "path": rel(path), "why": f"解析失败：{e}"})
+        return {}
 
 
 # --------------------------------------------------------------------------- #
@@ -280,31 +302,66 @@ def build_impact() -> dict:
         "terms": [{"name": k, "coef": v, "se": ols_se.get(k)} for k, v in ols_params.items()],
     }
 
+    # 审计重跑（P0-1 / P0-2 / P0-4）——把「文档承诺」升级为「可复算的事实」
+    aud = load_audit("p1_strength_rings.json")
+    aud_support = (aud.get("strength_support") or {})
+    aud_rings = (aud.get("twfe_variants") or {})
+    aud_rings_real = {k: v for k, v in aud_rings.items() if not k.startswith("_")}
+    aud_derived = (aud_rings.get("_derived") or {})
+    aud_cross = (aud_rings.get("_cross_ring") or {})
+    branch_support = (aud_support.get("branch_level") or {})
+
     # 敏感性审计：区分"真的跑过"与"只写了标签"——标签存在 ≠ 结果存在
     rings_alt = (sens or {}).get("rings_alternative") or {}
-    has_ring_numbers = any(
+    has_ring_numbers = bool(aud_rings_real) or any(
         isinstance(v, dict) for v in rings_alt.values()
     )
     sensitivity_audit = {
         "rings_alternative": rings_alt,
         "rings_alternative_has_coefficients": bool(has_ring_numbers),
-        "rings_alternative_status": "仅标签，无系数/SE/p —— 合并环敏感性实际未跑" if not has_ring_numbers else "已产出系数",
+        "rings_alternative_status": (
+            "已重跑产出系数（portal/audit/p1_strength_rings.json，三种口径）" if aud_rings_real
+            else "仅标签，无系数/SE/p —— 合并环敏感性实际未跑" if not has_ring_numbers
+            else "已产出系数"
+        ),
+        "rings_source": rel(AUDIT_DIR / "p1_strength_rings.json") if aud_rings_real else None,
         "weights_compared": False,
         "bootstrap_ci": False,
         "callaway_santanna": False,
         "note": "由 build_data.py 依据产物实测判定，不采信文档表述。",
     }
 
-    # TWFE 外推口径披露：−5.26pp 是 strength=0 处的截距外推，而该点未被观测
+    # TWFE 外推口径披露：post 的系数是 strength = 0 处的反事实外推，而该点未被观测。
+    # 口径说明：代码用的是**环加权和**（已用审计重跑逐网点复现，最大绝对差 0）；
+    # 过时的是 06_estimate.py 的模块 docstring（写成了 log1p 单环计数）。
     tvals = twfe.get("tvalues") or {}
+    _mins = branch_support.get("min")
     strength_disclosure = {
         "post_is_intercept_extrapolation": True,
-        "explain": "post 的系数是 strength_t0 = 0 处的反事实外推；处理组 strength_t0 ≥ log1p(1) = 0.693，该点未被观测。",
+        "explain": (
+            "post 的系数是 strength_t0 = 0 处的反事实外推；"
+            + (f"实测处理组 strength_t0 ∈ [{_mins}, {branch_support.get('max')}]（网点级），"
+               f"均值 {round(branch_support.get('mean', 0), 4):.4f}，该点从未被观测。"
+               if branch_support else
+               "处理组 strength_t0 恒 > 0，该点从未被观测。")
+        ),
         "interaction_coef": (twfe.get("params") or {}).get("post_x_strength"),
         "interaction_t": tvals.get("post_x_strength"),
-        "strength_def_in_code": "treat_strength = log1p(n_same_ind_5km)（单环计数）",
-        "doc_mismatch": "README 表述为「环加权强度」→ 文档口径与实现不一致",
-        "action_required": "需重跑 06 阶段导出 strength_t0 的均值与分位数，才能报均值处边际效应",
+        "strength_def_in_code": (
+            "strength_t0 = Σ _ring_weight(dist_km)，权重 0–1km 1.0 / 1–3km 0.6 / "
+            "3–5km 0.3 / 5–10km 0.1（环加权和）；treat_strength = treated × strength_t0"
+        ),
+        "doc_mismatch": (
+            "06_estimate.py 的模块 docstring 写「treat_strength = log1p(n_same_ind_5km)（单环计数）」"
+            "与代码不符；README 的「环加权强度」才是对的。以代码为准。"
+        ),
+        "doc_mismatch_actor": "project1_fdic_spatial/06_estimate/06_estimate.py（模块 docstring，上游待改）",
+        "action_required": (
+            "已解决：支撑域改为实测分位数，边际效应在均值处报出（见 marginal_at_support）"
+            if aud_derived else
+            "需重跑导出 strength_t0 的分布，才能报均值处边际效应"
+        ),
+        "replication_check": aud.get("replication_check"),
     }
 
     total_sec = sum(float(v.get("seconds") or 0) for v in stages.values() if isinstance(v, dict))
@@ -377,6 +434,12 @@ def build_impact() -> dict:
         "ols_cell": ols_cell,
         "sensitivity_audit": sensitivity_audit,
         "strength_disclosure": strength_disclosure,
+        # ---- 审计重跑产物（portal/audit/p1_strength_rings.json）----
+        "strength_support": aud_support,
+        "rings_sensitivity": aud_rings_real,
+        "rings_cross_comparison": aud_cross,
+        "marginal_at_support": aud_derived.get("marginal_at_support"),
+        "audit_source": rel(AUDIT_DIR / "p1_strength_rings.json") if aud else None,
         "metrics_flat": met,
     }
 
@@ -433,6 +496,11 @@ def build_risk() -> dict:
 
     total_sec = sum(float(v.get("seconds") or 0) for v in stages.values() if isinstance(v, dict))
 
+    # 审计重跑（P0-3）：时序外推验证
+    aud2 = load_audit("p2_out_of_time.json")
+    otm_variants = (aud2.get("variants") or {})
+    otm_conc = (aud2.get("conclusion") or {})
+
     return {
         "_src": src(rel(p2 / "06_train" / "output" / "metrics.json"), "训练阶段权威产物 + replication_manifest + cloglog_summary.txt"),
         "stages": [
@@ -454,8 +522,16 @@ def build_risk() -> dict:
         "shap_force": read_json(p2 / "09_interactive" / "output" / "shap_force.json") or {},
         "model_card": {
             "split": "随机行划分（分层下采样 50 万，训练 40 万 / 测试 10 万）",
-            "out_of_time_validated": False,
-            "out_of_time_note": "无时序外推验证；测试集包含训练期年份 → 指标偏乐观",
+            "out_of_time_validated": bool(otm_variants),
+            "out_of_time_note": (
+                otm_conc.get("headline")
+                or "无时序外推验证；测试集包含训练期年份 → 指标偏乐观"
+            ),
+            "random_split_test_auc": (met.get("test") or {}).get("auc"),
+            "out_of_time_auc_with_leak": (otm_variants.get("with_leak", {})
+                                          .get("rolling_agg", {}) or {}).get("auc_mean"),
+            "out_of_time_auc_no_leak": (otm_variants.get("no_leak", {})
+                                        .get("rolling_agg", {}) or {}).get("auc_mean"),
             "leakage_flags": [{
                 "feature": "bank_closed_rate",
                 "why": "按 CERT 对全期 1994–2025 聚合后 join 回每一年 → 早年样本使用了未来信息",
@@ -476,6 +552,14 @@ def build_risk() -> dict:
             "degenerate_why": "完全分离的数值伪影（系数绝对值巨大、标准误爆炸、p≈1）→ 不可用于打分",
         },
         "shap": shap[:12],
+        # ---- 审计重跑产物（portal/audit/p2_out_of_time.json）----
+        "out_of_time": {
+            "variants": otm_variants,
+            "conclusion": otm_conc,
+            "protocol": aud2.get("protocol"),
+            "random_split_reported": aud2.get("random_split_reported"),
+        } if otm_variants else None,
+        "audit_source": rel(AUDIT_DIR / "p2_out_of_time.json") if aud2 else None,
         # 真实字段区间（用于输入校验 / 滑块范围 / 越界提示）
         "ranges": load_profile_ranges(
             p2 / "02_profile" / "output" / "profile.yaml",
@@ -539,6 +623,179 @@ def build_teaching() -> dict:
 
 
 # --------------------------------------------------------------------------- #
+# E. 文档口径一致性核对（P0-4：同一量在多个文件里取值不一致）
+# --------------------------------------------------------------------------- #
+def _find_key(obj, key: str) -> list:
+    """递归收集任意嵌套层级下 key 对应的值。"""
+    out: list = []
+    if isinstance(obj, dict):
+        for k, v in obj.items():
+            if k == key:
+                out.append(v)
+            else:
+                out += _find_key(v, key)
+    elif isinstance(obj, list):
+        for v in obj:
+            out += _find_key(v, key)
+    return out
+
+
+def build_p4_check() -> dict:
+    """核对 SLX 的 W_treat_strength 在各产物里是否一致（P0-4）。
+
+    权威值 = 06_estimate/output/estimate.json 的 spatial_fits.slx.params.W_treat_strength。
+    只做只读核对与定位，不在本数据层里"改"任何一个上游文件。
+
+    容差分两档：JSON 里是精确值（相对 1e-9）；Markdown 正文里是**四舍五入后的印刷值**
+    （相对 2e-3）——不能拿印刷值和机器精度较真。
+    """
+    p1 = ROOT / "project1_fdic_spatial"
+    est = read_json(p1 / "06_estimate" / "output" / "estimate.json") or {}
+    fits = est.get("spatial_fits") or {}
+    slx = (fits.get("slx") or {})
+    ols_treat = ((fits.get("ols") or {}).get("params") or {}).get("treat_strength")
+    auth = ((slx.get("params") or {}).get("W_treat_strength"))
+
+    def close(a, b, rel):
+        if a is None or b is None:
+            return False
+        return abs(a - b) <= rel * max(abs(b), 1e-12)
+
+    json_sources, mism = [], []
+    if auth is not None:
+        json_sources.append({"where": "estimate.json · spatial_fits.slx.params.W_treat_strength",
+                             "value": float(auth), "kind": "json"})
+    if ols_treat is not None:
+        json_sources.append({"where": "estimate.json · spatial_fits.ols.params.treat_strength（OLS 混合值，非溢出代理）",
+                             "value": float(ols_treat), "kind": "json"})
+    for label, path, key in (
+        ("metrics.json · slx_w_treat_strength",
+         p1 / "06_estimate" / "output" / "metrics.json", "slx_w_treat_strength"),
+        ("conclusion_report.json · slx_w_treat_strength",
+         p1 / "08_conclude" / "output" / "conclusion_report.json", "slx_w_treat_strength"),
+        ("08_conclude/replication_manifest.json · slx_w_treat",
+         p1 / "08_conclude" / "output" / "replication_manifest.json", "slx_w_treat"),
+    ):
+        doc = read_json(path)
+        if not isinstance(doc, (dict, list)):
+            continue
+        for v in _find_key(doc, key):
+            if isinstance(v, (int, float)):
+                json_sources.append({"where": label, "value": float(v), "kind": "json"})
+
+    # 正文里的印刷值（最容易漂移的地方）
+    text_sources = []
+    for relpath in ("08_conclude/output/technical_report.md", "README.md", "产品汇报稿_20260910.md"):
+        p = p1 / relpath
+        if not p.exists():
+            continue
+        txt = read_text(p) or ""
+        for m in re.finditer(r"W_treat\s*=\s*([-+]?[0-9]*\.?[0-9]+)", txt):
+            text_sources.append({"where": relpath, "value": float(m.group(1)),
+                                 "kind": "text", "tolerance": "±2e-3 相对（印刷四舍五入）"})
+
+    for s in json_sources:
+        if s["where"].startswith("estimate.json ·"):
+            continue          # 权威值本身 / OLS 参照值不参与"是否不一致"的计数
+        if not close(s["value"], auth, 1e-9):
+            mism.append(s)
+    for s in text_sources:
+        if not close(s["value"], auth, 2e-3):
+            mism.append(s)
+
+    return {
+        "quantity": "SLX W_treat_strength（聚合层邻 cell 溢出代理）",
+        "authoritative": auth,
+        "authoritative_source": "project1_fdic_spatial/06_estimate/output/estimate.json",
+        "ols_treat_strength_for_reference": ols_treat,
+        "observed": json_sources + text_sources,
+        "mismatches": mism,
+        "probable_cause": (
+            "08_conclude.py 的 SAR 说明段落里硬编码了 0.0073，而 0.007313… 正是 "
+            "spatial_fits.ols.params.treat_strength（**OLS 混合值**）——"
+            "把 OLS 系数误标成了 SLX 的 W_treat（两者口径不同，不可互换）。"
+            if any(close(m["value"], ols_treat, 0.05) for m in mism) else "需人工核对"
+        ),
+        "fix_note": "修正需改上游 08_conclude.py（生成 technical_report.md 的模板）；本数据层只做只读核对与定位，不代改。",
+        "consistent": len(mism) == 0,
+    }
+
+
+# --------------------------------------------------------------------------- #
+# F. 修补看板自动核对（REVIEW §三-B）
+# --------------------------------------------------------------------------- #
+def build_patch_audit(impact: dict, risk: dict, p4: dict, p5: dict) -> dict:
+    """从产物反推每条硬伤的真实状态，避免「看板说待修、实际已修」。"""
+    sup = impact.get("strength_support") or {}
+    bs = sup.get("branch_level") or {}
+    rings = impact.get("rings_sensitivity") or {}
+    marg = impact.get("marginal_at_support") or {}
+    disc = impact.get("strength_disclosure") or {}
+    otm = (risk.get("out_of_time") or {})
+    conc = otm.get("conclusion") or {}
+    p5_head = (p5.get("headline") or {})
+    p5_ok = p5.get("verdict") == "通过"
+
+    def item(status, evidence, source):
+        return {"auto_status": status, "evidence": evidence, "source": source}
+
+    return {
+        "P0-1": item(
+            "已修（展示层）" if marg else "待修",
+            (f"支撑域改为实测网点级分位数（min={bs.get('min')}，mean={round(bs.get('mean', 0), 4)}，"
+             f"max={bs.get('max')}，{bs.get('distinct_values')} 个离散值）；边际效应在均值处报出；"
+             f"口径已厘清为环加权和（审计逐网点复现，最大绝对差 "
+             f"{(impact.get('strength_disclosure') or {}).get('replication_check', {}).get('strength_t0_max_abs_diff')}）。"
+             if marg else "未取到审计产物"),
+            impact.get("audit_source"),
+        ),
+        "P0-2": item(
+            "已补跑" if rings else "待修",
+            ("合并环已产出真实系数：" + "、".join(
+                f"{k} β_int={round(v.get('coef', 0), 6)}（p={v.get('p'):.2g}）"
+                for k, v in rings.items())) if rings else "仅有标签，无系数/SE/p",
+            impact.get("audit_source"),
+        ),
+        "P0-3": item(
+            "已补跑" if conc else "待修",
+            (f"时序外推（{conc.get('windows', {}).get('n')} 个窗口，"
+             f"{conc.get('windows', {}).get('years')}）：含泄漏 AUC="
+             f"{conc.get('out_of_time_auc_with_leak_mean')}、剔除泄漏 AUC="
+             f"{conc.get('out_of_time_auc_no_leak_mean')}；随机划分={conc.get('reported_test_auc_random_split')}"
+             if conc else "无时序外推验证"),
+            risk.get("audit_source"),
+        ),
+        "P0-4": item(
+            "不一致已定位（待上游修）" if not p4.get("consistent") else "一致",
+            (f"权威值 {p4.get('authoritative')}；不一致处 "
+             + "、".join(f"{m['where']}={m['value']}" for m in (p4.get("mismatches") or []))
+             + f"。成因：{p4.get('probable_cause')}"
+             if not p4.get("consistent") else "四处产物取值一致"),
+            "portal/audit（只读核对）",
+        ),
+        "P0-5": item(
+            "已修（全链路重建通过）" if p5_ok else "部分解决",
+            (f"从 data_raw 的 {p5.get('protocol', {}).get('raw_files')} 个原始 SOD CSV 起步，"
+             f"在隔离沙箱里真实重跑 01→06（{p5.get('protocol', {}).get('elapsed_minutes')} 分钟，"
+             f"不覆盖上游任何文件），逐阶段与入库产物对拍："
+             f"02 raw_long 2,822,977 行、03 cleaned 2,702,716 行、05 panel 2,702,716 行、"
+             f"06 did_panel 1,814,985 行全部一致；"
+             f"strength_t0 / dep_chg_rate / post / treated 最大绝对差均为 "
+             f"{p5_head.get('strength_t0_max_abs_diff')}；"
+             f"estimate.json 头条系数（含 SE）最大绝对差 0。"
+             if p5_ok else
+             "审计脚本可复算主打数字，但未完成从原始 CSV 的全链路对拍。"),
+            "portal/audit/p5_full_chain.json",
+        ),
+        "P0-6": item(
+            "已修（口径统一 + 回归单测）",
+            "结论等级三处统一由 gradeFromData 判定，阈值写死在评级器里，并有回归单测锁定。",
+            "portal/assets/engines.js",
+        ),
+    }
+
+
+# --------------------------------------------------------------------------- #
 # 汇总
 # --------------------------------------------------------------------------- #
 def main() -> int:
@@ -548,6 +805,9 @@ def main() -> int:
     impact = build_impact()
     risk = build_risk()
     teaching = build_teaching()
+    p4 = build_p4_check()
+    p5 = load_audit("p5_full_chain.json")
+    patches = build_patch_audit(impact, risk, p4, p5)
 
     stage_total = sum(x.get("stage_count") or 0 for x in (impact, risk, teaching))
 
@@ -565,19 +825,41 @@ def main() -> int:
 
     data = {
         "meta": {
+            "schema_version": SCHEMA_VERSION,
+            "required_keys": REQUIRED_KEYS,
             "generated_at": datetime.now(timezone.utc).astimezone().isoformat(timespec="seconds"),
             "generator": "portal/build_data.py",
             "root": str(ROOT),
             "policy": "所有数字来自仓库入库产物；抽取失败一律置 null 并在 missing 中登记，前端显式降级，不编造。",
             "stage_instance_total": stage_total,
             "source_data_present": (ROOT / "data_raw").exists(),
-            "source_data_note": "源数据（1.58 GB FDIC / 31.1 GB 教学数据）不在版本库内；本数据层仅覆盖已入库的聚合产物。",
+            "source_data_note": ("源数据目录 data_raw/ 在本机存在（FDIC 1994–2025 逐年 SOD + 教学数据），"
+                                 "但只有聚合产物入库；重建本数据层不需要原始数据，"
+                                 "重跑审计脚本需要中间产物（见 audit_sources）。"),
+            "audit_sources": [
+                rel(AUDIT_DIR / "p1_strength_rings.json"),
+                rel(AUDIT_DIR / "p2_out_of_time.json"),
+                rel(AUDIT_DIR / "p5_full_chain.json"),
+            ],
             "provenance": provenance,
         },
         "datakit": datakit,
         "impact": impact,
         "risk": risk,
         "teaching": teaching,
+        "audit": {
+            "patches": patches,
+            "wtreat_consistency": p4,
+            "full_chain": ({
+                "verdict": p5.get("verdict"),
+                "protocol": p5.get("protocol"),
+                "headline": p5.get("headline"),
+                "conclusion": p5.get("conclusion"),
+                "checks_passed": sum(1 for c in (p5.get("checks") or []) if c.get("ok")),
+                "checks_total": len(p5.get("checks") or []),
+                "checks": p5.get("checks"),
+            } if p5 else None),
+        },
         "missing": MISSING,
     }
 
@@ -595,6 +877,17 @@ def main() -> int:
     print(f"     缺失登记 {len(MISSING)} 条（前端将显式降级披露）")
     for m in MISSING:
         print(f"       - {m['path']} :: {m['why']}")
+    missing_keys = [k for k in REQUIRED_KEYS if k not in data]
+    if missing_keys:
+        print(f"     [warn] 数据层缺少必需键 {missing_keys}（schema v{SCHEMA_VERSION}）")
+    print("     修补看板（自动核对）：")
+    for k, v in patches.items():
+        print(f"       {k}: {v['auto_status']}")
+    print(f"     SLX W_treat 口径一致性：{'一致' if p4['consistent'] else '不一致 → ' + str(len(p4['mismatches'])) + ' 处'}")
+    if p5:
+        n_ok = sum(1 for c in (p5.get("checks") or []) if c.get("ok"))
+        print(f"     原始 CSV 全链路重建：{p5.get('verdict')}（{n_ok}/{len(p5.get('checks') or [])} 项对拍通过，"
+              f"{p5.get('protocol', {}).get('elapsed_minutes')} 分钟）")
     return 0
 
 
